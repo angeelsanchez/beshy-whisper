@@ -1,0 +1,61 @@
+{
+  "name": "BESHY Whisper",
+  "short_name": "Whisper",
+  "description": "Susurra tu progreso en silencio.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "es",
+  "categories": ["productivity", "lifestyle"],
+  "icons": [
+    {
+      "src": "/logo_pwa.ico",
+      "sizes": "16x16 32x32 48x48",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "/logo_pwa.ico",
+      "sizes": "192x192",
+      "type": "image/x-icon",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo_pwa.ico",
+      "sizes": "512x512",
+      "type": "image/x-icon",
+      "purpose": "any maskable"
+    }
+  ],
+  "prefer_related_applications": false,
+  "shortcuts": [
+    {
+      "name": "Crear Whisper",
+      "short_name": "Crear",
+      "description": "Crear un nuevo whisper",
+      "url": "/create",
+      "icons": [
+        {
+          "src": "/favicon.ico",
+          "sizes": "any",
+          "type": "image/x-icon"
+        }
+      ]
+    },
+    {
+      "name": "Ver Feed",
+      "short_name": "Feed",
+      "description": "Ver el feed de whispers",
+      "url": "/feed",
+      "icons": [
+        {
+          "src": "/favicon.ico",
+          "sizes": "any",
+          "type": "image/x-icon"
+        }
+      ]
+    }
+  ]
+}

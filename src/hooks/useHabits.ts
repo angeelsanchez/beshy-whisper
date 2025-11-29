@@ -1,0 +1,201 @@
+'use client';
+
+import { useState, useEffect, useCallback } from 'react';
+import { useAuthSession } from '@/hooks/useAuthSession';
+import type { TrackingType } from '@/lib/habit-templates';
+
+export interface Habit {
+  id: string;
+  user_id: string;
+  name: string;
+  description: string | null;
+  frequency: 'daily' | 'weekly';
+  frequency_mode: 'specific_days' | 'weekly_count';
+  target_days_per_week: number;
+  target_days: number[];
+  weekly_target: number | null;
+  color: string;
+  tracking_type: TrackingType;
+  target_value: number | null;
+  unit: string | null;
+  icon: string | null;
+  category: 'health' | 'mind' | 'productivity' | 'wellness' | 'social' | 'creativity' | null;
+  reminder_time: string | null;
+  has_progression: boolean;
+  current_level: number | null;
+  level_started_at: string | null;
+  is_shareable: boolean;
+  is_active: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+interface CreateHabitData {
+  name: string;
+  description?: string;
+  frequencyMode?: 'specific_days' | 'weekly_count';
+  targetDays?: number[];
+  weeklyTarget?: number;
+  color?: string;
+  trackingType?: TrackingType;
+  targetValue?: number;
+  unit?: string;
+  icon?: string;
+  category?: 'health' | 'mind' | 'productivity' | 'wellness' | 'social' | 'creativity';
+  reminderTime?: string;
+}
+
+interface UpdateHabitData {
+  name?: string;
+  description?: string | null;
+  frequencyMode?: 'specific_days' | 'weekly_count';
+  targetDays?: number[];
+  weeklyTarget?: number | null;
+  color?: string;
+  trackingType?: TrackingType;
+  targetValue?: number | null;
+  unit?: string | null;
+  icon?: string | null;
+  category?: 'health' | 'mind' | 'productivity' | 'wellness' | 'social' | 'creativity' | null;
+  reminderTime?: string | null;
+  isActive?: boolean;
+  sortOrder?: number;
+}
+
+export function useHabits() {
+  const { session } = useAuthSession();
+  const [habits, setHabits] = useState<Habit[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchHabits = useCallback(async () => {
+    if (!session?.user?.id) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/habits');
+      if (!res.ok) {
+        setError('Error al cargar hábitos');
+        setLoading(false);
+        return;
+      }
+
+      const data = await res.json();
+      setHabits(data.habits);
+      setError(null);
+    } catch {
+      setError('Error de conexión');
+    } finally {
+      setLoading(false);
+    }
+  }, [session?.user?.id]);
+
+  useEffect(() => {
+    fetchHabits();
+  }, [fetchHabits]);
+
+  useEffect(() => {
+    function handleRefresh(): void {
+      fetchHabits();
+    }
+
+    window.addEventListener('focus', handleRefresh);
+    window.addEventListener('habits-changed', handleRefresh);
+    return () => {
+      window.removeEventListener('focus', handleRefresh);
+      window.removeEventListener('habits-changed', handleRefresh);
+    };
+  }, [fetchHabits]);
+
+  const createHabit = useCallback(async (data: CreateHabitData): Promise<Habit | null> => {
+    if (!session?.user?.id) return null;
+
+    try {
+      const res = await fetch('/api/habits', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        setError(errData.error || 'Error al crear hábito');
+        return null;
+      }
+
+      const result = await res.json();
+      setHabits(prev => [...prev, result.habit]);
+      setError(null);
+      window.dispatchEvent(new Event('habits-changed'));
+      return result.habit;
+    } catch {
+      setError('Error de conexión');
+      return null;
+    }
+  }, [session?.user?.id]);
+
+  const updateHabit = useCallback(async (habitId: string, data: UpdateHabitData): Promise<boolean> => {
+    if (!session?.user?.id) return false;
+
+    try {
+      const res = await fetch(`/api/habits/${habitId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        setError(errData.error || 'Error al actualizar hábito');
+        return false;
+      }
+
+      const result = await res.json();
+      setHabits(prev => prev.map(h => h.id === habitId ? result.habit : h));
+      setError(null);
+      window.dispatchEvent(new Event('habits-changed'));
+      return true;
+    } catch {
+      setError('Error de conexión');
+      return false;
+    }
+  }, [session?.user?.id]);
+
+  const deleteHabit = useCallback(async (habitId: string): Promise<boolean> => {
+    if (!session?.user?.id) return false;
+
+    const previousHabits = habits;
+    setHabits(prev => prev.filter(h => h.id !== habitId));
+
+    try {
+      const res = await fetch(`/api/habits/${habitId}`, { method: 'DELETE' });
+
+      if (!res.ok) {
+        setHabits(previousHabits);
+        setError('Error al eliminar hábito');
+        return false;
+      }
+
+      setError(null);
+      window.dispatchEvent(new Event('habits-changed'));
+      return true;
+    } catch {
+      setHabits(previousHabits);
+      setError('Error de conexión');
+      return false;
+    }
+  }, [session?.user?.id, habits]);
+
+  return {
+    habits,
+    loading,
+    error,
+    createHabit,
+    updateHabit,
+    deleteHabit,
+    refetch: fetchHabits,
+  };
+}

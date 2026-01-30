@@ -2,49 +2,34 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { authOptions } from '../../auth/[...nextauth]/auth';
-
-// Helper function to validate UUID
-function isValidUUID(uuid: string): boolean {
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-  return uuidRegex.test(uuid);
-}
+import { updatePostSchema } from '@/lib/schemas/posts';
+import { uuidSchema } from '@/lib/schemas/common';
 
 export async function PUT(request: NextRequest) {
   try {
     // Get the current session
     const session = await getServerSession(authOptions);
-    
+
     if (!session || !session.user) {
       return NextResponse.json(
         { error: 'No autorizado - Sesión o usuario no encontrado' },
         { status: 401 }
       );
     }
-    
+
     // Get the request body
     const body = await request.json();
-    const { entryId, mensaje, is_private } = body;
-    
-    if (!entryId) {
+    const parsed = updatePostSchema.safeParse(body);
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: 'Solicitud inválida. Campo requerido: entryId' },
+        { error: 'Solicitud inválida. Se requiere entryId y mensaje o cambio de privacidad' },
         { status: 400 }
       );
     }
-    
-    // Check if this is just a privacy update or a full edit
-    const isPrivacyUpdate = is_private !== undefined && !mensaje;
-    const isMessageUpdate = mensaje !== undefined;
-    
-    if (!isPrivacyUpdate && !isMessageUpdate) {
-      return NextResponse.json(
-        { error: 'Solicitud inválida. Se requiere mensaje o cambio de privacidad' },
-        { status: 400 }
-      );
-    }
-    
+    const { entryId, mensaje, is_private } = parsed.data;
+
     const userId = session.user.id;
-    
+
     // Validate user ID
     if (!userId) {
       console.error('ID de usuario faltante en la sesión:', session);
@@ -53,12 +38,11 @@ export async function PUT(request: NextRequest) {
         { status: 401 }
       );
     }
-    
-    // Validate UUID
-    if (!isValidUUID(entryId)) {
-      console.error('ID de entrada inválido:', entryId);
+
+    if (!uuidSchema.safeParse(userId).success) {
+      console.error('ID de usuario inválido:', userId);
       return NextResponse.json(
-        { error: 'ID de entrada inválido' },
+        { error: 'ID de usuario inválido' },
         { status: 400 }
       );
     }
@@ -94,13 +78,13 @@ export async function PUT(request: NextRequest) {
     
     // Preparar los datos de actualización
     const updateData: Record<string, unknown> = {};
-    
-    if (isMessageUpdate) {
+
+    if (mensaje !== undefined) {
       updateData.mensaje = mensaje;
-      updateData.edited = true; // Marcar como editado solo si se cambió el mensaje
+      updateData.edited = true;
     }
-    
-    if (isPrivacyUpdate) {
+
+    if (is_private !== undefined) {
       updateData.is_private = is_private;
     }
     

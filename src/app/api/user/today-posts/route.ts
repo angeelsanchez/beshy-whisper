@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 import { authOptions } from '../../auth/[...nextauth]/auth';
 
 export async function GET(request: NextRequest) {
@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
     
     // Get today's entries for this user
-    const { data: entries, error } = await supabase
+    const { data: entries, error } = await supabaseAdmin
       .from('entries')
       .select('id, fecha, franja, mensaje')
       .eq('user_id', userId)

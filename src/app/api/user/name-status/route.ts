@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../auth/[...nextauth]/auth';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 
 export async function GET(req: NextRequest) {
   try {
@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
     const userId = session.user.id;
     
     // Get user's current name and last update time
-    const { data: userData, error: userError } = await supabase
+    const { data: userData, error: userError } = await supabaseAdmin
       .from('users')
       .select('name, last_name_update, needs_name_input')
       .eq('id', userId)
@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
     }
     
     // Check if user can update their name
-    const { data: canUpdateData, error: canUpdateError } = await supabase
+    const { data: canUpdateData, error: canUpdateError } = await supabaseAdmin
       .rpc('can_update_name', { user_id: userId });
     
     if (canUpdateError) {

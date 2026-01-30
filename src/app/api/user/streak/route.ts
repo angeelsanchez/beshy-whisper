@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 import { authOptions } from '../../auth/[...nextauth]/auth';
 
 export async function GET(request: NextRequest) {
@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     const userId = session.user.id;
     
     // Get all entries for this user, ordered by date
-    const { data: entries, error } = await supabase
+    const { data: entries, error } = await supabaseAdmin
       .from('entries')
       .select('fecha, franja')
       .eq('user_id', userId)

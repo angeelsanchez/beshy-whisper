@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 import { authOptions } from '../../auth/[...nextauth]/auth';
 
 // Helper function to validate UUID
@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
     
     try {
       // Use the check_like_status function to check if the user has liked the entry
-      const { data, error } = await supabase.rpc('check_like_status', {
+      const { data, error } = await supabaseAdmin.rpc('check_like_status', {
         p_user_id: userId,
         p_entry_id: entryId
       });
@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
         console.error('Error checking like status with RPC:', error);
         
         // Try with direct SQL as a fallback
-        const { data: existingLike, error: checkError } = await supabase
+        const { data: existingLike, error: checkError } = await supabaseAdmin
           .from('likes')
           .select('id')
           .eq('user_id', userId)
@@ -87,7 +87,7 @@ export async function GET(request: NextRequest) {
         }
         
         // Get the total likes count for the entry
-        const { data: likesCount, error: countError } = await supabase.rpc('get_likes_count', {
+        const { data: likesCount, error: countError } = await supabaseAdmin.rpc('get_likes_count', {
           p_entry_id: entryId
         });
         
@@ -96,7 +96,7 @@ export async function GET(request: NextRequest) {
           console.error('Error getting likes count with RPC:', countError);
           
           // Try with direct SQL as a fallback
-          const { data: countData, error: directCountError } = await supabase
+          const { data: countData, error: directCountError } = await supabaseAdmin
             .from('likes')
             .select('id', { count: 'exact' })
             .eq('entry_id', entryId);
@@ -115,7 +115,7 @@ export async function GET(request: NextRequest) {
       }
       
       // Get the total likes count for the entry
-      const { data: likesCount, error: countError } = await supabase.rpc('get_likes_count', {
+      const { data: likesCount, error: countError } = await supabaseAdmin.rpc('get_likes_count', {
         p_entry_id: entryId
       });
       
@@ -124,7 +124,7 @@ export async function GET(request: NextRequest) {
         console.error('Error getting likes count with RPC:', countError);
         
         // Try with direct SQL as a fallback
-        const { data: countData, error: directCountError } = await supabase
+        const { data: countData, error: directCountError } = await supabaseAdmin
           .from('likes')
           .select('id', { count: 'exact' })
           .eq('entry_id', entryId);

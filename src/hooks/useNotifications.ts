@@ -226,7 +226,7 @@ export const useNotifications = () => {
     const isIOSFirefox = isIOS && /FxiOS/.test(navigator.userAgent);
     
     if (isIOS && !isIOSChrome && !isIOSFirefox) {
-      const isStandalone = (window.navigator as any).standalone === true;
+      const isStandalone = window.navigator.standalone === true;
       const isDisplayStandalone = window.matchMedia('(display-mode: standalone)').matches;
       
       if (!isStandalone && !isDisplayStandalone) {

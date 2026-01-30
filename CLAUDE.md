@@ -2,7 +2,7 @@
 
 ## Proyecto
 
-App social de journaling anónimo. Los usuarios publican "whispers" diarios (franja DÍA y NOCHE), dan likes, siguen a otros usuarios, gestionan objetivos diarios, trackean hábitos (daily/weekly), mantienen rachas de publicación, personalizan su perfil (foto + bio), reciben push notifications y exportan whispers como imagen/PDF. Dominio: `whisper.beshy.es`.
+App social de journaling anónimo. Los usuarios publican "whispers" diarios (franja DÍA y NOCHE), dan likes, gestionan objetivos diarios, mantienen rachas de publicación, reciben push notifications y exportan whispers como imagen/PDF. Dominio: `whisper.beshy.es`.
 
 ## Tech Stack
 
@@ -15,10 +15,8 @@ App social de journaling anónimo. Los usuarios publican "whispers" diarios (fra
 | Base de datos | Supabase (PostgreSQL + Realtime + RLS) |
 | Validación | Zod |
 | Hashing | bcryptjs (cost factor 12) |
-| Storage | Supabase Storage (avatars bucket, público) |
 | Push | web-push (VAPID) |
 | Image gen | Puppeteer (server-side HTML → screenshot) |
-| Image compress | browser-image-compression (client-side avatar → WebP ~15KB) |
 | reCAPTCHA | Google reCAPTCHA v3 |
 
 ## Arquitectura
@@ -27,30 +25,23 @@ App social de journaling anónimo. Los usuarios publican "whispers" diarios (fra
 src/
 ├── app/                     # Next.js App Router
 │   ├── api/                 # Route Handlers (REST API, server-side)
-│   ├── (pages)/             # Pages: feed, create, profile, login, guest, admin, habits
+│   ├── (pages)/             # Pages: feed, create, profile, login, guest, admin
 │   ├── layout.tsx           # Root layout (PWA meta, fonts, splash)
 │   └── providers.tsx        # ThemeProvider > SessionProvider > PostProvider > AuthWrapper
-├── components/              # React client components (Avatar, ProfileEditForm, HabitCard, etc.)
+├── components/              # React client components (1 componente = 1 archivo)
 ├── context/                 # PostContext (entries + realtime), ThemeContext (día/noche)
-├── data/                    # Datos estáticos (quotes, writing-prompts, habit-templates)
-├── hooks/                   # Custom hooks (auth, notifications, activity, streak, stats, habits)
-├── lib/                     # Clientes externos y lógica compartida
+├── hooks/                   # Custom hooks (auth, notifications, activity, streak, stats)
+├── lib/                     # Clientes externos
 │   ├── supabase.ts          # Cliente anon (client-side reads + writes con RLS)
 │   ├── supabase-admin.ts    # Cliente service_role (server-side, bypasses RLS)
-│   ├── logger.ts            # Logger estructurado con integración Sentry
-│   ├── push-notify.ts       # Configuración VAPID centralizada + helpers de push
-│   ├── constants.ts         # Constantes compartidas (regex, thresholds, time windows)
 │   └── schemas/             # Zod schemas compartidos
 ├── types/                   # Declaraciones TypeScript (.d.ts)
-├── utils/                   # Funciones puras (format, UUID, html-escape, crypto, date-helpers)
+├── utils/                   # Funciones puras (format, UUID, html-escape, crypto)
 └── middleware.ts             # Rate limiting por IP en /api/*
 ```
 
 ### Flujo de auth
 NextAuth maneja sesiones JWT. `auth.uid()` de Supabase siempre es NULL porque no usamos Supabase Auth. Los API routes usan `getServerSession()` + `supabaseAdmin` (service_role, bypasses RLS). El client-side usa `supabase` (anon key) con RLS permisivo para reads.
-
-### Sesión JWT (campos custom)
-`id`, `alias`, `bsy_id`, `name`, `role`, `profile_photo_url`, `bio`
 
 ### Jerarquía de providers
 ```
@@ -68,43 +59,19 @@ PostContext mantiene canales Supabase para `public:entries` (INSERT/DELETE) y `p
 - Parámetros de función y return types deben estar tipados explícitamente
 - Usar `readonly` para props y datos inmutables
 
-### Imports y Path Aliases
-- SIEMPRE usar el alias `@/` para imports. NUNCA usar rutas relativas con `../` excepto en tests colocados (`__tests__/`) que importan su módulo adyacente
-- `@/*` está configurado en `tsconfig.json` apuntando a `./src/*`
-- Ejemplos correctos: `import { supabaseAdmin } from '@/lib/supabase-admin'`, `import { authOptions } from '@/app/api/auth/[...nextauth]/auth'`
-- Ejemplo incorrecto: `import { authOptions } from '../../auth/[...nextauth]/auth'`
-
-### Iconos (SVG > Emoji)
-- PREFERIR Lucide React SVG icons en la UI para una apariencia profesional
-- Emojis son aceptables donde encajen naturalmente (contenido generado por usuarios, notificaciones push, HTML de image generation, contextos donde un emoji aporta calidez)
-- Para iconos funcionales (navegación, indicadores, acciones, estados vacíos, categorías) → usar siempre SVG
-- `src/lib/icon-map.ts` contiene todos los mapeos de iconos (mood, habit, category, emoji→id)
-- `src/components/AppIcon.tsx` es el componente unificado para renderizar iconos
-- Backward compat: `AppIcon` convierte emojis antiguos de la DB a Lucide automáticamente via `EMOJI_TO_ICON_ID`
-- Para añadir un icono nuevo: agregar entrada en `icon-map.ts` y usar `<AppIcon>` en el componente
-- Para Lucide directo (sin AppIcon): `import { IconName } from 'lucide-react'` con `strokeWidth={2}`
-
 ### Validación con Zod
 - TODA ruta API DEBE validar su input con un schema Zod definido al inicio del archivo
 - Schemas compartidos van en `src/lib/schemas/`
 - SIEMPRE usar `.safeParse()`, NUNCA `.parse()`
 - Devolver 400 con `parsed.error.flatten().fieldErrors` cuando falla la validación
 
-### Notificaciones (regla de diseño)
-- TODA nueva feature que envíe push notifications DEBE registrar su tipo en `NOTIFICATION_TYPES` y `NOTIFICATION_CATEGORIES` (en `src/types/notification-preferences.ts`)
-- TODA notificación nueva DEBE usar `sendPushToUserIfEnabled()` en vez de `sendPushToUser()` directamente
-- Esto garantiza que el usuario pueda desactivar cualquier tipo de notificación desde su perfil
-- Las preferencias se almacenan como JSONB sparse en la columna `notification_preferences` de `users` (solo valores `false`; `null` = todo habilitado)
-- Para envíos batch (cron, followers): usar `getBatchUserPreferences()` + `isNotificationEnabled()` en vez de queries individuales
-
-### Seguridad (Zero Trust / OWASP Top 10 / Security by Design)
+### Seguridad (OWASP Top 10 / Security by Design)
 
 **Principios fundamentales:**
-- **Zero Trust**: valida todo, confía en nada. Cada capa verifica independientemente. No asumir que ninguna entrada, sesión, header, o dato intermedio es seguro o legítimo
-- **Security by Design**: la seguridad no es un afterthought, es un requisito desde la primera línea de código
-- **Security by Default**: cada nueva feature se entrega bloqueada, no abierta. Permisos mínimos siempre
-- **Worst Case First**: todo input es potencialmente malicioso — query params, headers, body, cookies, session claims
-- **Minimizar superficie de exposición**: exponer solo lo estrictamente necesario. No endpoints de debug, no datos extra en respuestas
+- **Security by Design**: la seguridad no es un afterthought, es un requisito
+- **Security by Default**: cada nueva feature se entrega bloqueada, no abierta
+- **Worst Case First**: nunca confiar en input del usuario, query params, headers, ni body
+- **Minimizar superficie de exposición**: exponer solo lo estrictamente necesario
 - **No depender de la buena voluntad del usuario**: construir sistemas que no puedan ser abusados
 
 **Reglas concretas:**
@@ -130,41 +97,13 @@ PostContext mantiene canales Supabase para `public:entries` (INSERT/DELETE) y `p
 9. **Known Vulnerabilities**: Dependencias actualizadas. Snyk para monitoreo (futuro)
 10. **Insufficient Logging**: Logger estructurado (sin datos sensibles)
 
-### UI / Responsive
-- TODO componente y página DEBE ser completamente responsive (mobile-first con Tailwind breakpoints)
-- Mobile es la plataforma principal (PWA). Diseñar primero para mobile, luego adaptar a desktop
-- Usar clases responsive de Tailwind (`sm:`, `md:`, `lg:`) en lugar de media queries custom
-- Testear visualmente en viewports: 375px (mobile), 768px (tablet), 1024px+ (desktop)
-
-### Clean Code y Arquitectura
-
-**Principios fundamentales:**
+### Calidad de Código
 - Código autoexplicativo ANTES que comentarios. Los comentarios solo explican el POR QUÉ cuando no es obvio
 - NO poner comentarios tipo `// Get the session`, `// Return response`, `// Import dependencies`
-- No archivos temporales (no `.tmp.tsx`, no `-fixed.ts`, no `-old.ts`)
-
-**DRY (Don't Repeat Yourself):**
-- Utilidades compartidas en `src/utils/`, tipos en `src/types/`, schemas Zod en `src/lib/schemas/`
-- Si una función aparece en más de un archivo, DEBE extraerse a `src/utils/` o `src/lib/`
-- Funciones de fecha reutilizables (`getTodayDate`, `isFutureDate`, `formatDate`) van en `src/utils/date-helpers.ts`
-- Constantes compartidas (regex, thresholds, time windows) van en `src/lib/constants.ts`
-- Configuración de web-push (VAPID) se centraliza en `src/lib/push-notify.ts` — NUNCA duplicar `webpush.setVapidDetails()` en cada ruta
-
-**Separación de responsabilidades:**
-- Los route handlers se limitan a: validar sesión → validar input (Zod) → llamar lógica de negocio → devolver respuesta
-- La lógica de negocio compleja (>30 líneas) DEBE extraerse a funciones en `src/lib/` o `src/utils/`
-- Funciones de más de 50 líneas deben dividirse en funciones más pequeñas con nombres descriptivos
-- Funciones con más de 3 parámetros deben usar un objeto tipado como parámetro (interface/type)
-
-**No magic numbers:**
-- Toda constante numérica con significado semántico debe ser una constante con nombre descriptivo
-- Ejemplos: `const MORNING_START_MINUTES = 600` (no `if (minutes > 600)`), `const MAX_PARTICIPANTS_NOTIFY = 50`
-
-**Logger (OBLIGATORIO en todo el proyecto):**
 - NO `console.log` en producción. Usar el logger de `src/lib/logger.ts`
-- NO `console.error` ni `console.warn` en componentes React ni contexts — usar `logger.error()` y `logger.warn()`
-- `logger.error()` envía automáticamente a Sentry
-- `logger.warn()` crea breadcrumb en Sentry
+- `console.error` SOLO en catch blocks de errores reales, sin datos sensibles
+- DRY: utilidades compartidas en `src/utils/`, tipos en `src/types/`, schemas Zod en `src/lib/schemas/`
+- No archivos temporales (no `.tmp.tsx`, no `-fixed.ts`, no `-old.ts`)
 
 ### Git
 - Conventional commits oneline: `feat:`, `fix:`, `sec:`, `refactor:`, `test:`, `docs:`, `chore:`
@@ -174,31 +113,14 @@ PostContext mantiene canales Supabase para `public:entries` (INSERT/DELETE) y `p
 - .mcp.json NUNCA se commitea (está en .gitignore)
 
 ### Testing
-
-**Framework:** Vitest + React Testing Library
-
-**Ubicación:** `__tests__/` junto al módulo o sufijo `.test.ts` / `.test.tsx`
-
-**Coverage targets (Testing Pyramid):**
-
-| Capa | Target | Qué testear |
-|------|--------|-------------|
-| `src/utils/`, `src/lib/`, `src/lib/schemas/` | **100%** | Funciones puras, helpers, validaciones Zod, lógica de negocio extraída |
-| `src/app/api/` (API routes) | **80%** | Happy path, errores de validación (Zod), errores de auth (401/403), ownership (IDOR), edge cases |
-| `src/components/` | **80%** | Renderizado condicional, interacciones de usuario, estados de loading/error, props edge cases |
-| `src/hooks/` | **80%** | Lógica de estado, side effects, valores de retorno, cleanup |
-| `src/types/`, `*.d.ts` | **0%** | No hay lógica que testear — son solo declaraciones |
-
-**Regla de oro:** toda nueva feature o bugfix DEBE incluir tests de las funciones y rutas que toca. No se acepta código nuevo sin tests de lo clave.
-
-**Patrones de testing:**
+- Framework: Vitest + React Testing Library
+- Tests colocados: `__tests__/` junto al módulo o sufijo `.test.ts`
+- Todas las rutas API: tests de happy path, errores de validación, errores de auth, edge cases
+- Todas las utilidades: tests unitarios
+- Coverage target: 80% utils, 70% API routes
 - Mock de Supabase a nivel de módulo (no por test)
 - Mock de NextAuth `getServerSession` para tests de API routes
-- Para componentes: `render()` + `screen.getByRole/Text` + `userEvent` para interacciones
-- Para hooks: `renderHook()` de `@testing-library/react`
-- Tests deben ser independientes entre sí (no compartir estado mutable)
-
-**Scripts:** `pnpm test`, `pnpm run test:run`, `pnpm run test:coverage`
+- Scripts: `npm test`, `npm run test:run`, `npm run test:coverage`
 
 ### Estructura de API Routes
 Patrón estándar para toda ruta:
@@ -253,26 +175,6 @@ WEBHOOK_SECRET                    # Auth para webhook de likes
 INTERNAL_API_KEY                  # Auth para endpoint de envío de notificaciones
 ```
 
-## Deployment
-
-### VPS (producción)
-- **Host**: `whisper.beshy.es` (IP: <REDACTED_IP>)
-- **Conexión**: SSH al servidor de producción
-- **Usuario de app**: `beshy` (tiene las SSH keys de GitHub)
-- **Process manager**: PM2 ejecutado como usuario `beshy` via systemd (`pm2-beshy.service`)
-- **Puerto**: 4000
-
-### Secuencia de deploy
-```bash
-ssh-server "su - app -c 'cd /path/to/beshy-whisper && git pull origin main && pnpm install --frozen-lockfile && pnpm run build && pm2 restart beshy-whisper'"
-```
-
-### Reglas críticas
-- Git pull SIEMPRE como usuario `beshy` (`su - beshy -c '...'`), root no tiene SSH keys de GitHub
-- NUNCA crear procesos PM2 como root (causa EADDRINUSE en puerto 4000)
-- PM2 restart: `ssh-server "su - app -c 'pm2 restart beshy-whisper'"`
-- PM2 logs: `ssh-server "su - app -c 'pm2 logs beshy-whisper --lines 50'"`
-
 ## Integraciones Futuras
 
 Estas integraciones están planificadas. Al implementarlas, consultar `docs/INTEGRATIONS.md`:
@@ -280,44 +182,9 @@ Estas integraciones están planificadas. Al implementarlas, consultar `docs/INTE
 | Integración | Propósito | Estado |
 |------------|----------|--------|
 | **Snyk** | Escaneo de vulnerabilidades en dependencias (CI) | Planificado |
-| **Sentry** | Error tracking + performance monitoring (client + server) | Integrado |
+| **Sentry** | Error tracking + performance monitoring (client + server) | Planificado |
 | **Microsoft Clarity** | Session recordings + heatmaps (solo client) | Planificado |
-| **SonarQube** | Análisis estático de código (quality gates) | Configurado (`sonar-project.properties`) |
-| **Offline-first PWA** | Funcionalidad offline completa en mobile (SW cache, sync queue, optimistic UI) | Planificado |
-
-## Checklist Pre-Implementación (OBLIGATORIO antes de cada tarea)
-
-Antes de escribir código en cualquier tarea, verificar:
-
-1. **Imports**: usar `@/` en todo import (nunca `../../`)
-2. **Validación Zod**: toda ruta API valida con `.safeParse()` y schema en `src/lib/schemas/`
-3. **Session + ownership**: toda mutación verifica sesión (401) y ownership (403)
-4. **Logger**: usar `logger` de `@/lib/logger` en vez de `console.*` (en API routes Y componentes)
-5. **DRY**: antes de crear una función, buscar si ya existe en `src/utils/` o `src/lib/`
-6. **Tests**: escribir tests de toda función/ruta nueva o modificada. Seguir la Testing Pyramid
-7. **TypeScript**: sin `any`, sin `@ts-ignore`, tipos explícitos
-8. **Constantes**: sin magic numbers, extraer a constantes con nombre
-9. **Tamaño**: funciones <50 líneas, >3 params → objeto tipado
-10. **ESLint + Build**: verificar que `pnpm run lint` y `pnpm run build` pasen
-11. **Iconos**: preferir Lucide SVG via `<AppIcon>` para iconos funcionales; emojis ok donde aporten calidez
-12. **Notificaciones**: si la feature envía push, registrar tipo en `NOTIFICATION_TYPES` y usar `sendPushToUserIfEnabled()`
-
-## Deuda Técnica Conocida
-
-Problemas identificados pendientes de resolver (actualizar conforme se resuelvan):
-
-- [ ] 27 rutas API usan import relativo para `authOptions` en vez de `@/app/api/auth/[...nextauth]/auth`
-- [ ] `getTodayDate()` duplicada en 7 archivos — extraer a `src/utils/date-helpers.ts`
-- [ ] `UUID_REGEX` duplicada en 7 archivos — extraer a `src/lib/constants.ts`
-- [ ] `webpush.setVapidDetails()` duplicada en 5 archivos — centralizar en `src/lib/push-notify.ts` (ya centralizado, falta migrar: `schedule-reminders`, `like-notification`, `send-like`, `send`, `test-push`)
-- [ ] `countRetomas()` + `RETOMA_THRESHOLD_DAYS` duplicados — extraer a `src/utils/habit-helpers.ts`
-- [ ] Cálculo de streak implementado en 3 lugares diferentes — extraer a `src/lib/streak.ts`
-- [ ] `PostContext.tsx` usa `console.error/warn` en vez del logger
-- [ ] `HabitWizard.tsx` (1125 líneas) — dividir en subcomponentes
-- [ ] `generate-image/route.ts` tiene 3 templates HTML con estructura duplicada
-- [ ] Magic numbers para time windows en cron-reminders sin constantes con nombre
-- [ ] Faltan Error Boundaries en el client-side
-- [ ] 6+ rutas API sin validación Zod: `generate-image`, `send-like`, `send`, `like-notification`, `cron-reminders`, `test-push`
+| **SonarQube** | Análisis estático de código (quality gates) | Planificado |
 
 ## Documentación Adicional
 

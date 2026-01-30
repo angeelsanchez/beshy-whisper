@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 import { authOptions } from '../../auth/[...nextauth]/auth';
 
 // Helper function to validate UUID
@@ -63,7 +63,7 @@ export async function DELETE(request: NextRequest) {
     console.log('Procesando eliminación de post:', { userId, entryId });
     
     // First verify that the entry belongs to the user
-    const { data: entry, error: fetchError } = await supabase
+    const { data: entry, error: fetchError } = await supabaseAdmin
       .from('entries')
       .select('user_id')
       .eq('id', entryId)
@@ -92,7 +92,7 @@ export async function DELETE(request: NextRequest) {
     }
     
     // Delete any likes associated with this entry first
-    const { error: likesDeleteError } = await supabase
+    const { error: likesDeleteError } = await supabaseAdmin
       .from('likes')
       .delete()
       .eq('entry_id', entryId);
@@ -103,7 +103,7 @@ export async function DELETE(request: NextRequest) {
     }
     
     // Delete the entry
-    const { error: deleteError } = await supabase
+    const { error: deleteError } = await supabaseAdmin
       .from('entries')
       .delete()
       .eq('id', entryId)

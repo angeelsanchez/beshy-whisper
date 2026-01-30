@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 import { authOptions } from '../../auth/[...nextauth]/auth';
 
 // Helper function to validate UUID
@@ -64,7 +64,7 @@ export async function PUT(request: NextRequest) {
     }
     
     // Verificar que el post pertenece al usuario
-    const { data: entry, error: fetchError } = await supabase
+    const { data: entry, error: fetchError } = await supabaseAdmin
       .from('entries')
       .select('user_id')
       .eq('id', entryId)
@@ -105,7 +105,7 @@ export async function PUT(request: NextRequest) {
     }
     
     // Actualizar el post
-    const { error: updateError } = await supabase
+    const { error: updateError } = await supabaseAdmin
       .from('entries')
       .update(updateData)
       .eq('id', entryId);

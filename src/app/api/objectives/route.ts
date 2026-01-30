@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 import { authOptions } from '../auth/[...nextauth]/auth';
 
 // Helper function to validate UUID
@@ -54,7 +54,7 @@ export async function PATCH(request: NextRequest) {
     }
     
     // Verificar que el objetivo pertenece al usuario
-    const { data: objective, error: fetchError } = await supabase
+    const { data: objective, error: fetchError } = await supabaseAdmin
       .from('objectives')
       .select('user_id')
       .eq('id', objectiveId)
@@ -83,7 +83,7 @@ export async function PATCH(request: NextRequest) {
     }
     
     // Actualizar el objetivo
-    const { error: updateError } = await supabase
+    const { error: updateError } = await supabaseAdmin
       .from('objectives')
       .update({ 
         done,
@@ -158,7 +158,7 @@ export async function DELETE(request: NextRequest) {
     }
     
     // Verificar que el objetivo pertenece al usuario
-    const { data: objective, error: fetchError } = await supabase
+    const { data: objective, error: fetchError } = await supabaseAdmin
       .from('objectives')
       .select('user_id')
       .eq('id', objectiveId)
@@ -187,7 +187,7 @@ export async function DELETE(request: NextRequest) {
     }
     
     // Eliminar el objetivo
-    const { error: deleteError } = await supabase
+    const { error: deleteError } = await supabaseAdmin
       .from('objectives')
       .delete()
       .eq('id', objectiveId);

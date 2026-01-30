@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import crypto from 'crypto';
+import bcrypt from 'bcryptjs';
 
 export async function POST(req: NextRequest) {
   try {
@@ -61,11 +61,7 @@ export async function POST(req: NextRequest) {
     
     const bsyId = `BSY${nextNumber.toString().padStart(3, '0')}`;
     
-    // Generate password hash
-    const passwordHash = crypto
-      .createHash('sha256')
-      .update(password)
-      .digest('hex');
+    const passwordHash = await bcrypt.hash(password, 12);
     
     // Generate verification token
     const verificationToken = crypto.randomBytes(32).toString('hex');

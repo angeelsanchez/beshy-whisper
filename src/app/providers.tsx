@@ -2,8 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { SessionProvider } from 'next-auth/react';
-import SupabaseSessionSync from '@/components/SupabaseSessionSync';
-import SupabaseAuthSync from '@/components/SupabaseAuthSync';
 import { PostProvider } from '@/context/PostContext';
 import { ThemeProvider } from '@/context/ThemeContext';
 import dynamic from 'next/dynamic';
@@ -65,8 +63,6 @@ export function Providers({ children }: { children: React.ReactNode }) {
         refetchOnWindowFocus={false} // Disable aggressive refetch on focus
         refetchWhenOffline={false} // Don't refetch when offline
       >
-        <SupabaseSessionSync />
-        <SupabaseAuthSync />
         <PostProvider>
           <AuthWrapper>
             {children}

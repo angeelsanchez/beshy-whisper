@@ -53,7 +53,6 @@ export function useAuthSession() {
     if (hasAttemptedRefresh && status === 'unauthenticated') {
       // Clean up localStorage when truly logged out
       if (typeof window !== 'undefined') {
-        localStorage.removeItem('supabase-user-id');
         localStorage.removeItem('isGuest');
         // Also clear any stale session storage
         sessionStorage.removeItem('isGuest');

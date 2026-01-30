@@ -68,13 +68,12 @@ export default function RootLayout({
                   const theme = isDaytime ? 'day-theme' : 'night-theme';
                   document.documentElement.className = '${montserrat.variable} ' + theme;
                   
-                  // Import and initialize service worker manager
                   window.addEventListener('load', function() {
-                    import('/src/utils/serviceWorkerManager.js').then(module => {
-                      module.initializeServiceWorker();
-                    }).catch(error => {
-                      console.error('Failed to load service worker manager:', error);
-                    });
+                    if ('serviceWorker' in navigator) {
+                      setTimeout(function() {
+                        navigator.serviceWorker.register('/sw.js', { scope: '/' });
+                      }, 2000);
+                    }
                   });
                   
                   // Optimized splash screen hiding

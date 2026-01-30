@@ -65,13 +65,14 @@ PostContext mantiene canales Supabase para `public:entries` (INSERT/DELETE) y `p
 - SIEMPRE usar `.safeParse()`, NUNCA `.parse()`
 - Devolver 400 con `parsed.error.flatten().fieldErrors` cuando falla la validación
 
-### Seguridad (OWASP Top 10 / Security by Design)
+### Seguridad (Zero Trust / OWASP Top 10 / Security by Design)
 
 **Principios fundamentales:**
-- **Security by Design**: la seguridad no es un afterthought, es un requisito
-- **Security by Default**: cada nueva feature se entrega bloqueada, no abierta
-- **Worst Case First**: nunca confiar en input del usuario, query params, headers, ni body
-- **Minimizar superficie de exposición**: exponer solo lo estrictamente necesario
+- **Zero Trust**: valida todo, confía en nada. Cada capa verifica independientemente. No asumir que ninguna entrada, sesión, header, o dato intermedio es seguro o legítimo
+- **Security by Design**: la seguridad no es un afterthought, es un requisito desde la primera línea de código
+- **Security by Default**: cada nueva feature se entrega bloqueada, no abierta. Permisos mínimos siempre
+- **Worst Case First**: todo input es potencialmente malicioso — query params, headers, body, cookies, session claims
+- **Minimizar superficie de exposición**: exponer solo lo estrictamente necesario. No endpoints de debug, no datos extra en respuestas
 - **No depender de la buena voluntad del usuario**: construir sistemas que no puedan ser abusados
 
 **Reglas concretas:**

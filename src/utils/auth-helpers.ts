@@ -43,5 +43,9 @@ export async function syncSupabaseSession(session: Session | null) {
  * Get the Supabase callback URL for OAuth providers
  */
 export function getSupabaseCallbackUrl() {
-  return process.env.SUPABASE_CALLBACK_URL || 'https://jpjvphycemtihwzrsgoa.supabase.co/auth/v1/callback';
+  const callbackUrl = process.env.SUPABASE_CALLBACK_URL;
+  if (!callbackUrl) {
+    throw new Error('SUPABASE_CALLBACK_URL environment variable is required');
+  }
+  return callbackUrl;
 } 

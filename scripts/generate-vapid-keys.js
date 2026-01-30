@@ -1,6 +1,6 @@
 const webpush = require('web-push');
+const crypto = require('crypto');
 
-// Generate VAPID keys
 const vapidKeys = webpush.generateVAPIDKeys();
 
 console.log('VAPID Keys generated:');
@@ -16,5 +16,5 @@ console.log('');
 console.log(`NEXT_PUBLIC_VAPID_PUBLIC_KEY="${vapidKeys.publicKey}"`);
 console.log(`VAPID_PRIVATE_KEY="${vapidKeys.privateKey}"`);
 console.log(`VAPID_EMAIL="mailto:hola@beshy.es"`);
-console.log(`WEBHOOK_SECRET="${Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)}"`);
-console.log(`INTERNAL_API_KEY="${Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)}"`);
+console.log(`WEBHOOK_SECRET="${crypto.randomBytes(32).toString('hex')}"`);
+console.log(`INTERNAL_API_KEY="${crypto.randomBytes(32).toString('hex')}"`);

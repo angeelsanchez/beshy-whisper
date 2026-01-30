@@ -45,14 +45,14 @@ describe('POST /api/auth/register', () => {
   });
 
   it('returns 400 for missing email', async () => {
-    const res = await POST(makeRequest({ password: 'Test123!a', token: 'tok' }));
+    const res = await POST(makeRequest({ password: '12345678', token: 'tok' }));
     expect(res.status).toBe(400);
     const json = await res.json();
     expect(json.errors).toBeDefined();
   });
 
   it('returns 400 for invalid email format', async () => {
-    const res = await POST(makeRequest({ email: 'not-email', password: 'Test123!a', token: 'tok' }));
+    const res = await POST(makeRequest({ email: 'not-email', password: '12345678', token: 'tok' }));
     expect(res.status).toBe(400);
   });
 
@@ -62,7 +62,7 @@ describe('POST /api/auth/register', () => {
   });
 
   it('returns 400 for missing reCAPTCHA token', async () => {
-    const res = await POST(makeRequest({ email: 'test@test.com', password: 'Test123!a' }));
+    const res = await POST(makeRequest({ email: 'test@test.com', password: '12345678' }));
     expect(res.status).toBe(400);
   });
 
@@ -71,7 +71,7 @@ describe('POST /api/auth/register', () => {
       json: () => Promise.resolve({ success: false }),
     });
 
-    const res = await POST(makeRequest({ email: 'test@test.com', password: 'Test123!a', token: 'bad-tok' }));
+    const res = await POST(makeRequest({ email: 'test@test.com', password: '12345678', token: 'bad-tok' }));
     expect(res.status).toBe(400);
     const json = await res.json();
     expect(json.message).toContain('reCAPTCHA');
@@ -82,14 +82,14 @@ describe('POST /api/auth/register', () => {
       json: () => Promise.resolve({ success: true, score: 0.2 }),
     });
 
-    const res = await POST(makeRequest({ email: 'test@test.com', password: 'Test123!a', token: 'tok' }));
+    const res = await POST(makeRequest({ email: 'test@test.com', password: '12345678', token: 'tok' }));
     expect(res.status).toBe(400);
   });
 
   it('returns 400 when user already exists', async () => {
     qb.single.mockResolvedValueOnce({ data: { id: 'existing-uuid' }, error: null });
 
-    const res = await POST(makeRequest({ email: 'exists@test.com', password: 'Test123!a', token: 'tok' }));
+    const res = await POST(makeRequest({ email: 'exists@test.com', password: '12345678', token: 'tok' }));
     expect(res.status).toBe(400);
     const json = await res.json();
     expect(json.message).toContain('already exists');
@@ -102,7 +102,7 @@ describe('POST /api/auth/register', () => {
 
     const res = await POST(makeRequest({
       email: 'new@test.com',
-      password: 'Secure1pass!',
+      password: 'securepass123',
       token: 'valid-token',
       name: 'Test User',
     }));

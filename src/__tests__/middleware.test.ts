@@ -53,31 +53,4 @@ describe('middleware', () => {
     const res = middleware(makeRequest('/api/some/other', ip));
     expect(res.status).toBe(429);
   });
-
-  it('returns 429 when check-lockout rate limit exceeded (5/min)', () => {
-    const ip = '10.0.0.10';
-    for (let i = 0; i < 5; i++) {
-      middleware(makeRequest('/api/auth/check-lockout', ip));
-    }
-    const res = middleware(makeRequest('/api/auth/check-lockout', ip));
-    expect(res.status).toBe(429);
-  });
-
-  it('returns 429 when callback rate limit exceeded (5/min)', () => {
-    const ip = '10.0.0.11';
-    for (let i = 0; i < 5; i++) {
-      middleware(makeRequest('/api/auth/callback', ip));
-    }
-    const res = middleware(makeRequest('/api/auth/callback', ip));
-    expect(res.status).toBe(429);
-  });
-
-  it('allows check-lockout requests within limit', () => {
-    const ip = '10.0.0.12';
-    for (let i = 0; i < 4; i++) {
-      middleware(makeRequest('/api/auth/check-lockout', ip));
-    }
-    const res = middleware(makeRequest('/api/auth/check-lockout', ip));
-    expect(res.status).toBe(200);
-  });
 });

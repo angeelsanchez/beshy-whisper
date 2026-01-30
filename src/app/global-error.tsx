@@ -1,25 +1,11 @@
 'use client';
 
-import * as Sentry from '@sentry/nextjs';
-import { AlertCircle } from 'lucide-react';
-import { useEffect } from 'react';
-
 export default function GlobalError({
-  error,
   reset,
 }: {
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  useEffect(() => {
-    Sentry.captureException(error, {
-      tags: {
-        boundary: 'global-error',
-        digest: error.digest ?? 'none',
-      },
-    });
-  }, [error]);
-
   return (
     <html lang="es">
       <body style={{
@@ -35,8 +21,8 @@ export default function GlobalError({
         textAlign: 'center',
       }}>
         <div style={{ padding: '2rem', maxWidth: '400px' }}>
-          <div style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'center' }}>
-            <AlertCircle style={{ width: '4rem', height: '4rem' }} strokeWidth={1.5} color="#EF4444" />
+          <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>
+            &#128565;
           </div>
           <h1 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>
             Algo salio mal

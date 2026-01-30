@@ -3,6 +3,7 @@ import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import crypto from "crypto";
+import bcrypt from "bcryptjs";
 
 // Function to generate sequential BSYXXX alias
 async function generateBeshyId() {
@@ -56,18 +57,28 @@ export const authOptions: NextAuthOptions = {
           .eq('email', credentials.email)
           .single();
 
-        if (!user) {
+        if (!user || !user.password_hash) {
           return null;
         }
 
-        // Verify password (in a real app, use bcrypt or similar)
-        const passwordHash = crypto
-          .createHash('sha256')
-          .update(credentials.password)
-          .digest('hex');
+        const isBcryptHash = user.password_hash.startsWith('$2b$') || user.password_hash.startsWith('$2a$');
 
-        if (user.password_hash !== passwordHash) {
-          return null;
+        if (isBcryptHash) {
+          const isValid = await bcrypt.compare(credentials.password, user.password_hash);
+          if (!isValid) return null;
+        } else {
+          const sha256Hash = crypto
+            .createHash('sha256')
+            .update(credentials.password)
+            .digest('hex');
+
+          if (user.password_hash !== sha256Hash) return null;
+
+          const newHash = await bcrypt.hash(credentials.password, 12);
+          await supabaseAdmin
+            .from('users')
+            .update({ password_hash: newHash })
+            .eq('id', user.id);
         }
 
         return {

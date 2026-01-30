@@ -34,11 +34,12 @@ export default function AdminPage() {
       router.push('/login');
       return;
     }
-    
-    // Here you would typically check if the user has admin rights
-    // For simplicity, we're just checking if they're authenticated
-    // In a real app, you'd have an admin role in your database
-    
+
+    if (session.user.role !== 'admin') {
+      router.push('/feed');
+      return;
+    }
+
     fetchEntries();
   }, [session, status, router]);
 
@@ -103,8 +104,8 @@ export default function AdminPage() {
     );
   }
 
-  if (!session) {
-    return null; // Will redirect in useEffect
+  if (!session || session.user.role !== 'admin') {
+    return null;
   }
 
   return (

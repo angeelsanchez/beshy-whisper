@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import webpush from 'web-push';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { safeCompare } from '@/utils/crypto-helpers';
 
 // Configure web-push with VAPID keys
 webpush.setVapidDetails(
@@ -13,7 +14,7 @@ export async function POST(request: NextRequest) {
   try {
     // Verify webhook signature (basic security)
     const webhookSecret = request.headers.get('webhook-secret');
-    if (webhookSecret !== process.env.WEBHOOK_SECRET) {
+    if (!webhookSecret || !safeCompare(webhookSecret, process.env.WEBHOOK_SECRET || '')) {
       console.error('Invalid webhook secret');
       return NextResponse.json(
         { error: 'Unauthorized' },

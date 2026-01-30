@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { authOptions } from '../../auth/[...nextauth]/auth';
 import { batchObjectivesSchema } from '@/lib/schemas/objectives';
+import { logger } from '@/lib/logger';
 
 // API para guardar objetivos en lote
 export async function POST(request: NextRequest) {
@@ -32,7 +33,7 @@ export async function POST(request: NextRequest) {
 
     // Validate user ID
     if (!userId) {
-      console.error('ID de usuario faltante en la sesión:', session);
+      logger.error('ID de usuario faltante en la sesión', { userId: String(session.user?.id) });
       return NextResponse.json(
         { error: 'No autorizado - ID de usuario faltante en la sesión' },
         { status: 401 }
@@ -48,7 +49,7 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    console.log('Guardando objetivos:', objectives);
+    logger.info('Guardando objetivos', { count: objectives.length });
     
     // Guardar los objetivos en la base de datos
     const { data, error } = await supabaseAdmin
@@ -57,7 +58,7 @@ export async function POST(request: NextRequest) {
       .select();
     
     if (error) {
-      console.error('Error al guardar objetivos en la base de datos:', error);
+      logger.error('Error al guardar objetivos en la base de datos', { detail: error?.message || String(error) });
       return NextResponse.json(
         { error: `Error al guardar objetivos: ${error.message}` },
         { status: 500 }
@@ -70,7 +71,7 @@ export async function POST(request: NextRequest) {
       data
     });
   } catch (error) {
-    console.error('Error inesperado en la API de objetivos:', error);
+    logger.error('Error inesperado en la API de objetivos', { detail: error instanceof Error ? error.message : String(error) });
     return NextResponse.json(
       { error: 'Error interno del servidor' },
       { status: 500 }

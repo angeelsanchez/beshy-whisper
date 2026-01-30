@@ -4,6 +4,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { authOptions } from '../../auth/[...nextauth]/auth';
 import { likeStatusSchema } from '@/lib/schemas/likes';
 import { uuidSchema } from '@/lib/schemas/common';
+import { logger } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   try {
@@ -32,7 +33,7 @@ export async function GET(request: NextRequest) {
 
     // Validate user ID
     if (!userId) {
-      console.error('User ID missing in session:', session);
+      logger.error('User ID missing in session', { userId: String(session.user?.id) });
       return NextResponse.json(
         { error: 'Unauthorized - User ID missing in session' },
         { status: 401 }
@@ -40,7 +41,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (!uuidSchema.safeParse(userId).success) {
-      console.error('Invalid user ID:', userId);
+      logger.error('Invalid user ID', { userId });
       return NextResponse.json(
         { error: 'Invalid user ID' },
         { status: 400 }
@@ -55,7 +56,7 @@ export async function GET(request: NextRequest) {
       });
       
       if (error) {
-        console.error('Error checking like status with RPC:', error);
+        logger.error('Error checking like status with RPC', { detail: error?.message || String(error) });
         
         // Try with direct SQL as a fallback
         const { data: existingLike, error: checkError } = await supabaseAdmin
@@ -66,7 +67,7 @@ export async function GET(request: NextRequest) {
           .maybeSingle();
         
         if (checkError) {
-          console.error('Error checking existing like:', checkError);
+          logger.error('Error checking existing like', { detail: checkError?.message || String(checkError) });
           return NextResponse.json(
             { error: 'Failed to check like status' },
             { status: 500 }
@@ -80,7 +81,7 @@ export async function GET(request: NextRequest) {
         
         let count = 0;
         if (countError) {
-          console.error('Error getting likes count with RPC:', countError);
+          logger.error('Error getting likes count with RPC', { detail: countError?.message || String(countError) });
           
           // Try with direct SQL as a fallback
           const { data: countData, error: directCountError } = await supabaseAdmin
@@ -108,7 +109,7 @@ export async function GET(request: NextRequest) {
       
       let count = 0;
       if (countError) {
-        console.error('Error getting likes count with RPC:', countError);
+        logger.error('Error getting likes count with RPC', { detail: countError?.message || String(countError) });
         
         // Try with direct SQL as a fallback
         const { data: countData, error: directCountError } = await supabaseAdmin
@@ -129,14 +130,14 @@ export async function GET(request: NextRequest) {
         count: count
       });
     } catch (error) {
-      console.error('Unexpected error checking like status:', error);
+      logger.error('Unexpected error checking like status', { detail: error instanceof Error ? error.message : String(error) });
       return NextResponse.json(
         { error: 'Failed to check like status' },
         { status: 500 }
       );
     }
   } catch (error) {
-    console.error('Unexpected error in likes status API:', error);
+    logger.error('Unexpected error in likes status API', { detail: error instanceof Error ? error.message : String(error) });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

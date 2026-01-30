@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { authOptions } from '../../auth/[...nextauth]/auth';
 import { z } from 'zod';
+import { logger } from '@/lib/logger';
 
 const pushTokenSchema = z.object({
   endpoint: z.string().url(),
@@ -42,7 +43,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (userError) {
-      console.error('User verification failed for push token registration');
+      logger.error('User verification failed for push token registration');
       return NextResponse.json(
         { error: 'User not found' },
         { status: 404 }
@@ -63,7 +64,7 @@ export async function POST(request: NextRequest) {
       });
 
     if (error) {
-      console.error('Error saving push token:', error);
+      logger.error('Error saving push token', { detail: error?.message || String(error) });
       return NextResponse.json(
         { error: 'Failed to save push token' },
         { status: 500 }
@@ -72,7 +73,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error in push token registration:', error);
+    logger.error('Error in push token registration', { detail: error instanceof Error ? error.message : String(error) });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

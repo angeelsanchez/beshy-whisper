@@ -4,6 +4,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { authOptions } from '../../auth/[...nextauth]/auth';
 import { toggleLikeSchema } from '@/lib/schemas/likes';
 import { uuidSchema } from '@/lib/schemas/common';
+import { logger } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -32,7 +33,7 @@ export async function POST(request: NextRequest) {
 
     // Validate user ID
     if (!userId) {
-      console.error('User ID missing in session:', session);
+      logger.error('User ID missing in session', { userId: String(session.user?.id) });
       return NextResponse.json(
         { error: 'Unauthorized - User ID missing in session' },
         { status: 401 }
@@ -40,14 +41,14 @@ export async function POST(request: NextRequest) {
     }
 
     if (!uuidSchema.safeParse(userId).success) {
-      console.error('Invalid user ID:', userId);
+      logger.error('Invalid user ID', { userId });
       return NextResponse.json(
         { error: 'Invalid user ID' },
         { status: 400 }
       );
     }
     
-    console.log('Processing direct like toggle action:', { userId, entryId });
+    logger.info('Processing direct like toggle action', { userId, entryId });
     
     // First check if the like already exists
     const { data: existingLike, error: checkError } = await supabaseAdmin
@@ -58,7 +59,7 @@ export async function POST(request: NextRequest) {
       .maybeSingle();
     
     if (checkError) {
-      console.error('Error checking existing like:', checkError);
+      logger.error('Error checking existing like', { detail: checkError?.message || String(checkError) });
       return NextResponse.json(
         { error: 'Failed to check existing like' },
         { status: 500 }
@@ -74,7 +75,7 @@ export async function POST(request: NextRequest) {
         .eq('entry_id', entryId);
       
       if (deleteError) {
-        console.error('Error removing like with admin client:', deleteError);
+        logger.error('Error removing like with admin client', { detail: deleteError?.message || String(deleteError) });
         return NextResponse.json(
           { error: 'Failed to remove like' },
           { status: 500 }
@@ -96,7 +97,7 @@ export async function POST(request: NextRequest) {
         });
       
       if (insertError) {
-        console.error('Error adding like with admin client:', insertError);
+        logger.error('Error adding like with admin client', { detail: insertError?.message || String(insertError) });
         return NextResponse.json(
           { error: 'Failed to add like' },
           { status: 500 }
@@ -110,7 +111,7 @@ export async function POST(request: NextRequest) {
       });
     }
   } catch (error) {
-    console.error('Unexpected error in direct likes API:', error);
+    logger.error('Unexpected error in direct likes API', { detail: error instanceof Error ? error.message : String(error) });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import webpush from 'web-push';
+import { logger } from '@/lib/logger';
 
 // Configure web-push with VAPID keys
 webpush.setVapidDetails(
@@ -56,7 +57,7 @@ async function calculateUserStreak(userId: string): Promise<number> {
     
     return streak;
   } catch (error) {
-    console.error('Error calculating user streak:', error);
+    logger.error('Error calculating user streak', { detail: error instanceof Error ? error.message : String(error) });
     return 0;
   }
 }
@@ -67,25 +68,25 @@ async function checkUserTodayPosts(userId: string): Promise<{ hasDayPost: boolea
     const today = new Date();
     const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
     const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
-    
+
     const { data: entries, error } = await supabaseAdmin
       .from('entries')
       .select('franja')
       .eq('user_id', userId)
       .gte('fecha', startOfDay.toISOString())
       .lt('fecha', endOfDay.toISOString());
-    
+
     if (error) {
-      console.error('Error checking today posts:', error);
+      logger.error('Error checking today posts', { detail: error?.message || String(error) });
       return { hasDayPost: false, hasNightPost: false };
     }
-    
+
     const hasDayPost = entries?.some(entry => entry.franja === 'DIA') || false;
     const hasNightPost = entries?.some(entry => entry.franja === 'NOCHE') || false;
-    
+
     return { hasDayPost, hasNightPost };
   } catch (error) {
-    console.error('Error checking today posts:', error);
+    logger.error('Error checking today posts', { detail: error instanceof Error ? error.message : String(error) });
     return { hasDayPost: false, hasNightPost: false };
   }
 }
@@ -101,13 +102,13 @@ async function sendPushNotification(userId: string, title: string, body: string,
       .maybeSingle();
     
     if (tokenError || !pushTokenData) {
-      console.log(`User ${userId} has no push token registered`);
+      logger.info('User has no push token registered', { userId });
       return false;
     }
-    
+
     // Check if VAPID keys are configured
     if (!process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
-      console.error('VAPID keys not configured');
+      logger.error('VAPID keys not configured');
       return false;
     }
     
@@ -143,10 +144,10 @@ async function sendPushNotification(userId: string, title: string, body: string,
       }
     });
     
-    console.log(`Reminder notification sent successfully to user ${userId}:`, { title, body });
+    logger.info('Reminder notification sent successfully', { userId, title });
     return true;
   } catch (error) {
-    console.error(`Error sending reminder notification to user ${userId}:`, error);
+    logger.error('Error sending reminder notification', { userId, detail: error instanceof Error ? error.message : String(error) });
     return false;
   }
 }
@@ -154,7 +155,7 @@ async function sendPushNotification(userId: string, title: string, body: string,
 // Main function to process reminders for all users
 async function processReminders() {
   try {
-    console.log('[REMINDERS] Starting reminder processing...');
+    logger.info('Starting reminder processing');
     
     // Get all users with push tokens
     const { data: users, error: usersError } = await supabaseAdmin
@@ -162,11 +163,11 @@ async function processReminders() {
       .select('user_id');
     
     if (usersError || !users) {
-      console.error('Error fetching users with push tokens:', usersError);
+      logger.error('Error fetching users with push tokens', { detail: usersError?.message || String(usersError) });
       return;
     }
-    
-    console.log(`[REMINDERS] Processing reminders for ${users.length} users`);
+
+    logger.info('Processing reminders for users', { count: users.length });
     
     let notificationsSent = 0;
     let streakWarningsSent = 0;
@@ -228,14 +229,14 @@ async function processReminders() {
         }
         
       } catch (error) {
-        console.error(`Error processing reminders for user ${user.user_id}:`, error);
+        logger.error('Error processing reminders for user', { userId: user.user_id, detail: error instanceof Error ? error.message : String(error) });
       }
     }
     
-    console.log(`[REMINDERS] Processing complete. Notifications sent: ${notificationsSent}, Streak warnings: ${streakWarningsSent}`);
+    logger.info('Reminder processing complete', { notificationsSent, streakWarningsSent });
     
   } catch (error) {
-    console.error('Error in reminder processing:', error);
+    logger.error('Error in reminder processing', { detail: error instanceof Error ? error.message : String(error) });
   }
 }
 
@@ -258,7 +259,7 @@ export async function POST(request: NextRequest) {
     }, { status: 400 });
     
   } catch (error) {
-    console.error('Error in reminder API:', error);
+    logger.error('Error in reminder API', { detail: error instanceof Error ? error.message : String(error) });
     return NextResponse.json({ 
       error: 'Internal server error' 
     }, { status: 500 });
@@ -285,7 +286,7 @@ export async function GET() {
     
     return NextResponse.json(status);
   } catch (error) {
-    console.error('Error getting reminder status:', error);
+    logger.error('Error getting reminder status', { detail: error instanceof Error ? error.message : String(error) });
     return NextResponse.json({ 
       error: 'Internal server error' 
     }, { status: 500 });

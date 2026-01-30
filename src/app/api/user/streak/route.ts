@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { authOptions } from '../../auth/[...nextauth]/auth';
+import { logger } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   try {
@@ -25,7 +26,7 @@ export async function GET(request: NextRequest) {
       .order('fecha', { ascending: false });
     
     if (error) {
-      console.error('Error fetching user entries:', error);
+      logger.error('Error fetching user entries', { detail: error?.message || String(error) });
       return NextResponse.json(
         { error: 'Failed to fetch user entries' },
         { status: 500 }
@@ -142,7 +143,7 @@ export async function GET(request: NextRequest) {
     });
     
   } catch (error) {
-    console.error('Error in streak API:', error);
+    logger.error('Error in streak API', { detail: error instanceof Error ? error.message : String(error) });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

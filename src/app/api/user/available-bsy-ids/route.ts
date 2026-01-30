@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { logger } from '@/lib/logger';
 
 export async function GET(req: NextRequest) {
   try {
@@ -12,7 +13,7 @@ export async function GET(req: NextRequest) {
       .limit(1);
     
     if (error) {
-      console.error('Error fetching BSY IDs:', error);
+      logger.error('Error fetching BSY IDs', { detail: error?.message || String(error) });
       return NextResponse.json(
         { message: 'Failed to fetch BSY IDs' },
         { status: 500 }
@@ -33,7 +34,7 @@ export async function GET(req: NextRequest) {
       nextAvailableBsyId: nextBsyId
     });
   } catch (error) {
-    console.error('BSY ID generation error:', error);
+    logger.error('BSY ID generation error', { detail: error instanceof Error ? error.message : String(error) });
     return NextResponse.json(
       { message: 'Internal server error' },
       { status: 500 }

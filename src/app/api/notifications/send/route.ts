@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import webpush from 'web-push';
 import { safeCompare } from '@/utils/crypto-helpers';
+import { logger } from '@/lib/logger';
 
 // Configure web-push with VAPID keys
 webpush.setVapidDetails(
@@ -39,7 +40,7 @@ export async function POST(request: NextRequest) {
       .maybeSingle();
     
     if (tokenError) {
-      console.error('Error fetching push token:', tokenError);
+      logger.error('Error fetching push token', { detail: tokenError?.message || String(tokenError) });
       return NextResponse.json(
         { error: 'Failed to fetch push token' },
         { status: 500 }
@@ -79,15 +80,14 @@ export async function POST(request: NextRequest) {
       // Send the push notification
       await webpush.sendNotification(pushSubscription, payload);
       
-      console.log('Push notification sent successfully:', {
+      logger.info('Push notification sent successfully', {
         userId,
-        title,
-        body: notificationBody
+        title
       });
       
       return NextResponse.json({ success: true });
     } catch (pushError: unknown) {
-      console.error('Error sending push notification:', pushError);
+      logger.error('Error sending push notification', { detail: pushError instanceof Error ? pushError.message : String(pushError) });
 
       const statusCode = pushError instanceof Error && 'statusCode' in pushError
         ? (pushError as { statusCode: number }).statusCode
@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
           .delete()
           .eq('user_id', userId);
 
-        console.log('Removed invalid push token for user:', userId);
+        logger.info('Removed invalid push token for user', { userId });
       }
 
       return NextResponse.json(
@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
       );
     }
   } catch (error) {
-    console.error('Error in push notification sending:', error);
+    logger.error('Error in push notification sending', { detail: error instanceof Error ? error.message : String(error) });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import webpush from 'web-push';
+import { logger } from '@/lib/logger';
 
 // Configure web-push with VAPID keys
 webpush.setVapidDetails(
@@ -29,7 +30,7 @@ export async function POST(request: NextRequest) {
       .single();
     
     if (entryError || !entryData) {
-      console.error('Error fetching entry:', entryError);
+      logger.error('Error fetching entry', { detail: entryError?.message || String(entryError) });
       return NextResponse.json(
         { error: 'Entry not found' },
         { status: 404 }
@@ -52,7 +53,7 @@ export async function POST(request: NextRequest) {
       .single();
     
     if (likerError || !likerData) {
-      console.error('Error fetching liker data:', likerError);
+      logger.error('Error fetching liker data', { detail: likerError?.message || String(likerError) });
       return NextResponse.json(
         { error: 'Liker user not found' },
         { status: 404 }
@@ -69,7 +70,7 @@ export async function POST(request: NextRequest) {
       .maybeSingle();
     
     if (tokenError) {
-      console.error('Error fetching push token:', tokenError);
+      logger.error('Error fetching push token', { detail: tokenError?.message || String(tokenError) });
       return NextResponse.json(
         { error: 'Failed to fetch push token' },
         { status: 500 }
@@ -77,7 +78,7 @@ export async function POST(request: NextRequest) {
     }
     
     if (!pushTokenData) {
-      console.log('Entry owner has no push token registered:', entryData.user_id);
+      logger.info('Entry owner has no push token registered', { userId: entryData.user_id });
       return NextResponse.json(
         { message: 'Entry owner has no push token registered' },
         { status: 200 }
@@ -86,13 +87,13 @@ export async function POST(request: NextRequest) {
     
     // Check if VAPID keys are configured
     if (!process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
-      console.error('VAPID keys not configured');
+      logger.error('VAPID keys not configured');
       return NextResponse.json(
         { error: 'VAPID keys not configured' },
         { status: 500 }
       );
     }
-    
+
     // Prepare the push subscription object
     const pushSubscription = {
       endpoint: pushTokenData.endpoint,
@@ -101,11 +102,11 @@ export async function POST(request: NextRequest) {
         auth: pushTokenData.auth
       }
     };
-    
+
     // Prepare the notification payload
     const notificationTitle = '❤️ Nuevo like en tu Whisper';
     const notificationBody = `${likerName} le dio like a tu whisper`;
-    
+
     const payload = JSON.stringify({
       title: notificationTitle,
       body: notificationBody,
@@ -121,11 +122,9 @@ export async function POST(request: NextRequest) {
         liker_name: likerName
       }
     });
-    
+
     try {
-      console.log('[PUSH DEBUG] Sending push notification...');
-      console.log('[PUSH DEBUG] Subscription endpoint:', pushSubscription.endpoint.substring(0, 50) + '...');
-      console.log('[PUSH DEBUG] Payload:', payload);
+      logger.debug('Sending push notification');
       
       // Send the push notification with proper options
       await webpush.sendNotification(pushSubscription, payload, {
@@ -135,7 +134,7 @@ export async function POST(request: NextRequest) {
         }
       });
       
-      console.log('[PUSH DEBUG] Like notification sent successfully:', {
+      logger.info('Like notification sent successfully', {
         userId: entryData.user_id,
         likerName,
         entryId
@@ -146,7 +145,7 @@ export async function POST(request: NextRequest) {
         message: 'Like notification sent successfully'
       });
     } catch (pushError: unknown) {
-      console.error('[PUSH DEBUG] Error sending push notification:', pushError);
+      logger.error('Error sending push notification', { detail: pushError instanceof Error ? pushError.message : String(pushError) });
 
       const statusCode = pushError instanceof Error && 'statusCode' in pushError
         ? (pushError as { statusCode: number }).statusCode
@@ -160,7 +159,7 @@ export async function POST(request: NextRequest) {
           .delete()
           .eq('user_id', entryData.user_id);
 
-        console.log('[PUSH DEBUG] Removed invalid push token for user:', entryData.user_id);
+        logger.info('Removed invalid push token for user', { userId: entryData.user_id });
 
         return NextResponse.json(
           { message: 'Invalid push token removed' },
@@ -174,7 +173,7 @@ export async function POST(request: NextRequest) {
       );
     }
   } catch (error) {
-    console.error('Error in send-like notification:', error);
+    logger.error('Error in send-like notification', { detail: error instanceof Error ? error.message : String(error) });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

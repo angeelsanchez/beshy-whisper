@@ -86,7 +86,8 @@ export const authOptions: NextAuthOptions = {
           email: user.email,
           alias: user.alias,
           name: user.name,
-          bsy_id: user.bsy_id
+          bsy_id: user.bsy_id,
+          role: user.role || 'user'
         };
       }
     })
@@ -144,12 +145,13 @@ export const authOptions: NextAuthOptions = {
         user.alias = bsyId;
         user.bsy_id = bsyId;
         user.name = typeof displayName === 'string' ? displayName : `Usuario ${bsyId}`;
+        user.role = 'user';
       } else {
         user.alias = existingUser.alias;
         user.bsy_id = existingUser.bsy_id || existingUser.alias;
         user.name = existingUser.name || `Usuario ${existingUser.alias}`;
-        // Set the user ID to match the Supabase UUID
         user.id = existingUser.id;
+        user.role = existingUser.role || 'user';
         
         // Update provider information if not already set
         if (provider === 'google' && !existingUser.google_id) {
@@ -172,6 +174,7 @@ export const authOptions: NextAuthOptions = {
         session.user.alias = token.alias as string;
         session.user.bsy_id = token.bsy_id as string;
         session.user.name = token.name as string;
+        session.user.role = token.role as string;
       }
       return session;
     },
@@ -180,6 +183,7 @@ export const authOptions: NextAuthOptions = {
         token.alias = user.alias;
         token.bsy_id = user.bsy_id;
         token.name = user.name;
+        token.role = user.role;
       }
       return token;
     }

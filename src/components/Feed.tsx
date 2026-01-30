@@ -11,7 +11,11 @@ import { supabase } from '@/lib/supabase';
 import LikeButton from './LikeButton';
 import ObjectivesList from './ObjectivesList';
 import Image from 'next/image';
-import SocialShareModal from './SocialShareModal';
+import dynamic from 'next/dynamic';
+
+const SocialShareModal = dynamic(() => import('./SocialShareModal'), {
+  ssr: false,
+});
 
 // WhisperLogo component with dynamic coloring
 const WhisperLogo = ({ className = "h-6 w-auto", isDay }: { className?: string; isDay: boolean }) => (

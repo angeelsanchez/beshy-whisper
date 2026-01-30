@@ -6,9 +6,11 @@ import { useTheme } from '@/context/ThemeContext';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import AppDemo from '@/components/AppDemo';
-import FAQ from '@/components/FAQ';
+import dynamic from 'next/dynamic';
 import LiveStats from '@/components/LiveStats';
+
+const AppDemo = dynamic(() => import('@/components/AppDemo'));
+const FAQ = dynamic(() => import('@/components/FAQ'));
 
 export default function Home() {
   const { session, status } = useAuthSession();

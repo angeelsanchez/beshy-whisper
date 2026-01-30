@@ -98,6 +98,12 @@ PostContext mantiene canales Supabase para `public:entries` (INSERT/DELETE) y `p
 9. **Known Vulnerabilities**: Dependencias actualizadas. Snyk para monitoreo (futuro)
 10. **Insufficient Logging**: Logger estructurado (sin datos sensibles)
 
+### UI / Responsive
+- TODO componente y página DEBE ser completamente responsive (mobile-first con Tailwind breakpoints)
+- Mobile es la plataforma principal (PWA). Diseñar primero para mobile, luego adaptar a desktop
+- Usar clases responsive de Tailwind (`sm:`, `md:`, `lg:`) en lugar de media queries custom
+- Testear visualmente en viewports: 375px (mobile), 768px (tablet), 1024px+ (desktop)
+
 ### Calidad de Código
 - Código autoexplicativo ANTES que comentarios. Los comentarios solo explican el POR QUÉ cuando no es obvio
 - NO poner comentarios tipo `// Get the session`, `// Return response`, `// Import dependencies`
@@ -186,6 +192,7 @@ Estas integraciones están planificadas. Al implementarlas, consultar `docs/INTE
 | **Sentry** | Error tracking + performance monitoring (client + server) | Planificado |
 | **Microsoft Clarity** | Session recordings + heatmaps (solo client) | Planificado |
 | **SonarQube** | Análisis estático de código (quality gates) | Planificado |
+| **Offline-first PWA** | Funcionalidad offline completa en mobile (SW cache, sync queue, optimistic UI) | Planificado |
 
 ## Documentación Adicional
 

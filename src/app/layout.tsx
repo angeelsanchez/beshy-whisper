@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Montserrat } from "next/font/google";
 import { Providers } from "./providers";
-import AdaptiveNavigation from "@/components/AdaptiveNavigation";
-import InstallPrompt from "@/components/InstallPrompt";
+import dynamic from "next/dynamic";
+
+const AdaptiveNavigation = dynamic(() => import("@/components/AdaptiveNavigation"));
+const InstallPrompt = dynamic(() => import("@/components/InstallPrompt"));
 
 const montserrat = Montserrat({
   subsets: ["latin"],

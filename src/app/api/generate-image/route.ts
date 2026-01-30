@@ -144,7 +144,7 @@ export async function POST(request: NextRequest) {
     await browser.close();
 
     // Return image as buffer with optimized headers
-    return new NextResponse(screenshot, {
+    return new NextResponse(Buffer.from(screenshot), {
       status: 200,
       headers: {
         'Content-Type': 'image/png',

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import puppeteer from 'puppeteer';
 import fs from 'fs';
 import path from 'path';
+import { escapeHtml } from '@/utils/html-escape';
 
 // Logo cache for performance optimization
 let logoCache: string | null = null;
@@ -317,14 +318,14 @@ function createNormalHTML(
       <div class="content-container">
         <!-- User Info -->
         <div class="user-info">
-          <div class="display-name">${display_name}</div>
-          <div class="display-id">@${display_id}</div>
+          <div class="display-name">${escapeHtml(display_name)}</div>
+          <div class="display-id">@${escapeHtml(display_id)}</div>
           <div class="date">${formatDate(fecha)}</div>
         </div>
-        
+
         <!-- Message -->
-        <div class="message">${mensaje}</div>
-        
+        <div class="message">${escapeHtml(mensaje)}</div>
+
         <!-- Objectives (only for day entries) -->
         ${objetivos.length > 0 ? `
           <div class="objectives-container">
@@ -332,18 +333,18 @@ function createNormalHTML(
             ${objetivos.map(obj => `
               <div class="objective-item">
                 <span class="objective-icon">${obj.icon}</span>
-                <span class="objective-text ${obj.isCompleted ? 'objective-completed' : ''}">${obj.text}</span>
+                <span class="objective-text ${obj.isCompleted ? 'objective-completed' : ''}">${escapeHtml(obj.text)}</span>
               </div>
             `).join('')}
           </div>
         ` : ''}
-        
+
         <!-- Logo -->
         <div class="logo-container">
           ${processedLogo}
         </div>
       </div>
-      
+
       <!-- Watermark -->
       <div class="watermark">BESHY</div>
     </body>
@@ -514,14 +515,14 @@ function createBubbleHTML(
       <div class="bubble-container">
         <!-- User Info -->
         <div class="user-info">
-          <div class="display-name">${display_name}</div>
-          <div class="display-id">@${display_id}</div>
+          <div class="display-name">${escapeHtml(display_name)}</div>
+          <div class="display-id">@${escapeHtml(display_id)}</div>
           <div class="date">${formatDate(fecha)}</div>
         </div>
-        
+
         <!-- Message -->
-        <div class="message">${mensaje}</div>
-        
+        <div class="message">${escapeHtml(mensaje)}</div>
+
         <!-- Objectives (only for day entries) -->
         ${objetivos.length > 0 ? `
           <div class="objectives-container">
@@ -529,12 +530,12 @@ function createBubbleHTML(
             ${objetivos.map(obj => `
               <div class="objective-item">
                 <span class="objective-icon">${obj.icon}</span>
-                <span class="objective-text ${obj.isCompleted ? 'objective-completed' : ''}">${obj.text}</span>
+                <span class="objective-text ${obj.isCompleted ? 'objective-completed' : ''}">${escapeHtml(obj.text)}</span>
               </div>
             `).join('')}
           </div>
         ` : ''}
-        
+
         <!-- Footer -->
         <div class="footer">
           <div class="beshy-text">BESHY</div>
@@ -689,14 +690,14 @@ function createStickerHTML(
       <div class="sticker-container">
         <!-- User Info -->
         <div class="user-info">
-          <div class="display-name">${display_name}</div>
-          <div class="display-id">@${display_id}</div>
+          <div class="display-name">${escapeHtml(display_name)}</div>
+          <div class="display-id">@${escapeHtml(display_id)}</div>
           <div class="date">${formatDate(fecha)}</div>
         </div>
-        
+
         <!-- Message -->
-        <div class="message">${mensaje}</div>
-        
+        <div class="message">${escapeHtml(mensaje)}</div>
+
         <!-- Objectives (only for day entries) -->
         ${objetivos.length > 0 ? `
           <div class="objectives-container">
@@ -704,12 +705,12 @@ function createStickerHTML(
             ${objetivos.map(obj => `
               <div class="objective-item">
                 <span class="objective-icon">${obj.icon}</span>
-                <span class="objective-text ${obj.isCompleted ? 'objective-completed' : ''}">${obj.text}</span>
+                <span class="objective-text ${obj.isCompleted ? 'objective-completed' : ''}">${escapeHtml(obj.text)}</span>
               </div>
             `).join('')}
           </div>
         ` : ''}
-        
+
         <!-- Footer -->
         <div class="footer">
           <div class="beshy-text">BESHY</div>

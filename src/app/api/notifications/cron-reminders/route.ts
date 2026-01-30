@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import webpush from 'web-push';
+import { safeCompare } from '@/utils/crypto-helpers';
 
 // Configure web-push with VAPID keys
 webpush.setVapidDetails(
@@ -249,7 +250,7 @@ export async function GET(request: NextRequest) {
     const cronSecret = process.env.CRON_SECRET;
     if (cronSecret) {
       const authHeader = request.headers.get('authorization');
-      if (authHeader !== `Bearer ${cronSecret}`) {
+      if (!authHeader || !safeCompare(authHeader, `Bearer ${cronSecret}`)) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
       }
     }
@@ -283,7 +284,7 @@ export async function POST(request: NextRequest) {
     
     // Verify secret if configured
     const cronSecret = process.env.CRON_SECRET;
-    if (cronSecret && secret !== cronSecret) {
+    if (cronSecret && (!secret || !safeCompare(secret, cronSecret))) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     

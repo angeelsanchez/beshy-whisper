@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import webpush from 'web-push';
+import { safeCompare } from '@/utils/crypto-helpers';
 
 // Configure web-push with VAPID keys
 webpush.setVapidDetails(
@@ -13,7 +14,7 @@ export async function POST(request: NextRequest) {
   try {
     // Verify this is an internal request (you might want to add authentication)
     const authHeader = request.headers.get('authorization');
-    if (authHeader !== `Bearer ${process.env.INTERNAL_API_KEY}`) {
+    if (!authHeader || !safeCompare(authHeader, `Bearer ${process.env.INTERNAL_API_KEY}`)) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }

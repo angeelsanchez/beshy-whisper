@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
-import { supabase } from '@/lib/supabase';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { authOptions } from '../auth/[...nextauth]/auth';
 import webpush from 'web-push';
@@ -172,7 +171,7 @@ export async function POST(request: NextRequest) {
     
     try {
       // Use the updated add_like function that handles toggle functionality
-      const { data, error } = await supabase.rpc('add_like', {
+      const { data, error } = await supabaseAdmin.rpc('add_like', {
         p_user_id: userId,
         p_entry_id: entryId
       });
@@ -182,7 +181,7 @@ export async function POST(request: NextRequest) {
         
         // Try with direct SQL as a fallback
         // First check if the like already exists
-        const { data: existingLike, error: checkError } = await supabase
+        const { data: existingLike, error: checkError } = await supabaseAdmin
           .from('likes')
           .select('id')
           .eq('user_id', userId)
@@ -199,7 +198,7 @@ export async function POST(request: NextRequest) {
         
         if (existingLike) {
           // Like exists, so remove it (toggle off)
-          const { error: deleteError } = await supabase
+          const { error: deleteError } = await supabaseAdmin
             .from('likes')
             .delete()
             .eq('user_id', userId)
@@ -220,7 +219,7 @@ export async function POST(request: NextRequest) {
           });
         } else {
           // Like doesn't exist, so add it (toggle on)
-          const { error: insertError } = await supabase
+          const { error: insertError } = await supabaseAdmin
             .from('likes')
             .insert({
               user_id: userId,

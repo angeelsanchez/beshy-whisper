@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import webpush from 'web-push';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 
 // Configure web-push with VAPID keys
 webpush.setVapidDetails(
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Get user's push token
-    const { data: pushTokenData, error: tokenError } = await supabase
+    const { data: pushTokenData, error: tokenError } = await supabaseAdmin
       .from('push_tokens')
       .select('endpoint, p256dh, auth')
       .eq('user_id', userId)
@@ -119,7 +119,7 @@ export async function POST(request: NextRequest) {
       
       // If the push token is invalid, remove it from the database
       if (pushError.statusCode === 410 || pushError.statusCode === 404) {
-        await supabase
+        await supabaseAdmin
           .from('push_tokens')
           .delete()
           .eq('user_id', userId);

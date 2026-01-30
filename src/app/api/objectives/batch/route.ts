@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 import { authOptions } from '../../auth/[...nextauth]/auth';
 
 // Helper function to validate UUID
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
     console.log('Guardando objetivos:', objectives);
     
     // Guardar los objetivos en la base de datos
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('objectives')
       .insert(objectives)
       .select();

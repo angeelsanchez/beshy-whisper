@@ -1,10 +1,8 @@
-import NextAuth, { NextAuthOptions } from "next-auth";
+import { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { supabase } from "@/lib/supabase";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import crypto from "crypto";
-import { getSupabaseCallbackUrl } from "@/utils/auth-helpers";
 
 // Function to generate sequential BSYXXX alias
 async function generateBeshyId() {
@@ -90,21 +88,6 @@ export const authOptions: NextAuthOptions = {
       const provider = account?.provider || 'credentials';
       const providerId = account?.providerAccountId || null;
       
-      // If signing in with Google, also link with Supabase
-      if (provider === 'google') {
-        try {
-          // Link the OAuth account with Supabase
-          const supabaseCallbackUrl = getSupabaseCallbackUrl();
-          
-          // We don't need to do anything with the callback URL directly in code
-          // Just make sure it's properly set in your Supabase OAuth settings
-          console.log('Using Supabase callback URL:', supabaseCallbackUrl);
-        } catch (error) {
-          console.error('Error during Supabase integration:', error);
-          // Continue with NextAuth even if Supabase sync fails
-        }
-      }
-      
       // Check if user already exists by email
       const { data: existingUser } = await supabaseAdmin
         .from('users')
@@ -178,9 +161,6 @@ export const authOptions: NextAuthOptions = {
         session.user.alias = token.alias as string;
         session.user.bsy_id = token.bsy_id as string;
         session.user.name = token.name as string;
-        
-        // Debug log
-        console.log('Session callback - user ID:', session.user.id);
       }
       return session;
     },
@@ -189,10 +169,6 @@ export const authOptions: NextAuthOptions = {
         token.alias = user.alias;
         token.bsy_id = user.bsy_id;
         token.name = user.name;
-        
-        // Debug log
-        console.log('JWT callback - user:', user);
-        console.log('JWT callback - token:', token);
       }
       return token;
     }

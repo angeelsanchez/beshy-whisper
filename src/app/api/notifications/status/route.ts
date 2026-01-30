@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/auth';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { logger } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   try {
@@ -21,7 +22,7 @@ export async function GET(request: NextRequest) {
       .eq('user_id', session.user.id);
 
     if (tokensError) {
-      console.error('Error counting push tokens:', tokensError);
+      logger.error('Error counting push tokens', { detail: tokensError?.message || String(tokensError) });
       return NextResponse.json(
         { error: 'Failed to count push tokens' },
         { status: 500 }
@@ -41,7 +42,7 @@ export async function GET(request: NextRequest) {
       }
     } catch (error) {
       // Notifications table might not exist, that's okay
-      console.log('Notifications table not available');
+      logger.info('Notifications table not available');
     }
 
     // Get user's entries count for context
@@ -51,7 +52,7 @@ export async function GET(request: NextRequest) {
       .eq('user_id', session.user.id);
 
     if (entriesError) {
-      console.error('Error counting entries:', entriesError);
+      logger.error('Error counting entries', { detail: entriesError?.message || String(entriesError) });
     }
 
     // Check if user has recent activity
@@ -65,7 +66,7 @@ export async function GET(request: NextRequest) {
       .gte('fecha', oneWeekAgo.toISOString());
 
     if (recentEntriesError) {
-      console.error('Error counting recent entries:', recentEntriesError);
+      logger.error('Error counting recent entries', { detail: recentEntriesError?.message || String(recentEntriesError) });
     }
 
     // Check VAPID configuration
@@ -121,7 +122,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error in notifications status endpoint:', error);
+    logger.error('Error in notifications status endpoint', { detail: error instanceof Error ? error.message : String(error) });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

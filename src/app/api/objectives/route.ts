@@ -4,6 +4,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { authOptions } from '../auth/[...nextauth]/auth';
 import { patchObjectiveSchema, deleteObjectiveSchema } from '@/lib/schemas/objectives';
 import { uuidSchema } from '@/lib/schemas/common';
+import { logger } from '@/lib/logger';
 
 // Actualizar estado de un objetivo (completado/pendiente)
 export async function PATCH(request: NextRequest) {
@@ -33,7 +34,7 @@ export async function PATCH(request: NextRequest) {
 
     // Validate user ID
     if (!userId) {
-      console.error('ID de usuario faltante en la sesión:', session);
+      logger.error('ID de usuario faltante en la sesión', { userId: String(session.user?.id) });
       return NextResponse.json(
         { error: 'No autorizado - ID de usuario faltante en la sesión' },
         { status: 401 }
@@ -41,66 +42,66 @@ export async function PATCH(request: NextRequest) {
     }
 
     if (!uuidSchema.safeParse(userId).success) {
-      console.error('ID de usuario inválido:', userId);
+      logger.error('ID de usuario inválido', { userId });
       return NextResponse.json(
         { error: 'ID de usuario inválido' },
         { status: 400 }
       );
     }
-    
+
     // Verificar que el objetivo pertenece al usuario
     const { data: objective, error: fetchError } = await supabaseAdmin
       .from('objectives')
       .select('user_id')
       .eq('id', objectiveId)
       .single();
-    
+
     if (fetchError) {
-      console.error('Error al verificar la propiedad del objetivo:', fetchError);
+      logger.error('Error al verificar la propiedad del objetivo', { detail: fetchError?.message || String(fetchError) });
       return NextResponse.json(
         { error: 'Error al verificar la propiedad del objetivo' },
         { status: 500 }
       );
     }
-    
+
     if (!objective) {
       return NextResponse.json(
         { error: 'Objetivo no encontrado' },
         { status: 404 }
       );
     }
-    
+
     if (objective.user_id !== userId) {
       return NextResponse.json(
         { error: 'No autorizado - No puedes modificar objetivos de otros usuarios' },
         { status: 403 }
       );
     }
-    
+
     // Actualizar el objetivo
     const { error: updateError } = await supabaseAdmin
       .from('objectives')
-      .update({ 
+      .update({
         done,
         updated_at: new Date().toISOString()
       })
       .eq('id', objectiveId);
-    
+
     if (updateError) {
-      console.error('Error al actualizar el objetivo:', updateError);
+      logger.error('Error al actualizar el objetivo', { detail: updateError?.message || String(updateError) });
       return NextResponse.json(
         { error: 'Error al actualizar el objetivo' },
         { status: 500 }
       );
     }
-    
-    return NextResponse.json({ 
-      success: true, 
+
+    return NextResponse.json({
+      success: true,
       message: 'Objetivo actualizado correctamente',
       done
     });
   } catch (error) {
-    console.error('Error inesperado en la API de objetivos:', error);
+    logger.error('Error inesperado en la API de objetivos', { detail: error instanceof Error ? error.message : String(error) });
     return NextResponse.json(
       { error: 'Error interno del servidor' },
       { status: 500 }
@@ -136,7 +137,7 @@ export async function DELETE(request: NextRequest) {
 
     // Validate user ID
     if (!userId) {
-      console.error('ID de usuario faltante en la sesión:', session);
+      logger.error('ID de usuario faltante en la sesión', { userId: String(session.user?.id) });
       return NextResponse.json(
         { error: 'No autorizado - ID de usuario faltante en la sesión' },
         { status: 401 }
@@ -144,62 +145,62 @@ export async function DELETE(request: NextRequest) {
     }
 
     if (!uuidSchema.safeParse(userId).success) {
-      console.error('ID de usuario inválido:', userId);
+      logger.error('ID de usuario inválido', { userId });
       return NextResponse.json(
         { error: 'ID de usuario inválido' },
         { status: 400 }
       );
     }
-    
+
     // Verificar que el objetivo pertenece al usuario
     const { data: objective, error: fetchError } = await supabaseAdmin
       .from('objectives')
       .select('user_id')
       .eq('id', objectiveId)
       .single();
-    
+
     if (fetchError) {
-      console.error('Error al verificar la propiedad del objetivo:', fetchError);
+      logger.error('Error al verificar la propiedad del objetivo', { detail: fetchError?.message || String(fetchError) });
       return NextResponse.json(
         { error: 'Error al verificar la propiedad del objetivo' },
         { status: 500 }
       );
     }
-    
+
     if (!objective) {
       return NextResponse.json(
         { error: 'Objetivo no encontrado' },
         { status: 404 }
       );
     }
-    
+
     if (objective.user_id !== userId) {
       return NextResponse.json(
         { error: 'No autorizado - No puedes eliminar objetivos de otros usuarios' },
         { status: 403 }
       );
     }
-    
+
     // Eliminar el objetivo
     const { error: deleteError } = await supabaseAdmin
       .from('objectives')
       .delete()
       .eq('id', objectiveId);
-    
+
     if (deleteError) {
-      console.error('Error al eliminar el objetivo:', deleteError);
+      logger.error('Error al eliminar el objetivo', { detail: deleteError?.message || String(deleteError) });
       return NextResponse.json(
         { error: 'Error al eliminar el objetivo' },
         { status: 500 }
       );
     }
-    
-    return NextResponse.json({ 
-      success: true, 
+
+    return NextResponse.json({
+      success: true,
       message: 'Objetivo eliminado correctamente'
     });
   } catch (error) {
-    console.error('Error inesperado en la API de objetivos:', error);
+    logger.error('Error inesperado en la API de objetivos', { detail: error instanceof Error ? error.message : String(error) });
     return NextResponse.json(
       { error: 'Error interno del servidor' },
       { status: 500 }

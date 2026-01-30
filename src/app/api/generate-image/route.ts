@@ -3,6 +3,7 @@ import puppeteer from 'puppeteer';
 import fs from 'fs';
 import path from 'path';
 import { escapeHtml } from '@/utils/html-escape';
+import { logger } from '@/lib/logger';
 
 // Logo cache for performance optimization
 let logoCache: string | null = null;
@@ -41,7 +42,7 @@ async function getCachedLogo(): Promise<string> {
     logoCacheTime = now;
     return logoCache;
   } catch (error) {
-    console.warn('Could not read logo file:', error);
+    logger.warn('Could not read logo file', { detail: error instanceof Error ? error.message : String(error) });
     // Fallback to a simple SVG if logo file is not found
     logoCache = `<svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
       <text x="50" y="50" text-anchor="middle" dominant-baseline="middle" font-family="Arial" font-size="16" fill="currentColor">BESHY</text>
@@ -156,7 +157,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error generating image:', error);
+    logger.error('Error generating image', { detail: error instanceof Error ? error.message : String(error) });
     
     // More specific error handling
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';

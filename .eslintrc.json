@@ -3,7 +3,8 @@
   "rules": {
     "@typescript-eslint/no-unused-vars": "warn",
     "@typescript-eslint/no-explicit-any": "error",
-    "react-hooks/exhaustive-deps": "warn"
+    "react-hooks/exhaustive-deps": "warn",
+    "no-console": ["warn", { "allow": ["warn", "error"] }]
   },
   "ignorePatterns": [
     "next-env.d.ts",

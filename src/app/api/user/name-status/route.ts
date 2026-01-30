@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../auth/[...nextauth]/auth';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { logger } from '@/lib/logger';
 
 export async function GET(req: NextRequest) {
   try {
@@ -25,7 +26,7 @@ export async function GET(req: NextRequest) {
       .single();
     
     if (userError) {
-      console.error('Error fetching user data:', userError);
+      logger.error('Error fetching user data', { detail: userError?.message || String(userError) });
       return NextResponse.json(
         { message: 'Failed to fetch user data' },
         { status: 500 }
@@ -37,7 +38,7 @@ export async function GET(req: NextRequest) {
       .rpc('can_update_name', { user_id: userId });
     
     if (canUpdateError) {
-      console.error('Error checking if user can update name:', canUpdateError);
+      logger.error('Error checking if user can update name', { detail: canUpdateError?.message || String(canUpdateError) });
       return NextResponse.json(
         { message: 'Error checking name update eligibility' },
         { status: 500 }
@@ -58,7 +59,7 @@ export async function GET(req: NextRequest) {
       nextUpdateDate: nextUpdateDate ? nextUpdateDate.toISOString() : null
     });
   } catch (error) {
-    console.error('Name status check error:', error);
+    logger.error('Name status check error', { detail: error instanceof Error ? error.message : String(error) });
     return NextResponse.json(
       { message: 'Internal server error' },
       { status: 500 }

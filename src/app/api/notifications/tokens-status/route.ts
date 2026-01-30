@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/auth';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { logger } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   try {
@@ -21,7 +22,7 @@ export async function GET(request: NextRequest) {
       .eq('user_id', session.user.id);
 
     if (tokensError) {
-      console.error('Error fetching push tokens:', tokensError);
+      logger.error('Error fetching push tokens', { detail: tokensError?.message || String(tokensError) });
       return NextResponse.json(
         { error: 'Failed to fetch push tokens' },
         { status: 500 }
@@ -90,7 +91,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error in tokens-status endpoint:', error);
+    logger.error('Error in tokens-status endpoint', { detail: error instanceof Error ? error.message : String(error) });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

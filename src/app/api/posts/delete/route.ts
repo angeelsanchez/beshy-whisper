@@ -4,6 +4,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { authOptions } from '../../auth/[...nextauth]/auth';
 import { deletePostSchema } from '@/lib/schemas/posts';
 import { uuidSchema } from '@/lib/schemas/common';
+import { logger } from '@/lib/logger';
 
 export async function DELETE(request: NextRequest) {
   try {
@@ -32,7 +33,7 @@ export async function DELETE(request: NextRequest) {
 
     // Validate user ID
     if (!userId) {
-      console.error('ID de usuario faltante en la sesión:', session);
+      logger.error('ID de usuario faltante en la sesión', { userId: String(session.user?.id) });
       return NextResponse.json(
         { error: 'No autorizado - ID de usuario faltante en la sesión' },
         { status: 401 }
@@ -40,14 +41,14 @@ export async function DELETE(request: NextRequest) {
     }
 
     if (!uuidSchema.safeParse(userId).success) {
-      console.error('ID de usuario inválido:', userId);
+      logger.error('ID de usuario inválido', { userId });
       return NextResponse.json(
         { error: 'ID de usuario inválido' },
         { status: 400 }
       );
     }
     
-    console.log('Procesando eliminación de post:', { userId, entryId });
+    logger.info('Procesando eliminación de post', { userId, entryId });
     
     // First verify that the entry belongs to the user
     const { data: entry, error: fetchError } = await supabaseAdmin
@@ -57,7 +58,7 @@ export async function DELETE(request: NextRequest) {
       .single();
     
     if (fetchError) {
-      console.error('Error al verificar la propiedad del post:', fetchError);
+      logger.error('Error al verificar la propiedad del post', { detail: fetchError?.message || String(fetchError) });
       return NextResponse.json(
         { error: 'Error al verificar la propiedad del post' },
         { status: 500 }
@@ -85,7 +86,7 @@ export async function DELETE(request: NextRequest) {
       .eq('entry_id', entryId);
     
     if (likesDeleteError) {
-      console.error('Error al eliminar likes asociados:', likesDeleteError);
+      logger.error('Error al eliminar likes asociados', { detail: likesDeleteError?.message || String(likesDeleteError) });
       // Continue with deletion even if likes deletion fails
     }
     
@@ -97,7 +98,7 @@ export async function DELETE(request: NextRequest) {
       .eq('user_id', userId);
     
     if (deleteError) {
-      console.error('Error al eliminar el post:', deleteError);
+      logger.error('Error al eliminar el post', { detail: deleteError?.message || String(deleteError) });
       return NextResponse.json(
         { error: 'Error al eliminar el post' },
         { status: 500 }
@@ -109,7 +110,7 @@ export async function DELETE(request: NextRequest) {
       message: 'Post eliminado correctamente'
     });
   } catch (error) {
-    console.error('Error inesperado en la API de eliminación de posts:', error);
+    logger.error('Error inesperado en la API de eliminación de posts', { detail: error instanceof Error ? error.message : String(error) });
     return NextResponse.json(
       { error: 'Error interno del servidor' },
       { status: 500 }

@@ -1,5 +1,3 @@
-import * as Sentry from '@sentry/nextjs';
-
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
 interface LogEntry {
@@ -63,22 +61,12 @@ function log(level: LogLevel, message: string, data?: Record<string, unknown>) {
       console.log(formatted);
       break;
     case 'warn':
+      // eslint-disable-next-line no-console
       console.warn(formatted);
-      Sentry.addBreadcrumb({
-        category: 'logger',
-        message,
-        level: 'warning',
-        data: data ? sanitize(data) : undefined,
-      });
       break;
     case 'error':
+      // eslint-disable-next-line no-console
       console.error(formatted);
-      Sentry.captureEvent({
-        message,
-        level: 'error',
-        extra: data ? sanitize(data) : undefined,
-        tags: { source: 'logger' },
-      });
       break;
   }
 }

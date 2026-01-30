@@ -5,6 +5,7 @@ import { authOptions } from '../auth/[...nextauth]/auth';
 import { toggleLikeSchema } from '@/lib/schemas/likes';
 import { uuidSchema } from '@/lib/schemas/common';
 import webpush from 'web-push';
+import { logger } from '@/lib/logger';
 
 // Configure web-push with VAPID keys
 webpush.setVapidDetails(
@@ -24,7 +25,7 @@ async function sendLikeNotification(entryId: string, likerUserId: string) {
       .single();
     
     if (entryError || !entryData) {
-      console.error('Error fetching entry for notification:', entryError);
+      logger.error('Error fetching entry for notification', { detail: entryError?.message || String(entryError) });
       return;
     }
     
@@ -41,7 +42,7 @@ async function sendLikeNotification(entryId: string, likerUserId: string) {
       .single();
     
     if (likerError || !likerData) {
-      console.error('Error fetching liker data for notification:', likerError);
+      logger.error('Error fetching liker data for notification', { detail: likerError?.message || String(likerError) });
       return;
     }
     
@@ -55,16 +56,16 @@ async function sendLikeNotification(entryId: string, likerUserId: string) {
       .maybeSingle();
     
     if (tokenError || !pushTokenData) {
-      console.log('Entry owner has no push token registered:', entryData.user_id);
+      logger.info('Entry owner has no push token registered', { userId: entryData.user_id });
       return;
     }
     
     // Check if VAPID keys are configured
     if (!process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
-      console.error('VAPID keys not configured');
+      logger.error('VAPID keys not configured');
       return;
     }
-    
+
     // Prepare the push subscription object
     const pushSubscription = {
       endpoint: pushTokenData.endpoint,
@@ -73,11 +74,11 @@ async function sendLikeNotification(entryId: string, likerUserId: string) {
         auth: pushTokenData.auth
       }
     };
-    
+
     // Prepare the notification payload
     const notificationTitle = '❤️ Nuevo like en tu Whisper';
     const notificationBody = `${likerName} le dio like a tu whisper`;
-    
+
     const payload = JSON.stringify({
       title: notificationTitle,
       body: notificationBody,
@@ -93,7 +94,7 @@ async function sendLikeNotification(entryId: string, likerUserId: string) {
         liker_name: likerName
       }
     });
-    
+
     // Send the push notification
     await webpush.sendNotification(pushSubscription, payload, {
       TTL: 60 * 60, // 1 hour
@@ -101,14 +102,14 @@ async function sendLikeNotification(entryId: string, likerUserId: string) {
         'Urgency': 'normal'
       }
     });
-    
-    console.log('Like notification sent successfully:', {
+
+    logger.info('Like notification sent successfully', {
       userId: entryData.user_id,
       likerName,
       entryId
     });
   } catch (error) {
-    console.error('Error sending like notification:', error);
+    logger.error('Error sending like notification', { detail: error instanceof Error ? error.message : String(error) });
   }
 }
 
@@ -139,7 +140,7 @@ export async function POST(request: NextRequest) {
 
     // Validate user ID
     if (!userId) {
-      console.error('User ID missing in session:', session);
+      logger.error('User ID missing in session', { userId: String(session.user?.id) });
       return NextResponse.json(
         { error: 'Unauthorized - User ID missing in session' },
         { status: 401 }
@@ -147,14 +148,14 @@ export async function POST(request: NextRequest) {
     }
 
     if (!uuidSchema.safeParse(userId).success) {
-      console.error('Invalid user ID:', userId);
+      logger.error('Invalid user ID', { userId });
       return NextResponse.json(
         { error: 'Invalid user ID' },
         { status: 400 }
       );
     }
     
-    console.log('Processing like toggle action:', { userId, entryId });
+    logger.info('Processing like toggle action', { userId, entryId });
     
     try {
       // Use the updated add_like function that handles toggle functionality
@@ -164,7 +165,7 @@ export async function POST(request: NextRequest) {
       });
       
       if (error) {
-        console.error('Error toggling like with RPC:', error);
+        logger.error('Error toggling like with RPC', { detail: error?.message || String(error) });
         
         // Try with direct SQL as a fallback
         // First check if the like already exists
@@ -176,7 +177,7 @@ export async function POST(request: NextRequest) {
           .maybeSingle();
         
         if (checkError) {
-          console.error('Error checking existing like:', checkError);
+          logger.error('Error checking existing like', { detail: checkError?.message || String(checkError) });
           return NextResponse.json(
             { error: 'Failed to check existing like' },
             { status: 500 }
@@ -192,7 +193,7 @@ export async function POST(request: NextRequest) {
             .eq('entry_id', entryId);
           
           if (deleteError) {
-            console.error('Error removing like:', deleteError);
+            logger.error('Error removing like', { detail: deleteError?.message || String(deleteError) });
             return NextResponse.json(
               { error: 'Failed to remove like' },
               { status: 500 }
@@ -214,7 +215,7 @@ export async function POST(request: NextRequest) {
             });
           
           if (insertError) {
-            console.error('Error adding like:', insertError);
+            logger.error('Error adding like', { detail: insertError?.message || String(insertError) });
             return NextResponse.json(
               { error: 'Failed to add like' },
               { status: 500 }
@@ -222,36 +223,36 @@ export async function POST(request: NextRequest) {
           }
           
           // Send like notification asynchronously
-          sendLikeNotification(entryId, userId).catch(error => {
-            console.error('Failed to send like notification:', error);
+          sendLikeNotification(entryId, userId).catch(err => {
+            logger.error('Failed to send like notification', { detail: err instanceof Error ? err.message : String(err) });
           });
-          
-          return NextResponse.json({ 
-            success: true, 
+
+          return NextResponse.json({
+            success: true,
             action: 'liked',
             liked: true
           });
         }
       }
-      
+
       // Send like notification if the action was 'liked'
       if (data && data.liked === true) {
-        sendLikeNotification(entryId, userId).catch(error => {
-          console.error('Failed to send like notification:', error);
+        sendLikeNotification(entryId, userId).catch(err => {
+          logger.error('Failed to send like notification', { detail: err instanceof Error ? err.message : String(err) });
         });
       }
       
       // Return the result from the RPC function
       return NextResponse.json(data);
     } catch (error) {
-      console.error('Unexpected error toggling like:', error);
+      logger.error('Unexpected error toggling like', { detail: error instanceof Error ? error.message : String(error) });
       return NextResponse.json(
         { error: 'Failed to toggle like' },
         { status: 500 }
       );
     }
   } catch (error) {
-    console.error('Unexpected error in likes API:', error);
+    logger.error('Unexpected error in likes API', { detail: error instanceof Error ? error.message : String(error) });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

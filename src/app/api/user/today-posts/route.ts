@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { authOptions } from '../../auth/[...nextauth]/auth';
+import { logger } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   try {
@@ -32,7 +33,7 @@ export async function GET(request: NextRequest) {
       .order('fecha', { ascending: true });
     
     if (error) {
-      console.error('Error fetching today posts:', error);
+      logger.error('Error fetching today posts', { detail: error?.message || String(error) });
       return NextResponse.json(
         { error: 'Failed to fetch today posts' },
         { status: 500 }
@@ -94,7 +95,7 @@ export async function GET(request: NextRequest) {
     });
     
   } catch (error) {
-    console.error('Error in today posts API:', error);
+    logger.error('Error in today posts API', { detail: error instanceof Error ? error.message : String(error) });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

@@ -4,6 +4,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
+import { logger } from "@/lib/logger";
 
 // Function to generate sequential BSYXXX alias
 async function generateBeshyId() {
@@ -136,7 +137,7 @@ export const authOptions: NextAuthOptions = {
         });
 
         if (error) {
-          console.error('Error creating user:', error);
+          logger.error('Error creating user', { detail: error?.message || String(error) });
           return false;
         }
         

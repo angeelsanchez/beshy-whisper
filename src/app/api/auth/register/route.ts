@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import crypto from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
+import { logger } from '@/lib/logger';
 
 const registerSchema = z.object({
   email: z.string().email().max(255),
@@ -88,7 +89,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (error) {
-      console.error('Error creating user:', error);
+      logger.error('Error creating user', { detail: error?.message || String(error) });
       return NextResponse.json(
         { message: 'Failed to create user' },
         { status: 500 }
@@ -101,7 +102,7 @@ export async function POST(req: NextRequest) {
       name: displayName || `Usuario ${bsyId}`
     });
   } catch (error) {
-    console.error('Registration error:', error);
+    logger.error('Registration error', { detail: error instanceof Error ? error.message : String(error) });
     return NextResponse.json(
       { message: 'Internal server error' },
       { status: 500 }

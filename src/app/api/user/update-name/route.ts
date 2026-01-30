@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '../../auth/[...nextauth]/auth';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { updateNameSchema } from '@/lib/schemas/user';
+import { logger } from '@/lib/logger';
 
 export async function POST(req: NextRequest) {
   try {
@@ -32,7 +33,7 @@ export async function POST(req: NextRequest) {
       .rpc('can_update_name', { user_id: userId });
     
     if (canUpdateError) {
-      console.error('Error checking if user can update name:', canUpdateError);
+      logger.error('Error checking if user can update name', { detail: canUpdateError?.message || String(canUpdateError) });
       return NextResponse.json(
         { message: 'Error checking name update eligibility' },
         { status: 500 }
@@ -57,7 +58,7 @@ export async function POST(req: NextRequest) {
       .eq('id', userId);
     
     if (updateError) {
-      console.error('Error updating user name:', updateError);
+      logger.error('Error updating user name', { detail: updateError?.message || String(updateError) });
       return NextResponse.json(
         { message: 'Failed to update name' },
         { status: 500 }
@@ -69,7 +70,7 @@ export async function POST(req: NextRequest) {
       name: name
     });
   } catch (error) {
-    console.error('Name update error:', error);
+    logger.error('Name update error', { detail: error instanceof Error ? error.message : String(error) });
     return NextResponse.json(
       { message: 'Internal server error' },
       { status: 500 }

@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/auth';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import webpush from 'web-push';
+import { logger } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -25,7 +26,7 @@ export async function POST(request: NextRequest) {
       .eq('user_id', session.user.id);
 
     if (tokensError) {
-      console.error('Error fetching push tokens:', tokensError);
+      logger.error('Error fetching push tokens', { detail: tokensError?.message || String(tokensError) });
       return NextResponse.json(
         { error: 'Failed to fetch push tokens' },
         { status: 500 }
@@ -45,7 +46,7 @@ export async function POST(request: NextRequest) {
     const vapidEmail = process.env.VAPID_EMAIL;
 
     if (!vapidPublicKey || !vapidPrivateKey || !vapidEmail) {
-      console.error('VAPID keys not configured');
+      logger.error('VAPID keys not configured');
       return NextResponse.json(
         { error: 'VAPID configuration missing' },
         { status: 500 }
@@ -88,9 +89,9 @@ export async function POST(request: NextRequest) {
           statusCode: result.statusCode
         });
 
-        console.log(`Test notification sent successfully to token ${token.id}`);
+        logger.info('Test notification sent successfully', { tokenId: token.id });
       } catch (error) {
-        console.error(`Error sending test notification to token ${token.id}:`, error);
+        logger.error('Error sending test notification', { tokenId: token.id, detail: error instanceof Error ? error.message : String(error) });
         
         results.push({
           tokenId: token.id,
@@ -105,9 +106,9 @@ export async function POST(request: NextRequest) {
               .from('push_tokens')
               .delete()
               .eq('id', token.id);
-            console.log(`Removed invalid token ${token.id}`);
+            logger.info('Removed invalid token', { tokenId: token.id });
           } catch (deleteError) {
-            console.error(`Error removing invalid token ${token.id}:`, deleteError);
+            logger.error('Error removing invalid token', { tokenId: token.id, detail: deleteError instanceof Error ? deleteError.message : String(deleteError) });
           }
         }
       }
@@ -116,7 +117,7 @@ export async function POST(request: NextRequest) {
     const successCount = results.filter(r => r.status === 'success').length;
     const errorCount = results.filter(r => r.status === 'error').length;
 
-    console.log(`Test notification results: ${successCount} success, ${errorCount} errors`);
+    logger.info('Test notification results', { successCount, errorCount });
 
     return NextResponse.json({
       success: true,
@@ -130,7 +131,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error in test-push endpoint:', error);
+    logger.error('Error in test-push endpoint', { detail: error instanceof Error ? error.message : String(error) });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

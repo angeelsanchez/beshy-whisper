@@ -4,6 +4,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { authOptions } from '../../auth/[...nextauth]/auth';
 import { updatePostSchema } from '@/lib/schemas/posts';
 import { uuidSchema } from '@/lib/schemas/common';
+import { logger } from '@/lib/logger';
 
 export async function PUT(request: NextRequest) {
   try {
@@ -32,7 +33,7 @@ export async function PUT(request: NextRequest) {
 
     // Validate user ID
     if (!userId) {
-      console.error('ID de usuario faltante en la sesión:', session);
+      logger.error('ID de usuario faltante en la sesión', { userId: String(session.user?.id) });
       return NextResponse.json(
         { error: 'No autorizado - ID de usuario faltante en la sesión' },
         { status: 401 }
@@ -40,7 +41,7 @@ export async function PUT(request: NextRequest) {
     }
 
     if (!uuidSchema.safeParse(userId).success) {
-      console.error('ID de usuario inválido:', userId);
+      logger.error('ID de usuario inválido', { userId });
       return NextResponse.json(
         { error: 'ID de usuario inválido' },
         { status: 400 }
@@ -55,7 +56,7 @@ export async function PUT(request: NextRequest) {
       .single();
     
     if (fetchError) {
-      console.error('Error al verificar la propiedad del post:', fetchError);
+      logger.error('Error al verificar la propiedad del post', { detail: fetchError?.message || String(fetchError) });
       return NextResponse.json(
         { error: 'Error al verificar la propiedad del post' },
         { status: 500 }
@@ -95,7 +96,7 @@ export async function PUT(request: NextRequest) {
       .eq('id', entryId);
     
     if (updateError) {
-      console.error('Error al actualizar el post:', updateError);
+      logger.error('Error al actualizar el post', { detail: updateError?.message || String(updateError) });
       return NextResponse.json(
         { error: 'Error al actualizar el post' },
         { status: 500 }
@@ -107,7 +108,7 @@ export async function PUT(request: NextRequest) {
       message: 'Post actualizado correctamente'
     });
   } catch (error) {
-    console.error('Error inesperado en la API de actualización de posts:', error);
+    logger.error('Error inesperado en la API de actualización de posts', { detail: error instanceof Error ? error.message : String(error) });
     return NextResponse.json(
       { error: 'Error interno del servidor' },
       { status: 500 }

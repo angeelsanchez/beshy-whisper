@@ -1,67 +1,54 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
-import { supabase } from '@/lib/supabase';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { authOptions } from '../../auth/[...nextauth]/auth';
+import { z } from 'zod';
+
+const pushTokenSchema = z.object({
+  endpoint: z.string().url(),
+  p256dh: z.string().min(1),
+  auth: z.string().min(1),
+});
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('[REGISTER DEBUG] Starting push token registration...');
-    
     const session = await getServerSession(authOptions);
-    console.log('[REGISTER DEBUG] Session check:', session ? 'Found' : 'None');
-    
-    if (!session || !session.user) {
-      console.log('[REGISTER DEBUG] No session or user found');
+
+    if (!session?.user) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       );
     }
-    
-    console.log('[REGISTER DEBUG] User authenticated:', session.user.id);
-    
+
     const body = await request.json();
-    const { endpoint, p256dh, auth } = body;
-    console.log('[REGISTER DEBUG] Request data received:', {
-      endpoint: endpoint ? endpoint.substring(0, 50) + '...' : 'None',
-      p256dh_length: p256dh ? p256dh.length : 0,
-      auth_length: auth ? auth.length : 0
-    });
-    
-    if (!endpoint || !p256dh || !auth) {
-      console.log('[REGISTER DEBUG] Missing required data:', { endpoint: !!endpoint, p256dh: !!p256dh, auth: !!auth });
+    const parsed = pushTokenSchema.safeParse(body);
+
+    if (!parsed.success) {
       return NextResponse.json(
         { error: 'Missing required push subscription data' },
         { status: 400 }
       );
     }
-    
+
+    const { endpoint, p256dh, auth } = parsed.data;
     const userId = session.user.id;
     const userAgent = request.headers.get('user-agent') || '';
-    
-    console.log('[REGISTER DEBUG] Attempting database upsert...');
-    console.log('[REGISTER DEBUG] User ID:', userId);
-    console.log('[REGISTER DEBUG] User Agent:', userAgent.substring(0, 100));
-    
-    // First, try to verify user exists
-    const { data: userData, error: userError } = await supabaseAdmin
+
+    const { error: userError } = await supabaseAdmin
       .from('users')
-      .select('id, email')
+      .select('id')
       .eq('id', userId)
       .single();
-    
+
     if (userError) {
-      console.log('[REGISTER DEBUG] User verification failed:', userError);
+      console.error('User verification failed for push token registration');
       return NextResponse.json(
-        { error: 'User not found', details: userError.message },
+        { error: 'User not found' },
         { status: 404 }
       );
     }
-    
-    console.log('[REGISTER DEBUG] User verified:', userData.email);
-    
-    // Use admin client to bypass RLS for push token registration
+
     const { error } = await supabaseAdmin
       .from('push_tokens')
       .upsert({
@@ -74,31 +61,20 @@ export async function POST(request: NextRequest) {
       }, {
         onConflict: 'user_id'
       });
-    
-    console.log('[REGISTER DEBUG] Database operation result:', error ? 'ERROR' : 'SUCCESS');
+
     if (error) {
-      console.log('[REGISTER DEBUG] Database error details:', {
-        code: error.code,
-        message: error.message,
-        details: error.details,
-        hint: error.hint
-      });
-    }
-    
-    if (error) {
-      console.error('[REGISTER DEBUG] Error saving push token:', error);
+      console.error('Error saving push token:', error);
       return NextResponse.json(
-        { error: 'Failed to save push token', details: error.message },
+        { error: 'Failed to save push token' },
         { status: 500 }
       );
     }
-    
-    console.log('[REGISTER DEBUG] Push token registered successfully');
+
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('[REGISTER DEBUG] Error in push token registration:', error);
+    console.error('Error in push token registration:', error);
     return NextResponse.json(
-      { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }

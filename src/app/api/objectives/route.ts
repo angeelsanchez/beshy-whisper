@@ -2,39 +2,35 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { authOptions } from '../auth/[...nextauth]/auth';
-
-// Helper function to validate UUID
-function isValidUUID(uuid: string): boolean {
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-  return uuidRegex.test(uuid);
-}
+import { patchObjectiveSchema, deleteObjectiveSchema } from '@/lib/schemas/objectives';
+import { uuidSchema } from '@/lib/schemas/common';
 
 // Actualizar estado de un objetivo (completado/pendiente)
 export async function PATCH(request: NextRequest) {
   try {
     // Get the current session
     const session = await getServerSession(authOptions);
-    
+
     if (!session || !session.user) {
       return NextResponse.json(
         { error: 'No autorizado - Sesión o usuario no encontrado' },
         { status: 401 }
       );
     }
-    
+
     // Get the request body
     const body = await request.json();
-    const { objectiveId, done } = body;
-    
-    if (!objectiveId || typeof done !== 'boolean') {
+    const parsed = patchObjectiveSchema.safeParse(body);
+    if (!parsed.success) {
       return NextResponse.json(
         { error: 'Solicitud inválida. Campos requeridos: objectiveId, done' },
         { status: 400 }
       );
     }
-    
+    const { objectiveId, done } = parsed.data;
+
     const userId = session.user.id;
-    
+
     // Validate user ID
     if (!userId) {
       console.error('ID de usuario faltante en la sesión:', session);
@@ -43,12 +39,11 @@ export async function PATCH(request: NextRequest) {
         { status: 401 }
       );
     }
-    
-    // Validate UUID
-    if (!isValidUUID(objectiveId)) {
-      console.error('ID de objetivo inválido:', objectiveId);
+
+    if (!uuidSchema.safeParse(userId).success) {
+      console.error('ID de usuario inválido:', userId);
       return NextResponse.json(
-        { error: 'ID de objetivo inválido' },
+        { error: 'ID de usuario inválido' },
         { status: 400 }
       );
     }
@@ -118,27 +113,27 @@ export async function DELETE(request: NextRequest) {
   try {
     // Get the current session
     const session = await getServerSession(authOptions);
-    
+
     if (!session || !session.user) {
       return NextResponse.json(
         { error: 'No autorizado - Sesión o usuario no encontrado' },
         { status: 401 }
       );
     }
-    
+
     // Get the objective ID from URL
     const { searchParams } = new URL(request.url);
-    const objectiveId = searchParams.get('objectiveId');
-    
-    if (!objectiveId) {
+    const parsed = deleteObjectiveSchema.safeParse({ objectiveId: searchParams.get('objectiveId') });
+    if (!parsed.success) {
       return NextResponse.json(
         { error: 'Solicitud inválida. Parámetro requerido: objectiveId' },
         { status: 400 }
       );
     }
-    
+    const { objectiveId } = parsed.data;
+
     const userId = session.user.id;
-    
+
     // Validate user ID
     if (!userId) {
       console.error('ID de usuario faltante en la sesión:', session);
@@ -147,12 +142,11 @@ export async function DELETE(request: NextRequest) {
         { status: 401 }
       );
     }
-    
-    // Validate UUID
-    if (!isValidUUID(objectiveId)) {
-      console.error('ID de objetivo inválido:', objectiveId);
+
+    if (!uuidSchema.safeParse(userId).success) {
+      console.error('ID de usuario inválido:', userId);
       return NextResponse.json(
-        { error: 'ID de objetivo inválido' },
+        { error: 'ID de usuario inválido' },
         { status: 400 }
       );
     }

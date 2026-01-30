@@ -78,7 +78,7 @@ describe('POST /api/objectives/batch', () => {
   it('returns 403 when objectives belong to another user', async () => {
     mockGetServerSession.mockResolvedValue(mockSession);
     const res = await POST(makeRequest({
-      objectives: [{ user_id: 'other-user', entry_id: ENTRY_UUID, text: 'test' }],
+      objectives: [{ user_id: '550e8400-e29b-41d4-a716-446655440099', entry_id: ENTRY_UUID, text: 'test' }],
     }));
     expect(res.status).toBe(403);
   });

@@ -2,36 +2,30 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../auth/[...nextauth]/auth';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { updateNameSchema } from '@/lib/schemas/user';
 
 export async function POST(req: NextRequest) {
   try {
     // Get the session to verify authentication
     const session = await getServerSession(authOptions);
-    
+
     if (!session || !session.user) {
       return NextResponse.json(
         { message: 'Unauthorized' },
         { status: 401 }
       );
     }
-    
+
     const userId = session.user.id;
-    const { name } = await req.json();
-    
-    // Validate name
-    if (!name || typeof name !== 'string' || name.trim() === '') {
+    const body = await req.json();
+    const parsed = updateNameSchema.safeParse(body);
+    if (!parsed.success) {
       return NextResponse.json(
-        { message: 'Name cannot be empty' },
+        { message: 'Invalid request data' },
         { status: 400 }
       );
     }
-    
-    if (name.length > 50) {
-      return NextResponse.json(
-        { message: 'Name cannot exceed 50 characters' },
-        { status: 400 }
-      );
-    }
+    const { name } = parsed.data;
     
     // Check if user can update their name (using the database function with admin client)
     const { data: canUpdateData, error: canUpdateError } = await supabaseAdmin
@@ -56,7 +50,7 @@ export async function POST(req: NextRequest) {
     const { error: updateError } = await supabaseAdmin
       .from('users')
       .update({
-        name: name.trim(),
+        name: name,
         last_name_update: new Date().toISOString(),
         needs_name_input: false
       })
@@ -72,7 +66,7 @@ export async function POST(req: NextRequest) {
     
     return NextResponse.json({ 
       message: 'Name updated successfully',
-      name: name.trim()
+      name: name
     });
   } catch (error) {
     console.error('Name update error:', error);

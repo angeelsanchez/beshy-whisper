@@ -221,35 +221,50 @@ export function PostProvider({ children }: { children: ReactNode }) {
   }, [fetchEntries]);
 
   useEffect(() => {
-    const subscription = supabase
-      .channel('public:entries')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'entries' }, (payload) => {
-        const newPostUserId = payload.new.user_id;
-        if (newPostUserId !== currentUserId) {
-          fetchEntries();
-        }
-      })
-      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'entries' }, (payload) => {
-        const deletedEntryId = payload.old.id;
-        if (deletedEntryId) {
-          setEntries(prevEntries => prevEntries.filter(entry => entry.id !== deletedEntryId));
-        }
-      })
-      .subscribe();
-    
-    const likesSubscription = supabase
-      .channel('public:likes')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'likes' }, (payload) => {
-        handleLikesChange({ ...payload, eventType: 'INSERT' });
-      })
-      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'likes' }, (payload) => {
-        handleLikesChange({ ...payload, eventType: 'DELETE' });
-      })
-      .subscribe();
-    
+    const channels: ReturnType<typeof supabase.channel>[] = [];
+
+    const handleRealtimeError = (status: string, err?: Error) => {
+      if (err || status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+        console.warn('Realtime subscription issue:', status);
+      }
+    };
+
+    try {
+      const entriesChannel = supabase
+        .channel('public:entries')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'entries' }, (payload) => {
+          const newPostUserId = payload.new.user_id;
+          if (newPostUserId !== currentUserId) {
+            fetchEntries();
+          }
+        })
+        .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'entries' }, (payload) => {
+          const deletedEntryId = payload.old.id;
+          if (deletedEntryId) {
+            setEntries(prevEntries => prevEntries.filter(entry => entry.id !== deletedEntryId));
+          }
+        })
+        .subscribe(handleRealtimeError);
+      channels.push(entriesChannel);
+
+      const likesChannel = supabase
+        .channel('public:likes')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'likes' }, (payload) => {
+          handleLikesChange({ ...payload, eventType: 'INSERT' });
+        })
+        .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'likes' }, (payload) => {
+          handleLikesChange({ ...payload, eventType: 'DELETE' });
+        })
+        .subscribe(handleRealtimeError);
+      channels.push(likesChannel);
+    } catch {
+      console.warn('Realtime subscriptions unavailable');
+    }
+
     return () => {
-      subscription.unsubscribe();
-      likesSubscription.unsubscribe();
+      channels.forEach(ch => {
+        try { supabase.removeChannel(ch); } catch { /* ignore */ }
+      });
     };
   }, [currentUserId, fetchEntries, handleLikesChange]);
 

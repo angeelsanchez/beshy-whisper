@@ -10,7 +10,16 @@ import { useNotifications } from '@/hooks/useNotifications';
 import { useTheme } from '@/context/ThemeContext';
 
 // Navigation items configuration
-const getNavItems = (session: any, isGuest: boolean) => {
+interface NavItem {
+  id: string;
+  label: string;
+  href: string;
+  icon: React.ReactNode | ((isDay: boolean) => React.ReactNode);
+  isPostButton?: boolean;
+  badge?: number;
+}
+
+const getNavItems = (session: { user?: Record<string, unknown> } | null, isGuest: boolean) => {
   const items = [];
   
   // Show profile for authenticated users, login prompt for guests only
@@ -107,7 +116,7 @@ export default function AdaptiveNavigation() {
 
   const navItems = getNavItems(session, isGuest);
 
-  const getNavItemStyles = (item: any, isActive: boolean) => {
+  const getNavItemStyles = (item: NavItem, isActive: boolean) => {
     const baseStyles = "flex items-center justify-center transition-all duration-300 relative";
     
     if (item.isPostButton) {

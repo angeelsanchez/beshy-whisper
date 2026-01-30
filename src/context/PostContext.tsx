@@ -199,7 +199,7 @@ export function PostProvider({ children }: { children: ReactNode }) {
     }
   }, [fetchLikesCounts]);
 
-  const handleLikesChange = useCallback((payload: any) => {
+  const handleLikesChange = useCallback((payload: { new: Record<string, string> | null; old: Record<string, string> | null; eventType: string }) => {
     const { new: newLike, old: oldLike, eventType } = payload;
     const entryId = newLike?.entry_id || oldLike?.entry_id;
     if (!entryId || !entriesRef.current.length) return;

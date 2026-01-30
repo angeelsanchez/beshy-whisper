@@ -86,19 +86,23 @@ export async function POST(request: NextRequest) {
       });
       
       return NextResponse.json({ success: true });
-    } catch (pushError: any) {
+    } catch (pushError: unknown) {
       console.error('Error sending push notification:', pushError);
-      
+
+      const statusCode = pushError instanceof Error && 'statusCode' in pushError
+        ? (pushError as { statusCode: number }).statusCode
+        : undefined;
+
       // If the push token is invalid, remove it from the database
-      if (pushError.statusCode === 410 || pushError.statusCode === 404) {
+      if (statusCode === 410 || statusCode === 404) {
         await supabaseAdmin
           .from('push_tokens')
           .delete()
           .eq('user_id', userId);
-        
+
         console.log('Removed invalid push token for user:', userId);
       }
-      
+
       return NextResponse.json(
         { error: 'Failed to send push notification' },
         { status: 500 }

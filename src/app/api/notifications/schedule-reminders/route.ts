@@ -91,7 +91,7 @@ async function checkUserTodayPosts(userId: string): Promise<{ hasDayPost: boolea
 }
 
 // Helper function to send push notification
-async function sendPushNotification(userId: string, title: string, body: string, data?: any) {
+async function sendPushNotification(userId: string, title: string, body: string, data?: Record<string, unknown>) {
   try {
     // Get user's push token
     const { data: pushTokenData, error: tokenError } = await supabaseAdmin

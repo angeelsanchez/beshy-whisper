@@ -93,7 +93,7 @@ export async function PUT(request: NextRequest) {
     }
     
     // Preparar los datos de actualización
-    const updateData: any = {};
+    const updateData: Record<string, unknown> = {};
     
     if (isMessageUpdate) {
       updateData.mensaje = mensaje;

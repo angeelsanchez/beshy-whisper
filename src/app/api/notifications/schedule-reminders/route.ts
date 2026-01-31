@@ -2,6 +2,20 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import webpush from 'web-push';
 import { logger } from '@/lib/logger';
+import { safeCompare } from '@/utils/crypto-helpers';
+
+function verifyCronAuth(request: NextRequest): NextResponse | null {
+  const cronSecret = process.env.CRON_SECRET;
+  if (!cronSecret) {
+    logger.error('CRON_SECRET not configured');
+    return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 });
+  }
+  const authHeader = request.headers.get('authorization');
+  if (!authHeader || !safeCompare(authHeader, `Bearer ${cronSecret}`)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  return null;
+}
 
 // Configure web-push with VAPID keys
 webpush.setVapidDetails(
@@ -242,38 +256,44 @@ async function processReminders() {
 
 // API endpoint to manually trigger reminders (for testing)
 export async function POST(request: NextRequest) {
+  const authError = verifyCronAuth(request);
+  if (authError) return authError;
+
   try {
     const body = await request.json();
     const { action } = body;
-    
+
     if (action === 'process') {
       await processReminders();
-      return NextResponse.json({ 
-        success: true, 
-        message: 'Reminders processed successfully' 
+      return NextResponse.json({
+        success: true,
+        message: 'Reminders processed successfully'
       });
     }
-    
-    return NextResponse.json({ 
-      error: 'Invalid action. Use "process" to trigger reminders.' 
+
+    return NextResponse.json({
+      error: 'Invalid action. Use "process" to trigger reminders.'
     }, { status: 400 });
-    
+
   } catch (error) {
     logger.error('Error in reminder API', { detail: error instanceof Error ? error.message : String(error) });
-    return NextResponse.json({ 
-      error: 'Internal server error' 
+    return NextResponse.json({
+      error: 'Internal server error'
     }, { status: 500 });
   }
 }
 
 // GET endpoint to check reminder status
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const authError = verifyCronAuth(request);
+  if (authError) return authError;
+
   try {
     const now = new Date();
     const currentHour = now.getHours();
     const currentMinute = now.getMinutes();
     const currentTime = currentHour * 60 + currentMinute;
-    
+
     const status = {
       currentTime: `${currentHour.toString().padStart(2, '0')}:${currentMinute.toString().padStart(2, '0')}`,
       nextReminders: {
@@ -283,12 +303,12 @@ export async function GET() {
       },
       systemStatus: 'Active'
     };
-    
+
     return NextResponse.json(status);
   } catch (error) {
     logger.error('Error getting reminder status', { detail: error instanceof Error ? error.message : String(error) });
-    return NextResponse.json({ 
-      error: 'Internal server error' 
+    return NextResponse.json({
+      error: 'Internal server error'
     }, { status: 500 });
   }
 } 

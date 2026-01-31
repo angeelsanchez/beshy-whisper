@@ -37,6 +37,7 @@ export default function SocialShareModal({
   const [error, setError] = useState<string | null>(null);
   const [objectives, setObjectives] = useState<Objective[]>([]);
   const [imageDataUrl, setImageDataUrl] = useState<string | null>(propImageDataUrl || null);
+  const [lastBlob, setLastBlob] = useState<Blob | null>(null);
   const [nativeShareSupport, setNativeShareSupport] = useState(false);
 
 
@@ -100,12 +101,11 @@ export default function SocialShareModal({
   };
 
   // Generate shareable image using server-side Puppeteer
-  const generateShareImage = useCallback(async (mode: 'normal' | 'bubble' | 'sticker' = 'normal'): Promise<string | null> => {
+  const generateShareImage = useCallback(async (mode: 'normal' | 'bubble' | 'sticker' = 'normal'): Promise<{ dataUrl: string; blob: Blob } | null> => {
     setIsGenerating(true);
     setError(null);
-    
+
     try {
-      // Prepare request payload
       const payload = {
         mensaje: entry.mensaje,
         objetivos: objectives,
@@ -116,31 +116,28 @@ export default function SocialShareModal({
         isDay
       };
 
-      // Call the API endpoint with timeout and error handling
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 45000); // 45 second timeout
-      
+      const timeoutId = setTimeout(() => controller.abort(), 45000);
+
       const response = await fetch('/api/generate-image', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
         signal: controller.signal,
       });
-      
+
       clearTimeout(timeoutId);
 
       if (!response.ok) {
         throw new Error(`Failed to generate image: ${response.status}`);
       }
 
-      // Convert response to blob and then to data URL
-      const imageBlob = await response.blob();
-      const imageDataUrl = await blobToDataURL(imageBlob);
-      
-      setImageDataUrl(imageDataUrl);
-      return imageDataUrl;
+      const blob = await response.blob();
+      const dataUrl = await blobToDataURL(blob);
+
+      setImageDataUrl(dataUrl);
+      setLastBlob(blob);
+      return { dataUrl, blob };
 
     } catch (err) {
       console.error('Error generating image:', err);
@@ -162,230 +159,105 @@ export default function SocialShareModal({
   };
 
 
-  // Handle Bubble Share - Genera imagen con burbuja de chat (fondo dinámico + transparente)
-  const handleBubbleShare = async () => {
-    setIsGenerating(true);
-    setError(null);
+  const shareOrDownload = async (blob: Blob, filename: string) => {
+    const file = new File([blob], filename, { type: 'image/png' });
 
+    if (nativeShareSupport) {
+      try {
+        await navigator.share({
+          title: 'Mi whisper BESHY',
+          text: `${entryText}\n\n#BESHY #Whisper`,
+          files: [file]
+        });
+        return;
+      } catch (shareError) {
+        if (shareError instanceof Error && shareError.name === 'AbortError') return;
+        console.warn('Native share failed, fallback to download:', shareError);
+      }
+    }
+
+    const url = globalThis.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    globalThis.URL.revokeObjectURL(url);
+  };
+
+  const handleBubbleShare = async () => {
+    setError(null);
     try {
-      // Generar imagen burbuja
-      const generatedImage = await generateShareImage('bubble');
-      if (!generatedImage) {
+      const result = await generateShareImage('bubble');
+      if (!result) {
         setError('No se pudo generar la imagen burbuja.');
         return;
       }
-
-      // Crear un blob de la imagen
-      const response = await fetch(generatedImage);
-      const blob = await response.blob();
-      const file = new File([blob], `beshy-whisper-bubble-${Date.now()}.png`, { 
-        type: 'image/png' 
-      });
-
-      // Intentar compartir de forma nativa si está disponible
-      if (nativeShareSupport) {
-        try {
-          await navigator.share({
-            title: 'Mi whisper BESHY',
-            text: `${entryText}\n\n#BESHY #Whisper`,
-            files: [file]
-          });
-          return;
-        } catch (shareError) {
-          if (shareError instanceof Error && shareError.name === 'AbortError') {
-            return; // Usuario canceló
-          }
-          console.warn('Native share failed, fallback to download:', shareError);
-        }
-      }
-
-      // Fallback: descargar imagen
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `beshy-whisper-bubble-${Date.now()}.png`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-
+      await shareOrDownload(result.blob, `beshy-whisper-bubble-${Date.now()}.png`);
     } catch (err) {
       console.error('Error in bubble share:', err);
       setError('Error al compartir como burbuja. Inténtalo de nuevo.');
-    } finally {
-      setIsGenerating(false);
     }
   };
 
-  // Handle Sticker Share - Genera imagen sin fondo (completamente transparente para pegar sobre cualquier imagen)
   const handleStickerShare = async () => {
-    setIsGenerating(true);
     setError(null);
-
     try {
-      // Generar imagen sticker
-      const generatedImage = await generateShareImage('sticker');
-      if (!generatedImage) {
+      const result = await generateShareImage('sticker');
+      if (!result) {
         setError('No se pudo generar la imagen sticker.');
         return;
       }
-
-      // Crear un blob de la imagen
-      const response = await fetch(generatedImage);
-      const blob = await response.blob();
-      const file = new File([blob], `beshy-whisper-sticker-${Date.now()}.png`, { 
-        type: 'image/png' 
-      });
-
-      // Intentar compartir de forma nativa si está disponible
-      if (nativeShareSupport) {
-        try {
-          await navigator.share({
-            title: 'Mi whisper BESHY',
-            text: `${entryText}\n\n#BESHY #Whisper`,
-            files: [file]
-          });
-          return;
-        } catch (shareError) {
-          if (shareError instanceof Error && shareError.name === 'AbortError') {
-            return; // Usuario canceló
-          }
-          console.warn('Native share failed, fallback to download:', shareError);
-        }
-      }
-
-      // Fallback: descargar imagen
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `beshy-whisper-sticker-${Date.now()}.png`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-
+      await shareOrDownload(result.blob, `beshy-whisper-sticker-${Date.now()}.png`);
     } catch (err) {
       console.error('Error in sticker share:', err);
       setError('Error al compartir como sticker. Inténtalo de nuevo.');
-    } finally {
-      setIsGenerating(false);
     }
   };
 
-  // Handle Story Share - Genera imagen formato Instagram Stories (fondo dinámico día/noche)
   const handleStoryShare = async () => {
-    setIsGenerating(true);
     setError(null);
-
     try {
-      // Generar imagen normal (story)
-      const generatedImage = await generateShareImage('normal');
-      if (!generatedImage) {
+      const result = await generateShareImage('normal');
+      if (!result) {
         setError('No se pudo generar la imagen para story.');
         return;
       }
-
-      // Crear un blob de la imagen
-      const response = await fetch(generatedImage);
-      const blob = await response.blob();
-      const file = new File([blob], `beshy-whisper-story-${Date.now()}.png`, { 
-        type: 'image/png' 
-      });
-
-      // Intentar compartir de forma nativa si está disponible
-      if (nativeShareSupport) {
-        try {
-          await navigator.share({
-            title: 'Mi whisper BESHY',
-            text: `${entryText}\n\n#BESHY #Whisper`,
-            files: [file]
-          });
-          return;
-        } catch (shareError) {
-          if (shareError instanceof Error && shareError.name === 'AbortError') {
-            return; // Usuario canceló
-          }
-          console.warn('Native share failed, fallback to download:', shareError);
-        }
-      }
-
-      // Fallback: descargar imagen
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `beshy-whisper-story-${Date.now()}.png`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-
+      await shareOrDownload(result.blob, `beshy-whisper-story-${Date.now()}.png`);
     } catch (err) {
       console.error('Error in story share:', err);
       setError('Error al compartir como story. Inténtalo de nuevo.');
-    } finally {
-      setIsGenerating(false);
     }
   };
 
-  // Share to social platforms
   const shareToSocial = async (platform: string) => {
-    let currentImageDataUrl = imageDataUrl;
-    
-    // Generate image if not available
-    if (!currentImageDataUrl) {
-      try {
-        const generatedImage = await generateShareImage('normal');
-        if (generatedImage) {
-          currentImageDataUrl = generatedImage;
-        } else {
-          setError('No se pudo generar la imagen. Inténtalo de nuevo.');
-          return;
-        }
-      } catch (genError) {
-        console.error('Error generating image for social share:', genError);
-        setError('Error al generar la imagen para compartir.');
-        return;
-      }
-    }
-
     const { isMobile } = getPlatformInfo();
-
-    // Prepare sharing content
     const shareText = `${entryText}\n\n#BESHY #Whisper`;
-    
+
     try {
       switch (platform) {
-        case 'whatsapp':
-          if (isMobile) {
-            // Mobile WhatsApp sharing
-            const whatsappUrl = `whatsapp://send?text=${encodeURIComponent(shareText)}`;
-            window.open(whatsappUrl, '_blank');
-          } else {
-            // Desktop WhatsApp Web
-            const whatsappWebUrl = `https://web.whatsapp.com/send?text=${encodeURIComponent(shareText)}`;
-            window.open(whatsappWebUrl, '_blank');
-          }
+        case 'whatsapp': {
+          const url = isMobile
+            ? `whatsapp://send?text=${encodeURIComponent(shareText)}`
+            : `https://web.whatsapp.com/send?text=${encodeURIComponent(shareText)}`;
+          globalThis.open(url, '_blank');
           break;
-
+        }
         case 'instagram':
-          // Instagram doesn't support direct URL sharing with images
-          // Copy text and show instruction
           await navigator.clipboard.writeText(shareText);
           alert('Texto copiado al portapapeles. Abre Instagram y pega el contenido en tu historia o post.');
           break;
-
-        case 'facebook':
-          const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}&quote=${encodeURIComponent(shareText)}`;
-          window.open(facebookUrl, '_blank', 'width=600,height=400');
+        case 'facebook': {
+          const fbUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(globalThis.location.href)}&quote=${encodeURIComponent(shareText)}`;
+          globalThis.open(fbUrl, '_blank', 'width=600,height=400');
           break;
-
-        case 'twitter':
-          const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(window.location.href)}`;
-          window.open(twitterUrl, '_blank', 'width=600,height=400');
+        }
+        case 'twitter': {
+          const twUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(globalThis.location.href)}`;
+          globalThis.open(twUrl, '_blank', 'width=600,height=400');
           break;
-
-        default:
-          console.warn('Unsupported platform:', platform);
+        }
       }
     } catch (err) {
       console.error(`Error sharing to ${platform}:`, err);
@@ -393,7 +265,6 @@ export default function SocialShareModal({
     }
   };
 
-  // Native sharing (PWA support)
   const handleNativeShare = async () => {
     if (!nativeShareSupport) {
       setError('Compartir nativo no está disponible en este dispositivo.');
@@ -401,38 +272,22 @@ export default function SocialShareModal({
     }
 
     try {
-      let currentImageDataUrl = imageDataUrl;
-      
-      // Generate image if not available
-      if (!currentImageDataUrl) {
-        try {
-          const generatedImage = await generateShareImage('normal');
-          if (generatedImage) {
-            currentImageDataUrl = generatedImage;
-          }
-        } catch (genError) {
-          console.error('Error generating image for native share:', genError);
-        }
+      let currentBlob = lastBlob;
+
+      if (!currentBlob) {
+        const result = await generateShareImage('normal');
+        if (result) currentBlob = result.blob;
       }
 
       const shareData: ShareData = {
         title: 'Mi entrada en BESHY Whisper',
         text: `${entryText}\n\n#BESHY #Whisper`,
-        url: window.location.href,
+        url: globalThis.location.href,
       };
 
-      // Add image file if available
-      if (currentImageDataUrl) {
-        try {
-          const response = await fetch(currentImageDataUrl);
-          const blob = await response.blob();
-          const file = new File([blob], `beshy-whisper-${Date.now()}.png`, { 
-            type: 'image/png' 
-          });
-          shareData.files = [file];
-        } catch (fileError) {
-          console.warn('Could not add image to native share:', fileError);
-        }
+      if (currentBlob) {
+        const file = new File([currentBlob], `beshy-whisper-${Date.now()}.png`, { type: 'image/png' });
+        shareData.files = [file];
       }
 
       await navigator.share(shareData);

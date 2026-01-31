@@ -5,8 +5,7 @@ import { useState, useEffect } from 'react';
 interface HabitFormData {
   name: string;
   description: string;
-  frequency: 'daily' | 'weekly';
-  targetDaysPerWeek: number;
+  targetDays: number[];
   color: string;
 }
 
@@ -18,8 +17,7 @@ interface HabitFormProps {
   initialData?: {
     name: string;
     description: string | null;
-    frequency: 'daily' | 'weekly';
-    target_days_per_week: number;
+    target_days: number[];
     color: string;
   };
   mode: 'create' | 'edit';
@@ -31,11 +29,14 @@ const PRESET_COLORS = [
   '#EF6C00', '#00838F', '#4E342E', '#37474F',
 ];
 
+const DAY_LABELS = ['D', 'L', 'M', 'X', 'J', 'V', 'S'] as const;
+const ALL_DAYS = [0, 1, 2, 3, 4, 5, 6];
+const WEEKDAYS = [1, 2, 3, 4, 5];
+
 export default function HabitForm({ isOpen, onClose, onSubmit, isDay, initialData, mode }: HabitFormProps) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [frequency, setFrequency] = useState<'daily' | 'weekly'>('daily');
-  const [targetDaysPerWeek, setTargetDaysPerWeek] = useState(7);
+  const [targetDays, setTargetDays] = useState<number[]>(ALL_DAYS);
   const [color, setColor] = useState('#4A2E1B');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -44,21 +45,44 @@ export default function HabitForm({ isOpen, onClose, onSubmit, isDay, initialDat
     if (isOpen && initialData) {
       setName(initialData.name);
       setDescription(initialData.description ?? '');
-      setFrequency(initialData.frequency);
-      setTargetDaysPerWeek(initialData.target_days_per_week);
+      setTargetDays(
+        Array.isArray(initialData.target_days) && initialData.target_days.length > 0
+          ? [...initialData.target_days].sort((a, b) => a - b)
+          : ALL_DAYS
+      );
       setColor(initialData.color);
       setError(null);
     } else if (isOpen) {
       setName('');
       setDescription('');
-      setFrequency('daily');
-      setTargetDaysPerWeek(7);
+      setTargetDays(ALL_DAYS);
       setColor('#4A2E1B');
       setError(null);
     }
   }, [isOpen, initialData]);
 
   if (!isOpen) return null;
+
+  const toggleDay = (day: number) => {
+    setTargetDays(prev => {
+      if (prev.includes(day)) {
+        if (prev.length <= 1) return prev;
+        return prev.filter(d => d !== day);
+      }
+      return [...prev, day].sort((a, b) => a - b);
+    });
+  };
+
+  const setPreset = (days: number[]) => {
+    setTargetDays([...days].sort((a, b) => a - b));
+  };
+
+  const arraysEqual = (a: number[], b: number[]): boolean => {
+    if (a.length !== b.length) return false;
+    const sortedA = [...a].sort((x, y) => x - y);
+    const sortedB = [...b].sort((x, y) => x - y);
+    return sortedA.every((v, i) => v === sortedB[i]);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,8 +103,7 @@ export default function HabitForm({ isOpen, onClose, onSubmit, isDay, initialDat
     const success = await onSubmit({
       name: trimmedName,
       description: description.trim() || '',
-      frequency,
-      targetDaysPerWeek,
+      targetDays,
       color,
     });
     setSubmitting(false);
@@ -160,60 +183,65 @@ export default function HabitForm({ isOpen, onClose, onSubmit, isDay, initialDat
           </div>
 
           <div>
-            <label className={`block text-sm font-medium mb-1 ${isDay ? 'text-[#4A2E1B]' : 'text-[#F5F0E1]'}`}>
-              Frecuencia
+            <label className={`block text-sm font-medium mb-2 ${isDay ? 'text-[#4A2E1B]' : 'text-[#F5F0E1]'}`}>
+              Dias
             </label>
-            <div className={`flex gap-2 p-1 rounded-lg ${isDay ? 'bg-[#4A2E1B]/5' : 'bg-[#F5F0E1]/5'}`}>
-              {(['daily', 'weekly'] as const).map(f => (
-                <button
-                  key={f}
-                  type="button"
-                  onClick={() => {
-                    setFrequency(f);
-                    if (f === 'weekly') setTargetDaysPerWeek(1);
-                    else if (targetDaysPerWeek < 2) setTargetDaysPerWeek(7);
-                  }}
-                  className={`flex-1 py-1.5 rounded-md text-sm font-medium transition-all ${
-                    frequency === f
-                      ? isDay
-                        ? 'bg-[#4A2E1B] text-[#F5F0E1]'
-                        : 'bg-[#F5F0E1] text-[#2D1E1A]'
-                      : isDay
-                        ? 'text-[#4A2E1B]'
-                        : 'text-[#F5F0E1]'
-                  }`}
-                >
-                  {f === 'daily' ? 'Diario' : 'Semanal'}
-                </button>
-              ))}
+            <div className="flex gap-1.5 mb-2">
+              {DAY_LABELS.map((label, dayIndex) => {
+                const isSelected = targetDays.includes(dayIndex);
+                return (
+                  <button
+                    key={dayIndex}
+                    type="button"
+                    onClick={() => toggleDay(dayIndex)}
+                    className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${
+                      isSelected
+                        ? isDay
+                          ? 'bg-[#4A2E1B] text-[#F5F0E1]'
+                          : 'bg-[#F5F0E1] text-[#2D1E1A]'
+                        : isDay
+                          ? 'bg-[#4A2E1B]/10 text-[#4A2E1B]/50'
+                          : 'bg-[#F5F0E1]/10 text-[#F5F0E1]/50'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setPreset(ALL_DAYS)}
+                className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                  arraysEqual(targetDays, ALL_DAYS)
+                    ? isDay
+                      ? 'bg-[#4A2E1B]/20 text-[#4A2E1B]'
+                      : 'bg-[#F5F0E1]/20 text-[#F5F0E1]'
+                    : isDay
+                      ? 'bg-[#4A2E1B]/5 text-[#4A2E1B]/60 hover:bg-[#4A2E1B]/10'
+                      : 'bg-[#F5F0E1]/5 text-[#F5F0E1]/60 hover:bg-[#F5F0E1]/10'
+                }`}
+              >
+                Todos
+              </button>
+              <button
+                type="button"
+                onClick={() => setPreset(WEEKDAYS)}
+                className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                  arraysEqual(targetDays, WEEKDAYS)
+                    ? isDay
+                      ? 'bg-[#4A2E1B]/20 text-[#4A2E1B]'
+                      : 'bg-[#F5F0E1]/20 text-[#F5F0E1]'
+                    : isDay
+                      ? 'bg-[#4A2E1B]/5 text-[#4A2E1B]/60 hover:bg-[#4A2E1B]/10'
+                      : 'bg-[#F5F0E1]/5 text-[#F5F0E1]/60 hover:bg-[#F5F0E1]/10'
+                }`}
+              >
+                L-V
+              </button>
             </div>
           </div>
-
-          {frequency === 'daily' && (
-            <div>
-              <label className={`block text-sm font-medium mb-1 ${isDay ? 'text-[#4A2E1B]' : 'text-[#F5F0E1]'}`}>
-                Dias por semana: {targetDaysPerWeek}
-              </label>
-              <input
-                type="range"
-                min={1}
-                max={7}
-                value={targetDaysPerWeek}
-                onChange={e => setTargetDaysPerWeek(Number(e.target.value))}
-                className="w-full accent-[#4A2E1B]"
-              />
-              <div className={`flex justify-between text-xs mt-1 ${isDay ? 'text-[#4A2E1B]/50' : 'text-[#F5F0E1]/50'}`}>
-                <span>1</span>
-                <span>7</span>
-              </div>
-            </div>
-          )}
-
-          {frequency === 'weekly' && (
-            <p className={`text-xs ${isDay ? 'text-[#4A2E1B]/60' : 'text-[#F5F0E1]/60'}`}>
-              Se espera completar 1 vez por semana
-            </p>
-          )}
 
           <div>
             <label className={`block text-sm font-medium mb-2 ${isDay ? 'text-[#4A2E1B]' : 'text-[#F5F0E1]'}`}>

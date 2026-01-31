@@ -3,19 +3,43 @@
 import { HabitStatData } from '@/hooks/useHabitStats';
 
 interface HabitCardProps {
-  habit: {
-    id: string;
-    name: string;
-    color: string;
-    frequency: 'daily' | 'weekly';
-    target_days_per_week: number;
+  readonly habit: {
+    readonly id: string;
+    readonly name: string;
+    readonly color: string;
+    readonly target_days: number[];
   };
-  isCompleted: boolean;
-  toggling: boolean;
-  stat?: HabitStatData;
-  isDay: boolean;
-  onToggle: () => void;
-  onEdit: () => void;
+  readonly isCompleted: boolean;
+  readonly toggling: boolean;
+  readonly stat?: HabitStatData;
+  readonly isDay: boolean;
+  readonly isDueToday?: boolean;
+  readonly onToggle: () => void;
+  readonly onEdit: () => void;
+}
+
+function getConsistencyStyle(
+  completionRate: number,
+  totalReps: number,
+  isDay: boolean,
+): { borderClass: string; opacityClass: string } {
+  if (totalReps === 0) return { borderClass: '', opacityClass: '' };
+
+  if (completionRate >= 80) {
+    return {
+      borderClass: isDay ? 'border-l-4 border-l-green-600/40' : 'border-l-4 border-l-green-400/40',
+      opacityClass: '',
+    };
+  }
+
+  if (completionRate < 50) {
+    return {
+      borderClass: isDay ? 'border-l-4 border-l-amber-500/40' : 'border-l-4 border-l-amber-400/40',
+      opacityClass: 'opacity-75',
+    };
+  }
+
+  return { borderClass: '', opacityClass: '' };
 }
 
 export default function HabitCard({
@@ -24,25 +48,30 @@ export default function HabitCard({
   toggling,
   stat,
   isDay,
+  isDueToday = true,
   onToggle,
   onEdit,
 }: HabitCardProps) {
   const completionRate = stat?.completionRateWeekly ?? 0;
   const currentStreak = stat?.currentStreak ?? 0;
+  const totalReps = stat?.totalRepetitions ?? 0;
   const milestone = stat?.milestone;
 
-  const getMilestoneIcon = () => {
+  const getMilestoneIcon = (): string | null => {
     if (milestone === '66_reps') return '★';
     if (milestone === '21_reps') return '◆';
     return null;
   };
 
   const milestoneIcon = getMilestoneIcon();
+  const { borderClass, opacityClass } = getConsistencyStyle(completionRate, totalReps, isDay);
 
   return (
     <div
       className={`flex items-center gap-3 p-3 rounded-xl transition-all duration-200 ${
         isDay ? 'bg-[#4A2E1B]/5' : 'bg-[#F5F0E1]/5'
+      } ${borderClass} ${opacityClass} ${
+        !isDueToday ? 'opacity-50' : ''
       } ${milestone === '66_reps' ? (isDay ? 'ring-1 ring-amber-500/40' : 'ring-1 ring-amber-400/30') : ''}`}
     >
       <button

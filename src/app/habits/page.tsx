@@ -26,7 +26,7 @@ export default function HabitsPage() {
   const router = useRouter();
   const { session, isLoading: authLoading } = useAuthSession();
   const { isDay } = useTheme();
-  const { habits, loading: habitsLoading, createHabit, updateHabit, deleteHabit, refetch: refetchHabits } = useHabits();
+  const { habits, loading: habitsLoading, createHabit, updateHabit, deleteHabit } = useHabits();
   const habitIds = useMemo(() => habits.map(h => h.id), [habits]);
   const { isCompleted, toggleLog, toggling, refetch: refetchLogs } = useHabitLogs(habitIds, getCurrentMonth());
   const { stats, refetch: refetchStats } = useHabitStats();
@@ -53,8 +53,8 @@ export default function HabitsPage() {
     refetchStats();
   }, [toggleLog, refetchStats, showToastMessage]);
 
-  const handleCreate = useCallback(async (data: { name: string; description: string; frequency: 'daily' | 'weekly'; targetDaysPerWeek: number; color: string }) => {
-    const habit = await createHabit(data);
+  const handleCreate = useCallback(async (data: { name: string; description: string; targetDays: number[]; color: string }) => {
+    const habit = await createHabit({ name: data.name, description: data.description, targetDays: data.targetDays, color: data.color });
     if (habit) {
       refetchStats();
       refetchLogs();
@@ -63,9 +63,14 @@ export default function HabitsPage() {
     return false;
   }, [createHabit, refetchStats, refetchLogs]);
 
-  const handleEdit = useCallback(async (data: { name: string; description: string; frequency: 'daily' | 'weekly'; targetDaysPerWeek: number; color: string }) => {
+  const handleEdit = useCallback(async (data: { name: string; description: string; targetDays: number[]; color: string }) => {
     if (!editingHabitId) return false;
-    const success = await updateHabit(editingHabitId, data);
+    const success = await updateHabit(editingHabitId, {
+      name: data.name,
+      description: data.description,
+      targetDays: data.targetDays,
+      color: data.color,
+    });
     if (success) {
       refetchStats();
       return true;

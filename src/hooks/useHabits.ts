@@ -3,13 +3,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuthSession } from '@/hooks/useAuthSession';
 
-interface Habit {
+export interface Habit {
   id: string;
   user_id: string;
   name: string;
   description: string | null;
   frequency: 'daily' | 'weekly';
   target_days_per_week: number;
+  target_days: number[];
   color: string;
   is_active: boolean;
   sort_order: number;
@@ -20,16 +21,14 @@ interface Habit {
 interface CreateHabitData {
   name: string;
   description?: string;
-  frequency?: 'daily' | 'weekly';
-  targetDaysPerWeek?: number;
+  targetDays?: number[];
   color?: string;
 }
 
 interface UpdateHabitData {
   name?: string;
   description?: string | null;
-  frequency?: 'daily' | 'weekly';
-  targetDaysPerWeek?: number;
+  targetDays?: number[];
   color?: string;
   isActive?: boolean;
   sortOrder?: number;

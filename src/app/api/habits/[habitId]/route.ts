@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { authOptions } from '../../auth/[...nextauth]/auth';
-import { updateHabitSchema } from '@/lib/schemas/habits';
+import { updateHabitSchema, derivedFromTargetDays } from '@/lib/schemas/habits';
 import { logger } from '@/lib/logger';
 
 interface RouteParams {
@@ -60,12 +60,17 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     }
 
     const updates: Record<string, unknown> = {};
-    const { name, description, frequency, targetDaysPerWeek, color, isActive, sortOrder } = parsed.data;
+    const { name, description, targetDays, color, isActive, sortOrder } = parsed.data;
 
     if (name !== undefined) updates.name = name;
     if (description !== undefined) updates.description = description;
-    if (frequency !== undefined) updates.frequency = frequency;
-    if (targetDaysPerWeek !== undefined) updates.target_days_per_week = targetDaysPerWeek;
+    if (targetDays !== undefined) {
+      const sorted = [...targetDays].sort((a, b) => a - b);
+      const derived = derivedFromTargetDays(sorted);
+      updates.target_days = sorted;
+      updates.frequency = derived.frequency;
+      updates.target_days_per_week = derived.targetDaysPerWeek;
+    }
     if (color !== undefined) updates.color = color;
     if (isActive !== undefined) updates.is_active = isActive;
     if (sortOrder !== undefined) updates.sort_order = sortOrder;

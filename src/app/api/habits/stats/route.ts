@@ -71,7 +71,7 @@ function calculateLongestStreak(dates: string[]): number {
   return longest;
 }
 
-function calculateCompletionRateWeekly(dates: string[]): number {
+function calculateCompletionRateWeekly(dates: string[], targetDaysCount: number): number {
   if (dates.length === 0) return 0;
 
   const today = new Date();
@@ -82,7 +82,8 @@ function calculateCompletionRateWeekly(dates: string[]): number {
   const weekEnd = toLocalDateStr(today);
 
   const completedThisWeek = dates.filter(d => d >= weekStart && d <= weekEnd).length;
-  return Math.round((completedThisWeek / 7) * 100);
+  const divisor = Math.max(targetDaysCount, 1);
+  return Math.min(Math.round((completedThisWeek / divisor) * 100), 100);
 }
 
 function calculateAvgGapDays(dates: string[]): number | null {
@@ -144,7 +145,7 @@ export async function GET(request: NextRequest) {
 
     let habitsQuery = supabaseAdmin
       .from('habits')
-      .select('id, name, target_days_per_week')
+      .select('id, name, target_days_per_week, target_days')
       .eq('user_id', session.user.id)
       .eq('is_active', true);
 
@@ -218,7 +219,10 @@ export async function GET(request: NextRequest) {
         totalRepetitions: milestoneDates.length,
         currentStreak: calculateCurrentStreak(milestoneDates),
         longestStreak: calculateLongestStreak(milestoneDates),
-        completionRateWeekly: calculateCompletionRateWeekly(milestoneDates),
+        completionRateWeekly: calculateCompletionRateWeekly(
+          milestoneDates,
+          Array.isArray(habit.target_days) ? habit.target_days.length : (habit.target_days_per_week ?? 7)
+        ),
         avgGapDays: calculateAvgGapDays(milestoneDates),
         lastCompletedAt: milestoneDates.length > 0 ? milestoneDates[milestoneDates.length - 1] : null,
         retomaCount: countRetomas(milestoneDates),

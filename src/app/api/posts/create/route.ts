@@ -4,10 +4,18 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { authOptions } from '../../auth/[...nextauth]/auth';
 import { createPostSchema } from '@/lib/schemas/posts';
 import { logger } from '@/lib/logger';
-import { sendPushToUserIfEnabled } from '@/lib/push-notify';
+import webpush from 'web-push';
+
+webpush.setVapidDetails(
+  process.env.VAPID_EMAIL || 'mailto:your@email.com',
+  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || '',
+  process.env.VAPID_PRIVATE_KEY || ''
+);
 
 async function notifyFollowers(userId: string, userName: string, entryId: string) {
   try {
+    if (!process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) return;
+
     const { data: followers, error: followError } = await supabaseAdmin
       .from('follows')
       .select('follower_id')
@@ -17,17 +25,41 @@ async function notifyFollowers(userId: string, userName: string, entryId: string
 
     const followerIds = followers.map(f => f.follower_id);
 
-    const sendPromises = followerIds.map(followerId =>
-      sendPushToUserIfEnabled(followerId, {
-        title: `✨ ${userName} ha publicado un nuevo whisper`,
-        body: 'Echa un vistazo a lo que ha compartido',
-        tag: 'follow-post-notification',
-        data: { url: `/feed?highlight=${entryId}`, type: 'follow_post' },
-      }, 'follow_post').catch(() => {})
-    );
+    const { data: tokens, error: tokenError } = await supabaseAdmin
+      .from('push_tokens')
+      .select('user_id, endpoint, p256dh, auth')
+      .in('user_id', followerIds);
+
+    if (tokenError || !tokens?.length) return;
+
+    const payload = JSON.stringify({
+      title: `✨ ${userName} ha publicado un nuevo whisper`,
+      body: 'Echa un vistazo a lo que ha compartido',
+      icon: '/favicon.ico',
+      badge: '/favicon.ico',
+      tag: 'follow-post-notification',
+      requireInteraction: false,
+      data: { url: `/feed?highlight=${entryId}`, type: 'follow_post' },
+    });
+
+    const sendPromises = tokens.map(async (token) => {
+      try {
+        await webpush.sendNotification(
+          { endpoint: token.endpoint, keys: { p256dh: token.p256dh, auth: token.auth } },
+          payload,
+          { TTL: 60 * 60, headers: { Urgency: 'normal' } }
+        );
+      } catch (err) {
+        const statusCode = (err as { statusCode?: number }).statusCode;
+        if (statusCode === 410 || statusCode === 404) {
+          await supabaseAdmin.from('push_tokens').delete().eq('user_id', token.user_id);
+          logger.info('Removed invalid push token', { userId: token.user_id });
+        }
+      }
+    });
 
     await Promise.allSettled(sendPromises);
-    logger.info('Follow post notifications sent', { userId, followerCount: followerIds.length });
+    logger.info('Follow post notifications sent', { userId, followerCount: tokens.length });
   } catch (error) {
     logger.error('Error notifying followers', { detail: error instanceof Error ? error.message : String(error) });
   }
@@ -46,7 +78,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid request data', details: parsed.error.flatten() }, { status: 400 });
     }
 
-    const { mensaje, franja, is_private, objectives, mood, habitSnapshots } = parsed.data;
+    const { mensaje, franja, is_private, objectives } = parsed.data;
     const userId = session.user.id;
     const userName = session.user.name || session.user.alias || 'Alguien';
 
@@ -86,7 +118,6 @@ export async function POST(request: NextRequest) {
         franja,
         guest: false,
         is_private,
-        mood: mood ?? null,
       })
       .select()
       .single();
@@ -117,33 +148,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    let savedSnapshots: unknown[] = [];
-    if (franja === 'NOCHE' && habitSnapshots.length > 0) {
-      const snapshotRows = habitSnapshots.map(s => ({
-        entry_id: entry.id,
-        habit_id: s.habitId,
-        habit_name: s.habitName,
-        habit_icon: s.habitIcon ?? null,
-        habit_color: s.habitColor,
-        tracking_type: s.trackingType,
-        target_value: s.targetValue ?? null,
-        unit: s.unit ?? null,
-        completed_value: s.completedValue ?? null,
-        is_completed: s.isCompleted,
-      }));
-
-      const { data: snapData, error: snapError } = await supabaseAdmin
-        .from('entry_habit_snapshots')
-        .insert(snapshotRows)
-        .select();
-
-      if (snapError) {
-        logger.error('Error saving habit snapshots', { detail: snapError.message });
-      } else {
-        savedSnapshots = snapData || [];
-      }
-    }
-
     if (!is_private) {
       notifyFollowers(userId, userName, entry.id).catch(err => {
         logger.error('Error in follow notification', { detail: err instanceof Error ? err.message : String(err) });
@@ -151,11 +155,7 @@ export async function POST(request: NextRequest) {
     }
 
     logger.info('Post created', { userId, entryId: entry.id, franja });
-    return NextResponse.json({
-      entry,
-      objectives: savedObjectives,
-      habitSnapshots: savedSnapshots,
-    }, { status: 201 });
+    return NextResponse.json({ entry, objectives: savedObjectives }, { status: 201 });
   } catch (error) {
     logger.error('Error in posts/create API', { detail: error instanceof Error ? error.message : String(error) });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

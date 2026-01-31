@@ -13,6 +13,9 @@ import LikeButton from '@/components/LikeButton';
 import ObjectivesList from '@/components/ObjectivesList';
 import ActivityCalendar from '@/components/ActivityCalendar';
 import PullToRefresh from '@/components/PullToRefresh';
+import FollowButton from '@/components/FollowButton';
+import FollowCounts from '@/components/FollowCounts';
+import FollowListModal from '@/components/FollowListModal';
 
 // Dynamically import NameUpdateForm to avoid hydration issues
 const NameUpdateForm = dynamic(() => import('@/components/NameUpdateForm'), {
@@ -167,7 +170,10 @@ export default function Profile() {
   const [showOptionsMenu, setShowOptionsMenu] = useState<string | null>(null);
   const [privacyLoading, setPrivacyLoading] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
-  
+  const [followListModal, setFollowListModal] = useState<{ isOpen: boolean; type: 'followers' | 'following' }>({
+    isOpen: false, type: 'followers',
+  });
+
   const router = useRouter();
   const [userId, setUserId] = useState<string | null>(session?.user?.id || null);
   
@@ -681,6 +687,21 @@ export default function Profile() {
           </div>
         )}
         
+        {/* Follow counts and button */}
+        {userProfile && userId && (
+          <div className="flex flex-col items-center gap-3 mb-4">
+            <FollowCounts
+              userId={userId}
+              isDay={isDay}
+              onFollowersClick={() => setFollowListModal({ isOpen: true, type: 'followers' })}
+              onFollowingClick={() => setFollowListModal({ isOpen: true, type: 'following' })}
+            />
+            {!isOwnProfile && (
+              <FollowButton targetUserId={userId} isDay={isDay} />
+            )}
+          </div>
+        )}
+
         {/* Navigation back */}
         <div className="flex items-center justify-between w-full mb-4">
           <Link href="/feed" className={`flex items-center gap-2 px-4 py-2.5 rounded-full transition-all duration-300 ${
@@ -1056,6 +1077,16 @@ export default function Profile() {
       )}
         </div>
       </PullToRefresh>
+
+      {userId && (
+        <FollowListModal
+          isOpen={followListModal.isOpen}
+          onClose={() => setFollowListModal(prev => ({ ...prev, isOpen: false }))}
+          userId={userId}
+          type={followListModal.type}
+          isDay={isDay}
+        />
+      )}
     </div>
   );
 } 

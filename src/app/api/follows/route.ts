@@ -3,35 +3,7 @@ import { getServerSession } from 'next-auth/next';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { authOptions } from '../auth/[...nextauth]/auth';
 import { toggleFollowSchema } from '@/lib/schemas/follows';
-import { sendPushToUserIfEnabled } from '@/lib/push-notify';
 import { logger } from '@/lib/logger';
-
-async function sendFollowNotification(followerId: string, targetUserId: string): Promise<void> {
-  const { data: followerData, error: followerError } = await supabaseAdmin
-    .from('users')
-    .select('bsy_id, name')
-    .eq('id', followerId)
-    .single();
-
-  if (followerError || !followerData) {
-    logger.error('Error fetching follower data for notification', { detail: followerError?.message || String(followerError) });
-    return;
-  }
-
-  const followerName = followerData.name || followerData.bsy_id || 'Alguien';
-
-  await sendPushToUserIfEnabled(targetUserId, {
-    title: '👤 Nuevo seguidor',
-    body: `${followerName} ha empezado a seguirte`,
-    tag: 'follow-notification',
-    data: {
-      url: '/profile',
-      type: 'follow',
-      follower_user_id: followerId,
-      follower_name: followerName,
-    },
-  }, 'follow');
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -101,11 +73,6 @@ export async function POST(request: NextRequest) {
     }
 
     logger.info('User followed', { userId, targetUserId });
-
-    sendFollowNotification(userId, targetUserId).catch(err => {
-      logger.error('Failed to send follow notification', { detail: err instanceof Error ? err.message : String(err) });
-    });
-
     return NextResponse.json({ action: 'followed', isFollowing: true });
   } catch (error) {
     logger.error('Error in follows API', { detail: error instanceof Error ? error.message : String(error) });

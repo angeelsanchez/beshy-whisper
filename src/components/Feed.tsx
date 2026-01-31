@@ -10,6 +10,7 @@ import { useTheme } from '@/context/ThemeContext';
 import { supabase } from '@/lib/supabase';
 import LikeButton from './LikeButton';
 import ObjectivesList from './ObjectivesList';
+import FeedFilter from './FeedFilter';
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
 
@@ -122,6 +123,9 @@ export default function Feed() {
     entry: null
   });
   const [privacyLoading, setPrivacyLoading] = useState<string | null>(null);
+  const [feedFilter, setFeedFilter] = useState<'all' | 'following'>('all');
+  const [followingEntries, setFollowingEntries] = useState<EntryWithUser[]>([]);
+  const [followingLoading, setFollowingLoading] = useState(false);
 
   // Check database connection with AbortController
   useEffect(() => {
@@ -160,10 +164,54 @@ export default function Feed() {
     };
   }, []);
 
+  // Fetch following feed when filter changes
+  useEffect(() => {
+    if (feedFilter !== 'following' || !isAuthenticated) return;
+
+    const controller = new AbortController();
+    setFollowingLoading(true);
+
+    const fetchFollowing = async () => {
+      try {
+        const res = await fetch('/api/feed?filter=following&limit=50', {
+          signal: controller.signal,
+        });
+        if (!res.ok) {
+          setFollowingLoading(false);
+          return;
+        }
+        const data = await res.json();
+        const mapped: EntryWithUser[] = (data.entries || []).map((e: Record<string, unknown>) => ({
+          ...e,
+          user_has_liked: false,
+        }));
+        setFollowingEntries(mapped);
+      } catch (err) {
+        if (err instanceof Error && err.name !== 'AbortError') {
+          setFollowingEntries([]);
+        }
+      } finally {
+        setFollowingLoading(false);
+      }
+    };
+
+    fetchFollowing();
+    return () => controller.abort();
+  }, [feedFilter, isAuthenticated]);
+
   // Update visible entries when entries or visibleCount changes
   useEffect(() => {
-    setVisibleEntries(allEntries.slice(0, visibleCount));
-  }, [allEntries, visibleCount]);
+    if (feedFilter === 'all') {
+      setVisibleEntries(allEntries.slice(0, visibleCount));
+    }
+  }, [allEntries, visibleCount, feedFilter]);
+
+  // Update visible entries for following filter
+  useEffect(() => {
+    if (feedFilter === 'following') {
+      setVisibleEntries(followingEntries.slice(0, visibleCount));
+    }
+  }, [followingEntries, visibleCount, feedFilter]);
 
   // Load more entries
   const loadMore = () => {
@@ -401,7 +449,14 @@ export default function Feed() {
       <h2 className="text-xl mb-6 text-center flex items-center justify-center gap-1">
         <span className="font-bold"><WhisperLogo className="h-6 w-auto" isDay={isDay} /></span> de la comunidad
       </h2>
-      
+
+      <FeedFilter
+        filter={feedFilter}
+        onFilterChange={(f) => { setFeedFilter(f); setVisibleCount(10); }}
+        isDay={isDay}
+        isAuthenticated={isAuthenticated}
+      />
+
       {/* Show error message if there's an error */}
       {error && (
         <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg">
@@ -416,10 +471,17 @@ export default function Feed() {
         </div>
       )}
       
-      {allEntries.length === 0 ? (
+      {followingLoading && feedFilter === 'following' ? (
+        <div className={`w-full text-center py-8 ${isDay ? 'text-[#4A2E1B]' : 'text-[#F5F0E1]'}`}>
+          <p className="opacity-80">Cargando whispers de quienes sigues...</p>
+        </div>
+      ) : (feedFilter === 'all' ? allEntries.length : followingEntries.length) === 0 ? (
         <div className={`${isDay ? 'bg-[#F5F0E1]' : 'bg-[#2D1E1A]'} p-4 text-center rounded-lg shadow-md transition-all duration-300`}>
           <p className="flex items-center justify-center gap-2">
-            No hay <WhisperLogo className="h-4 w-auto" isDay={isDay} /> aún. ¡Sé el primero en compartir!
+            {feedFilter === 'following'
+              ? 'No hay whispers de quienes sigues. Sigue a alguien para ver sus publicaciones aqui.'
+              : <>No hay <WhisperLogo className="h-4 w-auto" isDay={isDay} /> aun. ¡Se el primero en compartir!</>
+            }
           </p>
         </div>
       ) : (
@@ -660,7 +722,7 @@ export default function Feed() {
             </div>
           ))}
           
-          {visibleEntries.length < allEntries.length && (
+          {visibleEntries.length < (feedFilter === 'all' ? allEntries.length : followingEntries.length) && (
             <div className="flex justify-center mt-6">
               <button
                 onClick={loadMore}

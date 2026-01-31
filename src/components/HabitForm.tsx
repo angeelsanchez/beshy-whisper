@@ -5,7 +5,8 @@ import { useState, useEffect } from 'react';
 interface HabitFormData {
   name: string;
   description: string;
-  targetDays: number[];
+  frequency: 'daily' | 'weekly';
+  targetDaysPerWeek: number;
   color: string;
 }
 
@@ -13,12 +14,12 @@ interface HabitFormProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (data: HabitFormData) => Promise<boolean>;
-  onDelete?: () => Promise<boolean>;
   isDay: boolean;
   initialData?: {
     name: string;
     description: string | null;
-    target_days: number[];
+    frequency: 'daily' | 'weekly';
+    target_days_per_week: number;
     color: string;
   };
   mode: 'create' | 'edit';
@@ -30,66 +31,34 @@ const PRESET_COLORS = [
   '#EF6C00', '#00838F', '#4E342E', '#37474F',
 ];
 
-const DAY_LABELS = ['D', 'L', 'M', 'X', 'J', 'V', 'S'] as const;
-const ALL_DAYS = [0, 1, 2, 3, 4, 5, 6];
-const WEEKDAYS = [1, 2, 3, 4, 5];
-
-export default function HabitForm({ isOpen, onClose, onSubmit, onDelete, isDay, initialData, mode }: HabitFormProps) {
+export default function HabitForm({ isOpen, onClose, onSubmit, isDay, initialData, mode }: HabitFormProps) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [targetDays, setTargetDays] = useState<number[]>(ALL_DAYS);
+  const [frequency, setFrequency] = useState<'daily' | 'weekly'>('daily');
+  const [targetDaysPerWeek, setTargetDaysPerWeek] = useState(7);
   const [color, setColor] = useState('#4A2E1B');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
-  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (isOpen && initialData) {
       setName(initialData.name);
       setDescription(initialData.description ?? '');
-      setTargetDays(
-        Array.isArray(initialData.target_days) && initialData.target_days.length > 0
-          ? [...initialData.target_days].sort((a, b) => a - b)
-          : ALL_DAYS
-      );
+      setFrequency(initialData.frequency);
+      setTargetDaysPerWeek(initialData.target_days_per_week);
       setColor(initialData.color);
       setError(null);
-      setShowConfirmDelete(false);
-      setDeleting(false);
     } else if (isOpen) {
       setName('');
       setDescription('');
-      setTargetDays(ALL_DAYS);
+      setFrequency('daily');
+      setTargetDaysPerWeek(7);
       setColor('#4A2E1B');
       setError(null);
-      setShowConfirmDelete(false);
-      setDeleting(false);
     }
   }, [isOpen, initialData]);
 
   if (!isOpen) return null;
-
-  const toggleDay = (day: number) => {
-    setTargetDays(prev => {
-      if (prev.includes(day)) {
-        if (prev.length <= 1) return prev;
-        return prev.filter(d => d !== day);
-      }
-      return [...prev, day].sort((a, b) => a - b);
-    });
-  };
-
-  const setPreset = (days: number[]) => {
-    setTargetDays([...days].sort((a, b) => a - b));
-  };
-
-  const arraysEqual = (a: number[], b: number[]): boolean => {
-    if (a.length !== b.length) return false;
-    const sortedA = [...a].sort((x, y) => x - y);
-    const sortedB = [...b].sort((x, y) => x - y);
-    return sortedA.every((v, i) => v === sortedB[i]);
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -110,7 +79,8 @@ export default function HabitForm({ isOpen, onClose, onSubmit, onDelete, isDay, 
     const success = await onSubmit({
       name: trimmedName,
       description: description.trim() || '',
-      targetDays,
+      frequency,
+      targetDaysPerWeek,
       color,
     });
     setSubmitting(false);
@@ -118,36 +88,21 @@ export default function HabitForm({ isOpen, onClose, onSubmit, onDelete, isDay, 
     if (success) {
       onClose();
     } else {
-      setError('Error al guardar el hábito');
-    }
-  };
-
-  const handleDelete = async () => {
-    if (!onDelete) return;
-    if (!showConfirmDelete) {
-      setShowConfirmDelete(true);
-      return;
-    }
-    setDeleting(true);
-    const success = await onDelete();
-    setDeleting(false);
-    if (!success) {
-      setShowConfirmDelete(false);
-      setError('Error al eliminar el hábito');
+      setError('Error al guardar el habito');
     }
   };
 
   return (
     <>
-      <button type="button" aria-label="Cerrar" className="fixed inset-0 bg-black/50 z-40 cursor-default" onClick={onClose} />
-      <div className={`fixed inset-x-4 top-1/2 -translate-y-1/2 max-w-md mx-auto max-h-[85vh] rounded-xl shadow-xl z-50 flex flex-col ${
+      <div className="fixed inset-0 bg-black/50 z-40" onClick={onClose} />
+      <div className={`fixed inset-x-4 top-1/2 -translate-y-1/2 max-w-md mx-auto rounded-xl shadow-xl z-50 ${
         isDay ? 'bg-[#F5F0E1]' : 'bg-[#2D1E1A]'
       }`}>
-        <div className={`flex items-center justify-between p-4 border-b flex-shrink-0 ${
+        <div className={`flex items-center justify-between p-4 border-b ${
           isDay ? 'border-[#4A2E1B]/10' : 'border-[#F5F0E1]/10'
         }`}>
           <h3 className={`font-bold text-lg ${isDay ? 'text-[#4A2E1B]' : 'text-[#F5F0E1]'}`}>
-            {mode === 'create' ? 'Nuevo hábito' : 'Editar hábito'}
+            {mode === 'create' ? 'Nuevo habito' : 'Editar habito'}
           </h3>
           <button
             onClick={onClose}
@@ -162,7 +117,7 @@ export default function HabitForm({ isOpen, onClose, onSubmit, onDelete, isDay, 
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-4 space-y-4 overflow-y-auto flex-1 min-h-0">
+        <form onSubmit={handleSubmit} className="p-4 space-y-4">
           {error && (
             <p className="text-sm text-red-500 font-medium">{error}</p>
           )}
@@ -188,14 +143,14 @@ export default function HabitForm({ isOpen, onClose, onSubmit, onDelete, isDay, 
 
           <div>
             <label className={`block text-sm font-medium mb-1 ${isDay ? 'text-[#4A2E1B]' : 'text-[#F5F0E1]'}`}>
-              Descripción
+              Descripcion
             </label>
             <input
               type="text"
               value={description}
               onChange={e => setDescription(e.target.value)}
               maxLength={500}
-              placeholder="Descripción opcional"
+              placeholder="Descripcion opcional"
               className={`w-full px-3 py-2 rounded-lg border text-sm ${
                 isDay
                   ? 'bg-white/60 border-[#4A2E1B]/20 text-[#4A2E1B] placeholder:text-[#4A2E1B]/40'
@@ -205,63 +160,46 @@ export default function HabitForm({ isOpen, onClose, onSubmit, onDelete, isDay, 
           </div>
 
           <div>
-            <label className={`block text-sm font-medium mb-2 ${isDay ? 'text-[#4A2E1B]' : 'text-[#F5F0E1]'}`}>
-              Días
+            <label className={`block text-sm font-medium mb-1 ${isDay ? 'text-[#4A2E1B]' : 'text-[#F5F0E1]'}`}>
+              Frecuencia
             </label>
-            <div className="flex gap-1.5 mb-2">
-              {DAY_LABELS.map((label, dayIndex) => {
-                const isSelected = targetDays.includes(dayIndex);
-                return (
-                  <button
-                    key={dayIndex}
-                    type="button"
-                    onClick={() => toggleDay(dayIndex)}
-                    className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${
-                      isSelected
-                        ? isDay
-                          ? 'bg-[#4A2E1B] text-[#F5F0E1]'
-                          : 'bg-[#F5F0E1] text-[#2D1E1A]'
-                        : isDay
-                          ? 'bg-[#4A2E1B]/10 text-[#4A2E1B]/50'
-                          : 'bg-[#F5F0E1]/10 text-[#F5F0E1]/50'
-                    }`}
-                  >
-                    {label}
-                  </button>
-                );
-              })}
+            <div className={`flex gap-2 p-1 rounded-lg ${isDay ? 'bg-[#4A2E1B]/5' : 'bg-[#F5F0E1]/5'}`}>
+              {(['daily', 'weekly'] as const).map(f => (
+                <button
+                  key={f}
+                  type="button"
+                  onClick={() => setFrequency(f)}
+                  className={`flex-1 py-1.5 rounded-md text-sm font-medium transition-all ${
+                    frequency === f
+                      ? isDay
+                        ? 'bg-[#4A2E1B] text-[#F5F0E1]'
+                        : 'bg-[#F5F0E1] text-[#2D1E1A]'
+                      : isDay
+                        ? 'text-[#4A2E1B]'
+                        : 'text-[#F5F0E1]'
+                  }`}
+                >
+                  {f === 'daily' ? 'Diario' : 'Semanal'}
+                </button>
+              ))}
             </div>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setPreset(ALL_DAYS)}
-                className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
-                  arraysEqual(targetDays, ALL_DAYS)
-                    ? isDay
-                      ? 'bg-[#4A2E1B]/20 text-[#4A2E1B]'
-                      : 'bg-[#F5F0E1]/20 text-[#F5F0E1]'
-                    : isDay
-                      ? 'bg-[#4A2E1B]/5 text-[#4A2E1B]/60 hover:bg-[#4A2E1B]/10'
-                      : 'bg-[#F5F0E1]/5 text-[#F5F0E1]/60 hover:bg-[#F5F0E1]/10'
-                }`}
-              >
-                Todos
-              </button>
-              <button
-                type="button"
-                onClick={() => setPreset(WEEKDAYS)}
-                className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
-                  arraysEqual(targetDays, WEEKDAYS)
-                    ? isDay
-                      ? 'bg-[#4A2E1B]/20 text-[#4A2E1B]'
-                      : 'bg-[#F5F0E1]/20 text-[#F5F0E1]'
-                    : isDay
-                      ? 'bg-[#4A2E1B]/5 text-[#4A2E1B]/60 hover:bg-[#4A2E1B]/10'
-                      : 'bg-[#F5F0E1]/5 text-[#F5F0E1]/60 hover:bg-[#F5F0E1]/10'
-                }`}
-              >
-                L-V
-              </button>
+          </div>
+
+          <div>
+            <label className={`block text-sm font-medium mb-1 ${isDay ? 'text-[#4A2E1B]' : 'text-[#F5F0E1]'}`}>
+              Dias por semana: {targetDaysPerWeek}
+            </label>
+            <input
+              type="range"
+              min={1}
+              max={7}
+              value={targetDaysPerWeek}
+              onChange={e => setTargetDaysPerWeek(Number(e.target.value))}
+              className="w-full accent-[#4A2E1B]"
+            />
+            <div className={`flex justify-between text-xs mt-1 ${isDay ? 'text-[#4A2E1B]/50' : 'text-[#F5F0E1]/50'}`}>
+              <span>1</span>
+              <span>7</span>
             </div>
           </div>
 
@@ -302,47 +240,8 @@ export default function HabitForm({ isOpen, onClose, onSubmit, onDelete, isDay, 
                 : 'bg-[#F5F0E1] text-[#2D1E1A]'
             }`}
           >
-            {submitting ? 'Guardando...' : mode === 'create' ? 'Crear hábito' : 'Guardar cambios'}
+            {submitting ? 'Guardando...' : mode === 'create' ? 'Crear habito' : 'Guardar cambios'}
           </button>
-
-          {mode === 'edit' && onDelete && (
-            <div className={`pt-3 mt-3 border-t ${isDay ? 'border-[#4A2E1B]/10' : 'border-[#F5F0E1]/10'}`}>
-              {showConfirmDelete ? (
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmDelete(false)}
-                    disabled={deleting}
-                    className={`flex-1 py-2 rounded-lg text-sm font-medium ${
-                      isDay
-                        ? 'bg-[#4A2E1B]/10 text-[#4A2E1B]'
-                        : 'bg-[#F5F0E1]/10 text-[#F5F0E1]'
-                    }`}
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleDelete}
-                    disabled={deleting}
-                    className={`flex-1 py-2 rounded-lg text-sm font-medium bg-red-500 text-white ${
-                      deleting ? 'opacity-50 cursor-not-allowed' : ''
-                    }`}
-                  >
-                    {deleting ? 'Eliminando...' : 'Confirmar'}
-                  </button>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={handleDelete}
-                  className="w-full py-2 rounded-lg text-sm font-medium text-red-500 bg-red-500/10 hover:bg-red-500/20 transition-colors"
-                >
-                  Eliminar hábito
-                </button>
-              )}
-            </div>
-          )}
         </form>
       </div>
     </>

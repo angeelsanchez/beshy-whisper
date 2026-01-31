@@ -2,29 +2,15 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useAuthSession } from '@/hooks/useAuthSession';
-import type { TrackingType } from '@/lib/habit-templates';
 
-export interface Habit {
+interface Habit {
   id: string;
   user_id: string;
   name: string;
   description: string | null;
   frequency: 'daily' | 'weekly';
-  frequency_mode: 'specific_days' | 'weekly_count';
   target_days_per_week: number;
-  target_days: number[];
-  weekly_target: number | null;
   color: string;
-  tracking_type: TrackingType;
-  target_value: number | null;
-  unit: string | null;
-  icon: string | null;
-  category: 'health' | 'mind' | 'productivity' | 'wellness' | 'social' | 'creativity' | null;
-  reminder_time: string | null;
-  has_progression: boolean;
-  current_level: number | null;
-  level_started_at: string | null;
-  is_shareable: boolean;
   is_active: boolean;
   sort_order: number;
   created_at: string;
@@ -34,31 +20,17 @@ export interface Habit {
 interface CreateHabitData {
   name: string;
   description?: string;
-  frequencyMode?: 'specific_days' | 'weekly_count';
-  targetDays?: number[];
-  weeklyTarget?: number;
+  frequency?: 'daily' | 'weekly';
+  targetDaysPerWeek?: number;
   color?: string;
-  trackingType?: TrackingType;
-  targetValue?: number;
-  unit?: string;
-  icon?: string;
-  category?: 'health' | 'mind' | 'productivity' | 'wellness' | 'social' | 'creativity';
-  reminderTime?: string;
 }
 
 interface UpdateHabitData {
   name?: string;
   description?: string | null;
-  frequencyMode?: 'specific_days' | 'weekly_count';
-  targetDays?: number[];
-  weeklyTarget?: number | null;
+  frequency?: 'daily' | 'weekly';
+  targetDaysPerWeek?: number;
   color?: string;
-  trackingType?: TrackingType;
-  targetValue?: number | null;
-  unit?: string | null;
-  icon?: string | null;
-  category?: 'health' | 'mind' | 'productivity' | 'wellness' | 'social' | 'creativity' | null;
-  reminderTime?: string | null;
   isActive?: boolean;
   sortOrder?: number;
 }
@@ -78,7 +50,7 @@ export function useHabits() {
     try {
       const res = await fetch('/api/habits');
       if (!res.ok) {
-        setError('Error al cargar hábitos');
+        setError('Error al cargar habitos');
         setLoading(false);
         return;
       }
@@ -87,7 +59,7 @@ export function useHabits() {
       setHabits(data.habits);
       setError(null);
     } catch {
-      setError('Error de conexión');
+      setError('Error de conexion');
     } finally {
       setLoading(false);
     }
@@ -95,19 +67,6 @@ export function useHabits() {
 
   useEffect(() => {
     fetchHabits();
-  }, [fetchHabits]);
-
-  useEffect(() => {
-    function handleRefresh(): void {
-      fetchHabits();
-    }
-
-    window.addEventListener('focus', handleRefresh);
-    window.addEventListener('habits-changed', handleRefresh);
-    return () => {
-      window.removeEventListener('focus', handleRefresh);
-      window.removeEventListener('habits-changed', handleRefresh);
-    };
   }, [fetchHabits]);
 
   const createHabit = useCallback(async (data: CreateHabitData): Promise<Habit | null> => {
@@ -122,17 +81,16 @@ export function useHabits() {
 
       if (!res.ok) {
         const errData = await res.json();
-        setError(errData.error || 'Error al crear hábito');
+        setError(errData.error || 'Error al crear habito');
         return null;
       }
 
       const result = await res.json();
       setHabits(prev => [...prev, result.habit]);
       setError(null);
-      window.dispatchEvent(new Event('habits-changed'));
       return result.habit;
     } catch {
-      setError('Error de conexión');
+      setError('Error de conexion');
       return null;
     }
   }, [session?.user?.id]);
@@ -149,17 +107,16 @@ export function useHabits() {
 
       if (!res.ok) {
         const errData = await res.json();
-        setError(errData.error || 'Error al actualizar hábito');
+        setError(errData.error || 'Error al actualizar habito');
         return false;
       }
 
       const result = await res.json();
       setHabits(prev => prev.map(h => h.id === habitId ? result.habit : h));
       setError(null);
-      window.dispatchEvent(new Event('habits-changed'));
       return true;
     } catch {
-      setError('Error de conexión');
+      setError('Error de conexion');
       return false;
     }
   }, [session?.user?.id]);
@@ -175,16 +132,15 @@ export function useHabits() {
 
       if (!res.ok) {
         setHabits(previousHabits);
-        setError('Error al eliminar hábito');
+        setError('Error al eliminar habito');
         return false;
       }
 
       setError(null);
-      window.dispatchEvent(new Event('habits-changed'));
       return true;
     } catch {
       setHabits(previousHabits);
-      setError('Error de conexión');
+      setError('Error de conexion');
       return false;
     }
   }, [session?.user?.id, habits]);

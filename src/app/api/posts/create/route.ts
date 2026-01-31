@@ -52,7 +52,7 @@ async function notifyFollowers(userId: string, userName: string, entryId: string
       } catch (err) {
         const statusCode = (err as { statusCode?: number }).statusCode;
         if (statusCode === 410 || statusCode === 404) {
-          await supabaseAdmin.from('push_tokens').delete().eq('user_id', token.user_id);
+          await supabaseAdmin.from('push_tokens').delete().eq('endpoint', token.endpoint);
           logger.info('Removed invalid push token', { userId: token.user_id });
         }
       }

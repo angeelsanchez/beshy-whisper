@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { authOptions } from '../auth/[...nextauth]/auth';
-import { createHabitSchema, derivedFromTargetDays } from '@/lib/schemas/habits';
+import { createHabitSchema } from '@/lib/schemas/habits';
 import { logger } from '@/lib/logger';
 
 const MAX_HABITS_PER_USER = 20;
@@ -68,9 +68,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { name, description, targetDays, color, trackingType, targetValue, unit, icon, category, reminderTime, frequencyMode, weeklyTarget } = parsed.data;
-    const sorted = [...targetDays].sort((a, b) => a - b);
-    const { frequency, targetDaysPerWeek } = derivedFromTargetDays(sorted);
+    const { name, description, frequency, targetDaysPerWeek, color } = parsed.data;
 
     const { data: habit, error: insertError } = await supabaseAdmin
       .from('habits')
@@ -79,17 +77,8 @@ export async function POST(request: NextRequest) {
         name,
         description: description ?? null,
         frequency,
-        target_days_per_week: frequencyMode === 'weekly_count' ? (weeklyTarget ?? targetDaysPerWeek) : targetDaysPerWeek,
-        target_days: sorted,
+        target_days_per_week: targetDaysPerWeek,
         color,
-        tracking_type: trackingType,
-        target_value: trackingType === 'quantity' || trackingType === 'timer' ? targetValue : null,
-        unit: trackingType === 'quantity' || trackingType === 'timer' ? unit : null,
-        icon: icon ?? null,
-        category: category ?? null,
-        reminder_time: reminderTime ?? null,
-        frequency_mode: frequencyMode,
-        weekly_target: frequencyMode === 'weekly_count' ? weeklyTarget : null,
       })
       .select()
       .single();

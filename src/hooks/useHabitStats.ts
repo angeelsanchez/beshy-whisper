@@ -6,18 +6,7 @@ import { useAuthSession } from '@/hooks/useAuthSession';
 export interface HabitStatData {
   habitId: string;
   habitName: string;
-  trackingType: 'binary' | 'quantity' | 'timer';
-  targetValue: number | null;
-  unit: string | null;
-  frequencyMode: 'specific_days' | 'weekly_count';
-  weeklyTarget: number | null;
-  hasProgression: boolean;
-  currentLevel: number | null;
-  maxLevel: number | null;
-  shouldSuggestAdvance: boolean;
   totalRepetitions: number;
-  totalValue: number | null;
-  avgDailyValue: number | null;
   currentStreak: number;
   longestStreak: number;
   completionRateWeekly: number;
@@ -25,7 +14,7 @@ export interface HabitStatData {
   lastCompletedAt: string | null;
   retomaCount: number;
   milestone: '21_reps' | '66_reps' | null;
-  completionsByDate: Record<string, boolean | number>;
+  completionsByDate: Record<string, boolean>;
 }
 
 export function useHabitStats(habitId?: string) {
@@ -60,19 +49,6 @@ export function useHabitStats(habitId?: string) {
 
   useEffect(() => {
     fetchStats();
-  }, [fetchStats]);
-
-  useEffect(() => {
-    function handleRefresh(): void {
-      fetchStats();
-    }
-
-    window.addEventListener('focus', handleRefresh);
-    window.addEventListener('habits-changed', handleRefresh);
-    return () => {
-      window.removeEventListener('focus', handleRefresh);
-      window.removeEventListener('habits-changed', handleRefresh);
-    };
   }, [fetchStats]);
 
   const getStatForHabit = useCallback((id: string): HabitStatData | undefined => {

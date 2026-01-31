@@ -21,24 +21,28 @@ interface HabitStats {
   completionsByDate: Record<string, boolean>;
 }
 
+function toLocalDateStr(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function daysDiff(a: string, b: string): number {
+  const da = new Date(a + 'T00:00:00Z');
+  const db = new Date(b + 'T00:00:00Z');
+  return Math.round((da.getTime() - db.getTime()) / (1000 * 60 * 60 * 24));
+}
+
 function calculateCurrentStreak(dates: string[]): number {
   if (dates.length === 0) return 0;
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
+  const todayStr = toLocalDateStr(new Date());
   const sortedDesc = [...dates].sort((a, b) => b.localeCompare(a));
-  const lastDate = new Date(sortedDesc[0]);
-  lastDate.setHours(0, 0, 0, 0);
 
-  const diffFromToday = Math.floor((today.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
+  const diffFromToday = daysDiff(todayStr, sortedDesc[0]);
   if (diffFromToday > 1) return 0;
 
   let streak = 1;
   for (let i = 1; i < sortedDesc.length; i++) {
-    const current = new Date(sortedDesc[i - 1]);
-    const previous = new Date(sortedDesc[i]);
-    const diff = Math.floor((current.getTime() - previous.getTime()) / (1000 * 60 * 60 * 24));
+    const diff = daysDiff(sortedDesc[i - 1], sortedDesc[i]);
     if (diff === 1) {
       streak++;
     } else {
@@ -56,9 +60,7 @@ function calculateLongestStreak(dates: string[]): number {
   let current = 1;
 
   for (let i = 1; i < sorted.length; i++) {
-    const prev = new Date(sorted[i - 1]);
-    const curr = new Date(sorted[i]);
-    const diff = Math.floor((curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24));
+    const diff = daysDiff(sorted[i], sorted[i - 1]);
     if (diff === 1) {
       current++;
       if (current > longest) longest = current;
@@ -73,13 +75,11 @@ function calculateCompletionRateWeekly(dates: string[]): number {
   if (dates.length === 0) return 0;
 
   const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
   const sevenDaysAgo = new Date(today);
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
 
-  const weekStart = `${sevenDaysAgo.getFullYear()}-${String(sevenDaysAgo.getMonth() + 1).padStart(2, '0')}-${String(sevenDaysAgo.getDate()).padStart(2, '0')}`;
-  const weekEnd = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  const weekStart = toLocalDateStr(sevenDaysAgo);
+  const weekEnd = toLocalDateStr(today);
 
   const completedThisWeek = dates.filter(d => d >= weekStart && d <= weekEnd).length;
   return Math.round((completedThisWeek / 7) * 100);
@@ -92,9 +92,7 @@ function calculateAvgGapDays(dates: string[]): number | null {
   let totalGap = 0;
 
   for (let i = 1; i < sorted.length; i++) {
-    const prev = new Date(sorted[i - 1]);
-    const curr = new Date(sorted[i]);
-    totalGap += Math.floor((curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24));
+    totalGap += daysDiff(sorted[i], sorted[i - 1]);
   }
 
   return Math.round((totalGap / (sorted.length - 1)) * 10) / 10;
@@ -107,10 +105,8 @@ function countRetomas(dates: string[]): number {
   let retomas = 0;
 
   for (let i = 1; i < sorted.length; i++) {
-    const prev = new Date(sorted[i - 1]);
-    const curr = new Date(sorted[i]);
-    const diffDays = Math.floor((curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24));
-    if (diffDays > RETOMA_THRESHOLD_DAYS) {
+    const gap = daysDiff(sorted[i], sorted[i - 1]);
+    if (gap > RETOMA_THRESHOLD_DAYS) {
       retomas++;
     }
   }

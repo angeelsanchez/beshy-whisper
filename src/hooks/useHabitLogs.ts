@@ -17,6 +17,7 @@ export function useHabitLogs(habitIds: string[], month?: string) {
   const { session } = useAuthSession();
   const [completedMap, setCompletedMap] = useState<Map<string, Set<string>>>(new Map());
   const [loading, setLoading] = useState(true);
+  const habitIdsKey = habitIds.join(',');
   const [toggling, setToggling] = useState(false);
 
   const fetchLogs = useCallback(async () => {
@@ -54,7 +55,8 @@ export function useHabitLogs(habitIds: string[], month?: string) {
     } finally {
       setLoading(false);
     }
-  }, [session?.user?.id, habitIds.join(','), month]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.user?.id, habitIdsKey, month]);
 
   useEffect(() => {
     fetchLogs();

@@ -5,6 +5,14 @@ import { signIn } from 'next-auth/react';
 import { GoogleReCaptchaProvider, useGoogleReCaptcha } from 'react-google-recaptcha-v3';
 import { useTheme } from '@/context/ThemeContext';
 
+const AUTH_ERROR_MESSAGES: Record<string, string> = {
+  CredentialsSignin: 'Credenciales incorrectas',
+  SessionRequired: 'Sesión requerida',
+  OAuthSignin: 'Error al iniciar sesión con Google',
+  OAuthCallback: 'Error al iniciar sesión con Google',
+  OAuthAccountNotLinked: 'Esta cuenta ya existe con otro método de inicio de sesión',
+};
+
 function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -12,58 +20,89 @@ function LoginForm() {
   const [isRegistering, setIsRegistering] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const [cooldownEnd, setCooldownEnd] = useState<number | null>(null);
   const { executeRecaptcha } = useGoogleReCaptcha();
   const { isDay, colors } = useTheme();
 
+  useEffect(() => {
+    if (!cooldownEnd) return;
+    const interval = setInterval(() => {
+      const remaining = Math.ceil((cooldownEnd - Date.now()) / 1000);
+      if (remaining <= 0) {
+        setCooldownEnd(null);
+        setError('');
+      } else {
+        const minutes = Math.floor(remaining / 60);
+        const seconds = remaining % 60;
+        setError(`Demasiados intentos. Espera ${minutes}:${seconds.toString().padStart(2, '0')}`);
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [cooldownEnd]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
+    if (cooldownEnd) return;
+
     if (!executeRecaptcha) {
       setError('reCAPTCHA no disponible');
       return;
     }
-    
+
     try {
       const token = await executeRecaptcha('login_register');
-      
+
       if (isRegistering) {
-        // Validate name if registering
         const displayName = name.trim();
         if (displayName && displayName.length > 50) {
           setError('El nombre no puede exceder los 50 caracteres');
           return;
         }
-        
-        // Register logic
+
         const res = await fetch('/api/auth/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password, token, name: displayName }),
         });
-        
-        const data = await res.json();
-        
+
+        const data: { message?: string; bsy_id?: string } = await res.json();
+
         if (!res.ok) {
           throw new Error(data.message || 'Error al registrarse');
         }
-        
+
         setMessage(`Registro exitoso. Tu identificador es ${data.bsy_id}. Por favor, inicia sesión.`);
         setEmail('');
         setPassword('');
         setName('');
-        setIsRegistering(false); // Switch to login tab
+        setIsRegistering(false);
       } else {
-        // Login logic
+        const lockoutRes = await fetch('/api/auth/check-lockout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email }),
+        });
+
+        if (lockoutRes.ok) {
+          const lockoutData: { locked: boolean; remainingSeconds: number } = await lockoutRes.json();
+          if (lockoutData.locked) {
+            setCooldownEnd(Date.now() + lockoutData.remainingSeconds * 1000);
+            return;
+          }
+        }
+
         const result = await signIn('credentials', {
           redirect: false,
           email,
           password,
         });
-        
+
         if (result?.error) {
-          throw new Error(result.error);
+          const friendlyMessage = AUTH_ERROR_MESSAGES[result.error] ?? 'Ha ocurrido un error al iniciar sesión';
+          throw new Error(friendlyMessage);
         }
-        
+
         window.location.href = '/';
       }
     } catch (err: unknown) {
@@ -230,16 +269,21 @@ function LoginForm() {
           
           <button
             type="submit"
-            className="w-full py-3 px-4 font-medium transition-all duration-300 hover:shadow-md"
-            style={{ 
-              backgroundColor: colors.primary, 
-              color: colors.secondary, 
+            disabled={cooldownEnd !== null}
+            className={`w-full py-3 px-4 font-medium transition-all duration-300 ${
+              cooldownEnd !== null ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-md'
+            }`}
+            style={{
+              backgroundColor: colors.primary,
+              color: colors.secondary,
               borderRadius: '6px',
               transform: 'translateY(0)',
             }}
             onMouseOver={(e) => {
-              e.currentTarget.style.backgroundColor = colors.buttonHover;
-              e.currentTarget.style.transform = 'translateY(-1px)';
+              if (cooldownEnd === null) {
+                e.currentTarget.style.backgroundColor = colors.buttonHover;
+                e.currentTarget.style.transform = 'translateY(-1px)';
+              }
             }}
             onMouseOut={(e) => {
               e.currentTarget.style.backgroundColor = colors.primary;

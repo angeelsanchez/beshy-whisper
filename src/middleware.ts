@@ -9,6 +9,8 @@ const RATE_LIMITS: Record<string, { max: number; windowMs: number }> = {
   '/api/posts': { max: 20, windowMs: 60_000 },
   '/api/notifications': { max: 30, windowMs: 60_000 },
   '/api/webhooks': { max: 10, windowMs: 60_000 },
+  '/api/follows': { max: 20, windowMs: 60_000 },
+  '/api/feed': { max: 30, windowMs: 60_000 },
 };
 
 const DEFAULT_LIMIT = { max: 60, windowMs: 60_000 };

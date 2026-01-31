@@ -6,22 +6,9 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { usePostContext, EntryWithUser } from '@/context/PostContext';
 
-// Interfaz para los objetivos
 interface Objective {
-  id: string; // ID temporal para React
-  text: string;
-}
-
-// Interfaz para la entrada de la base de datos
-interface EntryData {
   id: string;
-  user_id: string;
-  nombre: string;
-  mensaje: string;
-  fecha: string;
-  ip: string;
-  franja: 'DIA' | 'NOCHE';
-  guest: boolean;
+  text: string;
 }
 
 // Custom hook for time of day
@@ -247,13 +234,9 @@ export default function WhisperForm() {
         // Continue with default IP
       }
       
-      let newEntry: EntryData | undefined;
-      
       if (session?.user.id) {
-        // Logged in user
         const currentDate = new Date().toISOString();
-        
-        // Create local entry to display immediately for optimistic UI update
+
         const localEntry: EntryWithUser = {
           id: `temp-${Date.now()}`,
           user_id: session.user.id,
@@ -270,85 +253,31 @@ export default function WhisperForm() {
           has_objectives: franja === 'DIA',
           is_private: isPrivate
         };
-        
-        // Add to local feed immediately
+
         addLocalPost(localEntry);
-        
-        // Now save to Supabase
-        const { data, error: saveError } = await supabase.from('entries').insert({
-          user_id: session.user.id,
-          nombre: session.user.name || '',
-          mensaje: message,
-          fecha: currentDate,
-          ip,
-          franja,
-          guest: false,
-          is_private: isPrivate
-        }).select();
-        
-        if (saveError) {
-          throw new Error(saveError.message);
+
+        const objectiveTexts = objectives
+          .map(obj => obj.text.trim())
+          .filter(t => t.length > 0);
+
+        const res = await fetch('/api/posts/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            mensaje: message,
+            franja,
+            is_private: isPrivate,
+            objectives: objectiveTexts,
+          }),
+        });
+
+        if (!res.ok) {
+          const errData = await res.json();
+          throw new Error(errData.error || 'Error al guardar el susurro');
         }
-        
-        if (data && data[0]) {
-          newEntry = data[0] as EntryData;
-          
-          // Si hay objetivos y estamos en franja DIA, guardarlos
-          if (isDay && objectives.length > 0) {
-            const entryId = newEntry.id;
-            
-            const objectivesData = objectives.map(obj => ({
-              entry_id: entryId,
-              user_id: session.user.id,
-              text: obj.text,
-              done: false
-            }));
-            
-            try {
-              console.log('Intentando guardar objetivos:', objectivesData);
-              
-              // En lugar de usar Supabase directamente, usar la API
-              const response = await fetch('/api/objectives/batch', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                  objectives: objectivesData
-                }),
-              });
-              
-              if (!response.ok) {
-                const errorData = await response.json();
-                console.error('Error al guardar objetivos:', errorData);
-                // No interrumpimos el flujo si falla la creación de objetivos
-              } else {
-                const result = await response.json();
-                console.log('Objetivos guardados correctamente:', result);
-                
-                // En lugar de hacer un refresh inmediato, hacemos un polling suave
-                // para actualizar los posts sin causar errores o saltos visuales
-                const smoothPolling = async () => {
-                  try {
-                    // Esperar un poco para dar tiempo a que la base de datos se actualice
-                    await new Promise(resolve => setTimeout(resolve, 800));
-                    
-                    // Actualizar los posts de manera silenciosa
-                    await refreshPosts();
-                    
-                    console.log('Posts actualizados silenciosamente después de guardar objetivos');
-                  } catch (pollingErr) {
-                    console.error('Error en el smooth polling:', pollingErr);
-                  }
-                };
-                
-                // Iniciar el polling suave sin esperar a que termine
-                smoothPolling();
-              }
-            } catch (objErr) {
-              console.error('Excepción al guardar objetivos:', objErr);
-            }
-          }
+
+        if (objectiveTexts.length > 0) {
+          setTimeout(() => refreshPosts(), 800);
         }
       } else {
         // Guest user
@@ -393,8 +322,6 @@ export default function WhisperForm() {
         }
         
         if (data && data[0]) {
-          newEntry = data?.[0] as EntryData;
-          // Mark that guest has posted
           sessionStorage.setItem('guestHasPosted', 'true');
         }
       }

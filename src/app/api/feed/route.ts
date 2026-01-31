@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
 
       const { data: entries, error: entriesError, count } = await supabaseAdmin
         .from('entries')
-        .select(`*, users:user_id (alias, name, bsy_id, profile_photo_url)`, { count: 'exact' })
+        .select(`*, users:user_id (alias, name, bsy_id)`, { count: 'exact' })
         .in('user_id', followingIds)
         .eq('is_private', false)
         .eq('guest', false)
@@ -64,56 +64,13 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
       }
 
-      const { data: repostRows, error: repostError } = await supabaseAdmin
-        .from('reposts')
-        .select(`
-          id,
-          user_id,
-          created_at,
-          users:user_id (alias, name, bsy_id, profile_photo_url),
-          entries:entry_id (*, users:user_id (alias, name, bsy_id, profile_photo_url))
-        `)
-        .in('user_id', followingIds)
-        .order('created_at', { ascending: false })
-        .range(offset, offset + limit - 1);
-
-      if (repostError) {
-        logger.warn('Error fetching reposts for following feed', { detail: repostError.message });
-      }
-
       const formattedEntries = formatEntries(entries || [], currentUserId);
-
-      const existingEntryIds = new Set(formattedEntries.map(e => e.id));
-      const typedRepostRows = (repostRows || []) as unknown as RepostRow[];
-      const repostEntries = typedRepostRows
-        .filter(r => r.entries && !r.entries.is_private && !existingEntryIds.has(r.entries.id))
-        .map(r => {
-          const entry = r.entries!;
-          const reposterUser = r.users;
-          const reposterName = reposterUser?.name || reposterUser?.alias || 'Alguien';
-
-          return {
-            ...formatEntries([entry], currentUserId)[0],
-            is_repost: true,
-            reposted_by: {
-              user_id: r.user_id,
-              display_name: reposterName,
-              reposted_at: r.created_at,
-            },
-            sort_date: r.created_at,
-          };
-        });
-
-      const merged = [...formattedEntries.map(e => ({ ...e, sort_date: e.fecha })), ...repostEntries]
-        .sort((a, b) => new Date(b.sort_date).getTime() - new Date(a.sort_date).getTime())
-        .slice(0, limit);
-
-      return NextResponse.json({ entries: merged, total: (count || 0) + repostEntries.length });
+      return NextResponse.json({ entries: formattedEntries, total: count || 0 });
     }
 
     const { data: entries, error: entriesError, count } = await supabaseAdmin
       .from('entries')
-      .select(`*, users:user_id (alias, name, bsy_id, profile_photo_url)`, { count: 'exact' })
+      .select(`*, users:user_id (alias, name, bsy_id)`, { count: 'exact' })
       .order('fecha', { ascending: false })
       .range(offset, offset + limit - 1);
 
@@ -134,14 +91,6 @@ export async function GET(request: NextRequest) {
   }
 }
 
-interface RepostRow {
-  id: string;
-  user_id: string;
-  created_at: string;
-  users?: { alias: string; name?: string; bsy_id?: string; profile_photo_url?: string | null } | null;
-  entries: EntryRow | null;
-}
-
 interface EntryRow {
   id: string;
   user_id: string | null;
@@ -153,7 +102,7 @@ interface EntryRow {
   guest: boolean;
   is_private?: boolean;
   edited?: boolean;
-  users?: { alias: string; name?: string; bsy_id?: string; profile_photo_url?: string | null } | null;
+  users?: { alias: string; name?: string; bsy_id?: string } | null;
 }
 
 function formatEntries(entries: EntryRow[], currentUserId?: string) {
@@ -183,10 +132,8 @@ function formatEntries(entries: EntryRow[], currentUserId?: string) {
       display_id,
       display_name,
       likes_count: 0,
-      reposts_count: 0,
       has_objectives: entry.franja === 'DIA',
       is_own: entry.user_id === currentUserId,
-      profile_photo_url: entry.users?.profile_photo_url ?? null,
     };
   });
 }

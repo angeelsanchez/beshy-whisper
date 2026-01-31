@@ -247,13 +247,14 @@ async function processReminders() {
 // Cron endpoint - can be called by external cron services
 export async function GET(request: NextRequest) {
   try {
-    // Verify cron secret if configured
     const cronSecret = process.env.CRON_SECRET;
-    if (cronSecret) {
-      const authHeader = request.headers.get('authorization');
-      if (!authHeader || !safeCompare(authHeader, `Bearer ${cronSecret}`)) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-      }
+    if (!cronSecret) {
+      logger.error('CRON_SECRET not configured');
+      return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 });
+    }
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader || !safeCompare(authHeader, `Bearer ${cronSecret}`)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     logger.info('Cron job triggered');
@@ -280,12 +281,16 @@ export async function GET(request: NextRequest) {
 // POST endpoint for manual triggering
 export async function POST(request: NextRequest) {
   try {
+    const cronSecret = process.env.CRON_SECRET;
+    if (!cronSecret) {
+      logger.error('CRON_SECRET not configured');
+      return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 });
+    }
+
     const body = await request.json();
     const { action, secret } = body;
-    
-    // Verify secret if configured
-    const cronSecret = process.env.CRON_SECRET;
-    if (cronSecret && (!secret || !safeCompare(secret, cronSecret))) {
+
+    if (!secret || !safeCompare(secret, cronSecret)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     

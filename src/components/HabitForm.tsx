@@ -168,7 +168,11 @@ export default function HabitForm({ isOpen, onClose, onSubmit, isDay, initialDat
                 <button
                   key={f}
                   type="button"
-                  onClick={() => setFrequency(f)}
+                  onClick={() => {
+                    setFrequency(f);
+                    if (f === 'weekly') setTargetDaysPerWeek(1);
+                    else if (targetDaysPerWeek < 2) setTargetDaysPerWeek(7);
+                  }}
                   className={`flex-1 py-1.5 rounded-md text-sm font-medium transition-all ${
                     frequency === f
                       ? isDay
@@ -185,23 +189,31 @@ export default function HabitForm({ isOpen, onClose, onSubmit, isDay, initialDat
             </div>
           </div>
 
-          <div>
-            <label className={`block text-sm font-medium mb-1 ${isDay ? 'text-[#4A2E1B]' : 'text-[#F5F0E1]'}`}>
-              Dias por semana: {targetDaysPerWeek}
-            </label>
-            <input
-              type="range"
-              min={1}
-              max={7}
-              value={targetDaysPerWeek}
-              onChange={e => setTargetDaysPerWeek(Number(e.target.value))}
-              className="w-full accent-[#4A2E1B]"
-            />
-            <div className={`flex justify-between text-xs mt-1 ${isDay ? 'text-[#4A2E1B]/50' : 'text-[#F5F0E1]/50'}`}>
-              <span>1</span>
-              <span>7</span>
+          {frequency === 'daily' && (
+            <div>
+              <label className={`block text-sm font-medium mb-1 ${isDay ? 'text-[#4A2E1B]' : 'text-[#F5F0E1]'}`}>
+                Dias por semana: {targetDaysPerWeek}
+              </label>
+              <input
+                type="range"
+                min={1}
+                max={7}
+                value={targetDaysPerWeek}
+                onChange={e => setTargetDaysPerWeek(Number(e.target.value))}
+                className="w-full accent-[#4A2E1B]"
+              />
+              <div className={`flex justify-between text-xs mt-1 ${isDay ? 'text-[#4A2E1B]/50' : 'text-[#F5F0E1]/50'}`}>
+                <span>1</span>
+                <span>7</span>
+              </div>
             </div>
-          </div>
+          )}
+
+          {frequency === 'weekly' && (
+            <p className={`text-xs ${isDay ? 'text-[#4A2E1B]/60' : 'text-[#F5F0E1]/60'}`}>
+              Se espera completar 1 vez por semana
+            </p>
+          )}
 
           <div>
             <label className={`block text-sm font-medium mb-2 ${isDay ? 'text-[#4A2E1B]' : 'text-[#F5F0E1]'}`}>

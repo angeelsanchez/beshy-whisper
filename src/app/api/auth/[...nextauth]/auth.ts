@@ -5,6 +5,8 @@ import { supabaseAdmin } from "@/lib/supabase-admin";
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import { logger } from "@/lib/logger";
+import { checkLockout, recordLoginAttempt } from "@/lib/auth-lockout";
+import { safeCompare } from "@/utils/crypto-helpers";
 
 // Function to generate sequential BSYXXX alias
 async function generateBeshyId() {
@@ -46,12 +48,25 @@ export const authOptions: NextAuthOptions = {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" }
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
         if (!credentials?.email || !credentials?.password) {
           return null;
         }
 
-        // Check if user exists
+        const ip = (req?.headers?.['x-forwarded-for'] as string)?.split(',')[0]?.trim()
+          || (req?.headers?.['x-real-ip'] as string)
+          || 'unknown';
+
+        const lockout = await checkLockout(ip, credentials.email);
+        if (lockout.locked) {
+          logger.warn('Login blocked by lockout', {
+            ip,
+            failedAttempts: lockout.failedAttempts,
+            remainingSeconds: lockout.remainingSeconds,
+          });
+          return null;
+        }
+
         const { data: user } = await supabaseAdmin
           .from('users')
           .select('*')
@@ -59,6 +74,7 @@ export const authOptions: NextAuthOptions = {
           .single();
 
         if (!user || !user.password_hash) {
+          await recordLoginAttempt(ip, credentials.email, false);
           return null;
         }
 
@@ -66,14 +82,20 @@ export const authOptions: NextAuthOptions = {
 
         if (isBcryptHash) {
           const isValid = await bcrypt.compare(credentials.password, user.password_hash);
-          if (!isValid) return null;
+          if (!isValid) {
+            await recordLoginAttempt(ip, credentials.email, false);
+            return null;
+          }
         } else {
           const sha256Hash = crypto
             .createHash('sha256')
             .update(credentials.password)
             .digest('hex');
 
-          if (user.password_hash !== sha256Hash) return null;
+          if (!safeCompare(user.password_hash, sha256Hash)) {
+            await recordLoginAttempt(ip, credentials.email, false);
+            return null;
+          }
 
           const newHash = await bcrypt.hash(credentials.password, 12);
           await supabaseAdmin
@@ -81,6 +103,8 @@ export const authOptions: NextAuthOptions = {
             .update({ password_hash: newHash })
             .eq('id', user.id);
         }
+
+        await recordLoginAttempt(ip, credentials.email, true);
 
         return {
           id: user.id,

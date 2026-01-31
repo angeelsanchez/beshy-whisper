@@ -3,8 +3,9 @@ import { NextRequest, NextResponse } from 'next/server';
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
 
 const RATE_LIMITS: Record<string, { max: number; windowMs: number }> = {
+  '/api/auth/check-lockout': { max: 5, windowMs: 60_000 },
   '/api/auth/register': { max: 5, windowMs: 60_000 },
-  '/api/auth/callback': { max: 10, windowMs: 60_000 },
+  '/api/auth/callback': { max: 5, windowMs: 60_000 },
   '/api/likes': { max: 30, windowMs: 60_000 },
   '/api/posts': { max: 20, windowMs: 60_000 },
   '/api/notifications': { max: 30, windowMs: 60_000 },

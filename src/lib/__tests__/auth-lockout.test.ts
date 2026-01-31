@@ -169,11 +169,8 @@ describe('recordLoginAttempt', () => {
     ).resolves.toBeUndefined();
   });
 
-  it('triggers cleanup when random byte is low', async () => {
-    vi.spyOn(crypto, 'getRandomValues').mockImplementation((array) => {
-      (array as Uint8Array)[0] = 0;
-      return array;
-    });
+  it('triggers cleanup when random < CLEANUP_PROBABILITY', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.005);
     const rpcMock = vi.mocked(supabaseAdmin as unknown as { rpc: ReturnType<typeof vi.fn> }).rpc;
     rpcMock.mockResolvedValueOnce({ error: null });
 
@@ -182,11 +179,8 @@ describe('recordLoginAttempt', () => {
     expect(rpcMock).toHaveBeenCalledWith('cleanup_old_login_attempts');
   });
 
-  it('does not trigger cleanup when random byte is high', async () => {
-    vi.spyOn(crypto, 'getRandomValues').mockImplementation((array) => {
-      (array as Uint8Array)[0] = 200;
-      return array;
-    });
+  it('does not trigger cleanup when random >= CLEANUP_PROBABILITY', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.5);
     const rpcMock = vi.mocked(supabaseAdmin as unknown as { rpc: ReturnType<typeof vi.fn> }).rpc;
 
     await recordLoginAttempt('1.2.3.4', 'user@test.com', false);

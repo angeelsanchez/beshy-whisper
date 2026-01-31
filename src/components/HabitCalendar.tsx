@@ -110,7 +110,7 @@ export default function HabitCalendar({ completionsByDate, totalHabits, isDay }:
             className={`w-3 h-3 rounded-sm ${getIntensityClass(intensity, todayStr)}`}
           />
         ))}
-        <span>Más</span>
+        <span>Mas</span>
       </div>
     </div>
   );

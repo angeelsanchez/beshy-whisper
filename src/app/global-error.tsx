@@ -1,7 +1,7 @@
 'use client';
 
 export default function GlobalError({
-  error,
+  error: _error,
   reset,
 }: {
   error: Error & { digest?: string };
@@ -31,21 +31,6 @@ export default function GlobalError({
           <p style={{ opacity: 0.8, marginBottom: '1.5rem', fontSize: '0.9rem' }}>
             Intenta recargar la pagina. Si el problema persiste, limpia la cache del navegador.
           </p>
-          <pre style={{
-            textAlign: 'left',
-            fontSize: '0.7rem',
-            opacity: 0.6,
-            backgroundColor: 'rgba(0,0,0,0.3)',
-            padding: '0.75rem',
-            borderRadius: '0.5rem',
-            overflowX: 'auto',
-            marginBottom: '1rem',
-            maxHeight: '150px',
-            overflow: 'auto',
-          }}>
-            {error.message}
-            {error.digest ? `\nDigest: ${error.digest}` : ''}
-          </pre>
           <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
             <button
               onClick={() => reset()}

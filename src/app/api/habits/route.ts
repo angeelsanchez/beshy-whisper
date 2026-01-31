@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { authOptions } from '../auth/[...nextauth]/auth';
-import { createHabitSchema } from '@/lib/schemas/habits';
+import { createHabitSchema, derivedFromTargetDays } from '@/lib/schemas/habits';
 import { logger } from '@/lib/logger';
 
 const MAX_HABITS_PER_USER = 20;
@@ -68,7 +68,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { name, description, frequency, targetDaysPerWeek, color } = parsed.data;
+    const { name, description, targetDays, color } = parsed.data;
+    const sorted = [...targetDays].sort((a, b) => a - b);
+    const { frequency, targetDaysPerWeek } = derivedFromTargetDays(sorted);
 
     const { data: habit, error: insertError } = await supabaseAdmin
       .from('habits')
@@ -78,6 +80,7 @@ export async function POST(request: NextRequest) {
         description: description ?? null,
         frequency,
         target_days_per_week: targetDaysPerWeek,
+        target_days: sorted,
         color,
       })
       .select()

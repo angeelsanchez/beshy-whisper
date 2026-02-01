@@ -22,7 +22,7 @@ export default function HabitStats({ stats, isDay }: HabitStatsProps) {
   return (
     <div className={`rounded-xl p-4 ${isDay ? 'bg-[#4A2E1B]/5' : 'bg-[#F5F0E1]/5'}`}>
       <h2 className={`text-base font-bold mb-3 ${isDay ? 'text-[#4A2E1B]' : 'text-[#F5F0E1]'}`}>
-        Estadisticas
+        Estadísticas
       </h2>
 
       <div className="grid grid-cols-2 gap-3 mb-4">
@@ -58,7 +58,7 @@ export default function HabitStats({ stats, isDay }: HabitStatsProps) {
       {stats.length > 1 && (
         <div className={`border-t pt-3 mt-3 ${isDay ? 'border-[#4A2E1B]/10' : 'border-[#F5F0E1]/10'}`}>
           <h3 className={`text-sm font-semibold mb-2 ${isDay ? 'text-[#4A2E1B]' : 'text-[#F5F0E1]'}`}>
-            Detalle por habito
+            Detalle por hábito
           </h3>
           <div className="space-y-2">
             {stats.map(s => (

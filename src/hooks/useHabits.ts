@@ -49,7 +49,7 @@ export function useHabits() {
     try {
       const res = await fetch('/api/habits');
       if (!res.ok) {
-        setError('Error al cargar habitos');
+        setError('Error al cargar hábitos');
         setLoading(false);
         return;
       }
@@ -58,7 +58,7 @@ export function useHabits() {
       setHabits(data.habits);
       setError(null);
     } catch {
-      setError('Error de conexion');
+      setError('Error de conexión');
     } finally {
       setLoading(false);
     }
@@ -80,7 +80,7 @@ export function useHabits() {
 
       if (!res.ok) {
         const errData = await res.json();
-        setError(errData.error || 'Error al crear habito');
+        setError(errData.error || 'Error al crear hábito');
         return null;
       }
 
@@ -89,7 +89,7 @@ export function useHabits() {
       setError(null);
       return result.habit;
     } catch {
-      setError('Error de conexion');
+      setError('Error de conexión');
       return null;
     }
   }, [session?.user?.id]);
@@ -106,7 +106,7 @@ export function useHabits() {
 
       if (!res.ok) {
         const errData = await res.json();
-        setError(errData.error || 'Error al actualizar habito');
+        setError(errData.error || 'Error al actualizar hábito');
         return false;
       }
 
@@ -115,7 +115,7 @@ export function useHabits() {
       setError(null);
       return true;
     } catch {
-      setError('Error de conexion');
+      setError('Error de conexión');
       return false;
     }
   }, [session?.user?.id]);
@@ -131,7 +131,7 @@ export function useHabits() {
 
       if (!res.ok) {
         setHabits(previousHabits);
-        setError('Error al eliminar habito');
+        setError('Error al eliminar hábito');
         return false;
       }
 
@@ -139,7 +139,7 @@ export function useHabits() {
       return true;
     } catch {
       setHabits(previousHabits);
-      setError('Error de conexion');
+      setError('Error de conexión');
       return false;
     }
   }, [session?.user?.id, habits]);

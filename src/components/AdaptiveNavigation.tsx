@@ -6,7 +6,6 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useAuthSession } from '@/hooks/useAuthSession';
 import { useDailyPostStatus } from '@/hooks/useDailyPostStatus';
-import { useNotifications } from '@/hooks/useNotifications';
 import { useTheme } from '@/context/ThemeContext';
 
 // Navigation items configuration
@@ -107,20 +106,12 @@ export default function AdaptiveNavigation() {
   const [mounted, setMounted] = useState(false);
   const [isGuest, setIsGuest] = useState(false);
   const { contextualMissingCount, loading: statusLoading } = useDailyPostStatus();
-  const { permission, requestPermission } = useNotifications();
 
   useEffect(() => {
     setMounted(true);
     const guestMode = sessionStorage.getItem('isGuest') === 'true';
     setIsGuest(guestMode);
-    
-    // Request notification permission for authenticated users
-    if (session && !isGuest && permission === 'default') {
-      setTimeout(() => {
-        requestPermission();
-      }, 2000); // Wait 2 seconds after mount to request permission
-    }
-  }, [session, isGuest, permission, requestPermission]);
+  }, []);
 
   if (!mounted) return null;
 

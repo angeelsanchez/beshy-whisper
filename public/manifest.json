@@ -17,15 +17,15 @@
       "type": "image/x-icon"
     },
     {
-      "src": "/logo_pwa.ico",
+      "src": "/icon-192.png",
       "sizes": "192x192",
-      "type": "image/x-icon",
+      "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/logo_pwa.ico",
+      "src": "/icon-512.png",
       "sizes": "512x512",
-      "type": "image/x-icon",
+      "type": "image/png",
       "purpose": "any maskable"
     }
   ],
@@ -38,9 +38,9 @@
       "url": "/create",
       "icons": [
         {
-          "src": "/favicon.ico",
-          "sizes": "any",
-          "type": "image/x-icon"
+          "src": "/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
         }
       ]
     },
@@ -51,9 +51,9 @@
       "url": "/feed",
       "icons": [
         {
-          "src": "/favicon.ico",
-          "sizes": "any",
-          "type": "image/x-icon"
+          "src": "/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
         }
       ]
     }

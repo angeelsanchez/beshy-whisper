@@ -47,7 +47,7 @@ export default function NotificationBanner() {
   };
 
   return (
-    <div style={{ top: 'calc(env(safe-area-inset-top, 16px) + 8px)' }} className={`fixed inset-x-4 max-w-md mx-auto z-[60] rounded-xl shadow-lg p-4 ${
+    <div className={`fixed top-4 inset-x-4 max-w-md mx-auto z-[60] rounded-xl shadow-lg p-4 ${
       isDay
         ? 'bg-[#F5F0E1] border border-[#4A2E1B]/20'
         : 'bg-[#2D1E1A] border border-[#F5F0E1]/20'

@@ -3,8 +3,8 @@ import { getServerSession } from 'next-auth/next';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { authOptions } from '../../auth/[...nextauth]/auth';
 import { toggleHabitLogSchema } from '@/lib/schemas/habits';
+import { sendPushToUser } from '@/lib/push-notify';
 import { logger } from '@/lib/logger';
-import webpush from 'web-push';
 
 const RETOMA_THRESHOLD_DAYS = 7;
 
@@ -33,54 +33,13 @@ function isFutureDate(dateStr: string): boolean {
   return dateStr > today;
 }
 
-async function sendMilestoneNotification(userId: string, milestone: MilestoneResult, habitName: string) {
-  try {
-    if (!process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) return;
-
-    webpush.setVapidDetails(
-      process.env.VAPID_EMAIL || 'mailto:your@email.com',
-      process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
-      process.env.VAPID_PRIVATE_KEY
-    );
-
-    const { data: tokens, error: tokenError } = await supabaseAdmin
-      .from('push_tokens')
-      .select('endpoint, p256dh, auth')
-      .eq('user_id', userId);
-
-    if (tokenError || !tokens?.length) return;
-
-    const payload = JSON.stringify({
-      title: milestone.message,
-      body: `Hábito: ${habitName}`,
-      icon: '/favicon.ico',
-      badge: '/favicon.ico',
-      tag: `habit-milestone-${milestone.type}`,
-      requireInteraction: false,
-      data: { url: '/habits', type: 'habit_milestone' },
-    });
-
-    const sendPromises = tokens.map(async (token) => {
-      try {
-        await webpush.sendNotification(
-          { endpoint: token.endpoint, keys: { p256dh: token.p256dh, auth: token.auth } },
-          payload,
-          { TTL: 60 * 60, headers: { Urgency: 'normal' } }
-        );
-      } catch (err) {
-        const statusCode = (err as { statusCode?: number }).statusCode;
-        if (statusCode === 410 || statusCode === 404) {
-          await supabaseAdmin.from('push_tokens').delete().eq('endpoint', token.endpoint);
-          logger.info('Removed invalid push token for habit milestone', { userId });
-        }
-      }
-    });
-
-    await Promise.allSettled(sendPromises);
-    logger.info('Habit milestone notification sent', { userId, milestone: milestone.type });
-  } catch (error) {
-    logger.error('Error sending milestone notification', { detail: error instanceof Error ? error.message : String(error) });
-  }
+async function sendMilestoneNotification(userId: string, milestone: MilestoneResult, habitName: string): Promise<void> {
+  await sendPushToUser(userId, {
+    title: milestone.message,
+    body: `Hábito: ${habitName}`,
+    tag: `habit-milestone-${milestone.type}`,
+    data: { url: '/habits', type: 'habit_milestone' },
+  });
 }
 
 function detectMilestone(

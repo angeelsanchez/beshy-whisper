@@ -1,133 +1,66 @@
-// ===================================================================
-// SERVICE WORKER SIMPLIFICADO PARA NOTIFICACIONES PUSH
-// OBJETIVO: Solo manejar push notifications sin cache problemático
-// ===================================================================
-
-console.log('Service Worker simplificado cargado');
-
-// Install event - solo registrar, sin cache
-self.addEventListener('install', (event) => {
-  console.log('Service Worker installing...');
-  
-  // Saltar la espera para activar inmediatamente
-  event.waitUntil(self.skipWaiting());
+globalThis.addEventListener('install', (event) => {
+  event.waitUntil(globalThis.skipWaiting());
 });
 
-// Activate event - tomar control inmediatamente
-self.addEventListener('activate', (event) => {
-  console.log('Service Worker activating...');
-  
+globalThis.addEventListener('activate', (event) => {
   event.waitUntil(
     Promise.all([
-      // Limpiar caches antiguos si existen
-      caches.keys().then(cacheNames => {
-        return Promise.all(
-          cacheNames.map(cacheName => {
-            console.log('Deleting old cache:', cacheName);
-            return caches.delete(cacheName);
-          })
-        );
-      }),
-      // Tomar control de todas las páginas
-      self.clients.claim()
-    ]).then(() => {
-      console.log('Service Worker activation complete');
-    })
+      caches.keys().then(cacheNames =>
+        Promise.all(cacheNames.map(name => caches.delete(name)))
+      ),
+      globalThis.clients.claim()
+    ])
   );
 });
 
-// Push notification handling
-self.addEventListener('push', (event) => {
-  console.log('[SW] Push received');
-  console.log('[SW] Push event details:', {
-    hasData: !!event.data,
-    dataType: event.data ? typeof event.data : 'none'
-  });
-  
-  if (!event.data) {
-    console.log('[SW] Push event but no data');
-    return;
-  }
+globalThis.addEventListener('push', (event) => {
+  if (!event.data) return;
 
   try {
     const data = event.data.json();
-    console.log('[SW] Push data parsed successfully:', data);
-    
+
     const options = {
       body: data.body || 'Nueva notificación',
-      icon: '/beshy-logo.svg', // Usar un icono que sabemos que funciona
-      badge: '/beshy-logo.svg',
+      icon: '/icon-192.png',
+      badge: '/icon-192.png',
       tag: data.tag || 'notification',
-      requireInteraction: true,
+      requireInteraction: data.requireInteraction ?? false,
       data: data.data || {},
-      actions: [
-        {
-          action: 'view',
-          title: 'Ver',
-          icon: '/beshy-logo.svg'
-        },
-        {
-          action: 'dismiss',
-          title: 'Cerrar'
-        }
-      ]
     };
 
-    console.log('[SW] Notification options prepared:', options);
-
     event.waitUntil(
-      self.registration.showNotification(data.title || 'BESHY Whisper', options)
-        .then(() => {
-          console.log('[SW] Notification displayed successfully');
-        })
-        .catch(error => {
-          console.error('[SW] Error showing notification:', error);
-        })
+      globalThis.registration.showNotification(data.title || 'BESHY Whisper', options)
     );
   } catch (error) {
     console.error('[SW] Error processing push data:', error);
-    console.error('[SW] Raw event data:', event.data);
   }
 });
 
-// Handle notification click
-self.addEventListener('notificationclick', (event) => {
-  console.log('[SW] Notification clicked:', event.action);
-  
+globalThis.addEventListener('notificationclick', (event) => {
   event.notification.close();
 
-  if (event.action === 'dismiss') {
-    return;
-  }
+  if (event.action === 'dismiss') return;
 
-  // Handle notification click
+  const targetUrl = (event.notification.data && event.notification.data.url) || '/';
+
   event.waitUntil(
-    self.clients.matchAll().then(clients => {
-      // If a client is already open, focus it
+    globalThis.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clients => {
       for (const client of clients) {
-        if (client.url.includes(self.location.origin) && 'focus' in client) {
+        if (client.url.includes(globalThis.location.origin) && 'focus' in client) {
+          client.navigate(targetUrl);
           return client.focus();
         }
       }
-      
-      // Otherwise, open a new window
-      if (self.clients.openWindow) {
-        return self.clients.openWindow('/');
+
+      if (globalThis.clients.openWindow) {
+        return globalThis.clients.openWindow(targetUrl);
       }
-    }).catch(error => {
-      console.error('[SW] Error handling notification click:', error);
     })
   );
 });
 
-// Handle messages from the main thread
-self.addEventListener('message', (event) => {
-  console.log('[SW] Message received:', event.data);
-  
+globalThis.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
-    self.skipWaiting();
+    globalThis.skipWaiting();
   }
 });
-
-console.log('Service Worker simplificado listo para notificaciones push');
-

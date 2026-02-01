@@ -1,19 +1,12 @@
 'use client';
 
 import { useNotifications } from '@/hooks/useNotifications';
-import { useState } from 'react';
 
 export const NotificationTest = () => {
-  const { permission, requestPermission, testNotification, settings, updateSettings } = useNotifications();
-  const [isTesting, setIsTesting] = useState(false);
+  const { permission, requestPermission, showNotification, settings } = useNotifications();
 
-  const handleTestNotification = async () => {
-    setIsTesting(true);
-    try {
-      await testNotification();
-    } finally {
-      setIsTesting(false);
-    }
+  const handleTestNotification = (): void => {
+    showNotification('Prueba de notificación', 'Las notificaciones funcionan correctamente', '/');
   };
 
   const handleRequestPermission = async () => {
@@ -62,10 +55,9 @@ export const NotificationTest = () => {
           <div className="space-y-3">
             <button
               onClick={handleTestNotification}
-              disabled={isTesting}
-              className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 disabled:opacity-50"
+              className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
             >
-              {isTesting ? 'Probando...' : 'Probar Notificación'}
+              Probar Notificación
             </button>
 
             <div className="text-sm text-blue-700">

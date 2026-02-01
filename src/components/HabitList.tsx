@@ -68,7 +68,7 @@ export default function HabitList({
               ? 'hover:bg-[#4A2E1B]/10 text-[#4A2E1B]'
               : 'hover:bg-[#F5F0E1]/10 text-[#F5F0E1]'
           }`}
-          aria-label="Nuevo habito"
+          aria-label="Nuevo hábito"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
             <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
@@ -85,13 +85,13 @@ export default function HabitList({
               : 'border-[#F5F0E1]/20 text-[#F5F0E1]/50 hover:border-[#F5F0E1]/40 hover:text-[#F5F0E1]/70'
           }`}
         >
-          Crea tu primer habito
+          Crea tu primer hábito
         </button>
       ) : (
         <>
           {totalTodayCount === 0 ? (
             <p className={`text-center text-sm py-4 ${isDay ? 'text-[#4A2E1B]/50' : 'text-[#F5F0E1]/50'}`}>
-              No hay habitos programados para hoy
+              No hay hábitos programados para hoy
             </p>
           ) : (
             <div className="space-y-2">
@@ -129,7 +129,7 @@ export default function HabitList({
                 >
                   <path d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/>
                 </svg>
-                Otros dias ({otherHabits.length})
+                Otros días ({otherHabits.length})
               </button>
 
               {showOtherDays && (
@@ -156,7 +156,7 @@ export default function HabitList({
 
       {totalTodayCount > 0 && completedCount === totalTodayCount && (
         <p className={`text-center text-sm mt-3 font-medium ${isDay ? 'text-[#4A2E1B]/70' : 'text-[#F5F0E1]/70'}`}>
-          Todos los habitos de hoy completados
+          Todos los hábitos de hoy completados
         </p>
       )}
     </div>

@@ -4,113 +4,48 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { authOptions } from '../auth/[...nextauth]/auth';
 import { toggleLikeSchema } from '@/lib/schemas/likes';
 import { uuidSchema } from '@/lib/schemas/common';
-import webpush from 'web-push';
+import { sendPushToUser } from '@/lib/push-notify';
 import { logger } from '@/lib/logger';
 
-// Configure web-push with VAPID keys
-webpush.setVapidDetails(
-  process.env.VAPID_EMAIL || 'mailto:hola@beshy.es',
-  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || '',
-  process.env.VAPID_PRIVATE_KEY || ''
-);
+async function sendLikeNotification(entryId: string, likerUserId: string): Promise<void> {
+  const { data: entryData, error: entryError } = await supabaseAdmin
+    .from('entries')
+    .select('user_id')
+    .eq('id', entryId)
+    .single();
 
-// Helper function to send like notification
-async function sendLikeNotification(entryId: string, likerUserId: string) {
-  try {
-    // Get entry data to find the owner
-    const { data: entryData, error: entryError } = await supabaseAdmin
-      .from('entries')
-      .select('user_id, mensaje')
-      .eq('id', entryId)
-      .single();
-    
-    if (entryError || !entryData) {
-      logger.error('Error fetching entry for notification', { detail: entryError?.message || String(entryError) });
-      return;
-    }
-    
-    // Don't send notification if user likes their own post
-    if (entryData.user_id === likerUserId) {
-      return;
-    }
-    
-    // Get liker user data
-    const { data: likerData, error: likerError } = await supabaseAdmin
-      .from('users')
-      .select('bsy_id, name')
-      .eq('id', likerUserId)
-      .single();
-    
-    if (likerError || !likerData) {
-      logger.error('Error fetching liker data for notification', { detail: likerError?.message || String(likerError) });
-      return;
-    }
-    
-    const likerName = likerData.name || likerData.bsy_id || 'Alguien';
-    
-    // Get entry owner's push token
-    const { data: pushTokenData, error: tokenError } = await supabaseAdmin
-      .from('push_tokens')
-      .select('endpoint, p256dh, auth')
-      .eq('user_id', entryData.user_id)
-      .maybeSingle();
-    
-    if (tokenError || !pushTokenData) {
-      logger.info('Entry owner has no push token registered', { userId: entryData.user_id });
-      return;
-    }
-    
-    // Check if VAPID keys are configured
-    if (!process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
-      logger.error('VAPID keys not configured');
-      return;
-    }
-
-    // Prepare the push subscription object
-    const pushSubscription = {
-      endpoint: pushTokenData.endpoint,
-      keys: {
-        p256dh: pushTokenData.p256dh,
-        auth: pushTokenData.auth
-      }
-    };
-
-    // Prepare the notification payload
-    const notificationTitle = '❤️ Nuevo like en tu Whisper';
-    const notificationBody = `${likerName} le dio like a tu whisper`;
-
-    const payload = JSON.stringify({
-      title: notificationTitle,
-      body: notificationBody,
-      icon: '/favicon.ico',
-      badge: '/favicon.ico',
-      tag: 'like-notification',
-      requireInteraction: false,
-      data: {
-        url: `/feed?highlight=${entryId}`,
-        type: 'like',
-        entry_id: entryId,
-        liker_user_id: likerUserId,
-        liker_name: likerName
-      }
-    });
-
-    // Send the push notification
-    await webpush.sendNotification(pushSubscription, payload, {
-      TTL: 60 * 60, // 1 hour
-      headers: {
-        'Urgency': 'normal'
-      }
-    });
-
-    logger.info('Like notification sent successfully', {
-      userId: entryData.user_id,
-      likerName,
-      entryId
-    });
-  } catch (error) {
-    logger.error('Error sending like notification', { detail: error instanceof Error ? error.message : String(error) });
+  if (entryError || !entryData) {
+    logger.error('Error fetching entry for notification', { detail: entryError?.message || String(entryError) });
+    return;
   }
+
+  if (entryData.user_id === likerUserId) return;
+
+  const { data: likerData, error: likerError } = await supabaseAdmin
+    .from('users')
+    .select('bsy_id, name')
+    .eq('id', likerUserId)
+    .single();
+
+  if (likerError || !likerData) {
+    logger.error('Error fetching liker data', { detail: likerError?.message || String(likerError) });
+    return;
+  }
+
+  const likerName = likerData.name || likerData.bsy_id || 'Alguien';
+
+  await sendPushToUser(entryData.user_id, {
+    title: '❤️ Nuevo like en tu Whisper',
+    body: `${likerName} le dio like a tu whisper`,
+    tag: 'like-notification',
+    data: {
+      url: `/feed?highlight=${entryId}`,
+      type: 'like',
+      entry_id: entryId,
+      liker_user_id: likerUserId,
+      liker_name: likerName,
+    },
+  });
 }
 
 export async function POST(request: NextRequest) {

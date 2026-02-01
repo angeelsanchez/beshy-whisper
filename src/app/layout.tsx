@@ -6,6 +6,7 @@ import dynamic from "next/dynamic";
 
 const AdaptiveNavigation = dynamic(() => import("@/components/AdaptiveNavigation"));
 const InstallPrompt = dynamic(() => import("@/components/InstallPrompt"));
+const NotificationBanner = dynamic(() => import("@/components/NotificationBanner"));
 
 const montserrat = Montserrat({
   subsets: ["latin"],
@@ -52,8 +53,8 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="BESHY Whisper" />
-        <link rel="apple-touch-icon" href="/beshy-logo.svg" />
-        <link rel="apple-touch-startup-image" href="/beshy-logo.svg" />
+        <link rel="apple-touch-icon" sizes="192x192" href="/icon-192.png" />
+        <link rel="apple-touch-icon" sizes="512x512" href="/icon-512.png" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="application-name" content="BESHY Whisper" />
         <link rel="icon" type="image/x-icon" href="/favicon.ico" />
@@ -123,6 +124,7 @@ export default function RootLayout({
               {children}
             </div>
             <AdaptiveNavigation />
+            <NotificationBanner />
             <InstallPrompt />
           </Providers>
         </div>

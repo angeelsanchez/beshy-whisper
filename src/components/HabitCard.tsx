@@ -87,7 +87,7 @@ export default function HabitCard({
               : 'border-[#F5F0E1]/30 hover:border-[#F5F0E1]/60'
         }`}
         style={isCompleted ? { backgroundColor: habit.color } : undefined}
-        aria-label={isCompleted ? 'Desmarcar habito' : 'Completar habito'}
+        aria-label={isCompleted ? 'Desmarcar hábito' : 'Completar hábito'}
       >
         {isCompleted && (
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="white" viewBox="0 0 16 16">
@@ -119,7 +119,7 @@ export default function HabitCard({
       }`}>
         <span title="Tasa semanal">{completionRate}%</span>
         {currentStreak > 0 && (
-          <span title={`Racha: ${currentStreak} dias`} className="tabular-nums">
+          <span title={`Racha: ${currentStreak} días`} className="tabular-nums">
             {currentStreak}d
           </span>
         )}

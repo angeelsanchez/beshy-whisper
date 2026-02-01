@@ -125,12 +125,12 @@ export default function HabitsPage() {
     }`}>
       <div className="max-w-lg mx-auto px-4 pt-6 space-y-4">
         <h1 className={`text-xl font-bold ${isDay ? 'text-[#4A2E1B]' : 'text-[#F5F0E1]'}`}>
-          Habitos
+          Hábitos
         </h1>
 
         {habitsLoading ? (
           <div className={`text-center py-12 text-sm ${isDay ? 'text-[#4A2E1B]/60' : 'text-[#F5F0E1]/60'}`}>
-            Cargando habitos...
+            Cargando hábitos...
           </div>
         ) : (
           <>
@@ -196,7 +196,7 @@ export default function HabitsPage() {
                 onClick={handleDelete}
                 className="flex-1 py-2 rounded-lg text-sm font-medium bg-red-500 text-white"
               >
-                Confirmar eliminacion
+                Confirmar eliminación
               </button>
             </div>
           ) : (
@@ -204,7 +204,7 @@ export default function HabitsPage() {
               onClick={() => setConfirmDelete(editingHabitId)}
               className="w-full py-2.5 rounded-xl text-sm font-medium text-red-500 bg-red-500/10 hover:bg-red-500/20 transition-colors"
             >
-              Eliminar habito
+              Eliminar hábito
             </button>
           )}
         </div>

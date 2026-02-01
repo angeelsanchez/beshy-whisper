@@ -111,7 +111,7 @@ export default function HabitForm({ isOpen, onClose, onSubmit, isDay, initialDat
     if (success) {
       onClose();
     } else {
-      setError('Error al guardar el habito');
+      setError('Error al guardar el hábito');
     }
   };
 
@@ -125,7 +125,7 @@ export default function HabitForm({ isOpen, onClose, onSubmit, isDay, initialDat
           isDay ? 'border-[#4A2E1B]/10' : 'border-[#F5F0E1]/10'
         }`}>
           <h3 className={`font-bold text-lg ${isDay ? 'text-[#4A2E1B]' : 'text-[#F5F0E1]'}`}>
-            {mode === 'create' ? 'Nuevo habito' : 'Editar habito'}
+            {mode === 'create' ? 'Nuevo hábito' : 'Editar hábito'}
           </h3>
           <button
             onClick={onClose}
@@ -166,14 +166,14 @@ export default function HabitForm({ isOpen, onClose, onSubmit, isDay, initialDat
 
           <div>
             <label className={`block text-sm font-medium mb-1 ${isDay ? 'text-[#4A2E1B]' : 'text-[#F5F0E1]'}`}>
-              Descripcion
+              Descripción
             </label>
             <input
               type="text"
               value={description}
               onChange={e => setDescription(e.target.value)}
               maxLength={500}
-              placeholder="Descripcion opcional"
+              placeholder="Descripción opcional"
               className={`w-full px-3 py-2 rounded-lg border text-sm ${
                 isDay
                   ? 'bg-white/60 border-[#4A2E1B]/20 text-[#4A2E1B] placeholder:text-[#4A2E1B]/40'
@@ -184,7 +184,7 @@ export default function HabitForm({ isOpen, onClose, onSubmit, isDay, initialDat
 
           <div>
             <label className={`block text-sm font-medium mb-2 ${isDay ? 'text-[#4A2E1B]' : 'text-[#F5F0E1]'}`}>
-              Dias
+              Días
             </label>
             <div className="flex gap-1.5 mb-2">
               {DAY_LABELS.map((label, dayIndex) => {
@@ -280,7 +280,7 @@ export default function HabitForm({ isOpen, onClose, onSubmit, isDay, initialDat
                 : 'bg-[#F5F0E1] text-[#2D1E1A]'
             }`}
           >
-            {submitting ? 'Guardando...' : mode === 'create' ? 'Crear habito' : 'Guardar cambios'}
+            {submitting ? 'Guardando...' : mode === 'create' ? 'Crear hábito' : 'Guardar cambios'}
           </button>
         </form>
       </div>

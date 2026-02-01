@@ -52,7 +52,7 @@ async function sendMilestoneNotification(userId: string, milestone: MilestoneRes
 
     const payload = JSON.stringify({
       title: milestone.message,
-      body: `Habito: ${habitName}`,
+      body: `Hábito: ${habitName}`,
       icon: '/favicon.ico',
       badge: '/favicon.ico',
       tag: `habit-milestone-${milestone.type}`,
@@ -93,10 +93,10 @@ function detectMilestone(
     return { type: '21_reps', message: '21 repeticiones completadas' };
   }
   if (previousTotalReps < 66 && totalReps >= 66) {
-    return { type: '66_reps', message: '66 repeticiones! Este habito ya es parte de ti' };
+    return { type: '66_reps', message: '¡66 repeticiones! Este hábito ya es parte de ti' };
   }
   if (previousRetomaCount === 0 && retomaCount >= 1) {
-    return { type: 'first_retoma', message: 'Has retomado un habito, sigue asi!' };
+    return { type: 'first_retoma', message: '¡Has retomado un hábito, sigue así!' };
   }
   if (previousRetomaCount < 3 && retomaCount >= 3) {
     return { type: '3_retomas', message: '3 retomas exitosas. Tu resiliencia es admirable' };

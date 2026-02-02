@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { SessionProvider } from 'next-auth/react';
+import { SessionProvider, useSession } from 'next-auth/react';
+import * as Sentry from '@sentry/nextjs';
 import { PostProvider } from '@/context/PostContext';
 import { ThemeProvider } from '@/context/ThemeContext';
 import dynamic from 'next/dynamic';
@@ -12,7 +13,23 @@ const NameInputModal = dynamic(() => import('@/components/NameInputModal'), {
   ssr: false,
 });
 
-// Wrapper component to handle the name input modal
+function SentryUserContext({ children }: Readonly<{ children: React.ReactNode }>) {
+  const { data: session } = useSession();
+
+  useEffect(() => {
+    if (session?.user?.id) {
+      Sentry.setUser({
+        id: session.user.id,
+        username: session.user.alias,
+      });
+    } else {
+      Sentry.setUser(null);
+    }
+  }, [session]);
+
+  return <>{children}</>;
+}
+
 function AuthWrapper({ children }: { children: React.ReactNode }) {
   const { session, status } = useAuthSession();
   const [showNameModal, setShowNameModal] = useState(false);
@@ -63,11 +80,13 @@ export function Providers({ children }: { children: React.ReactNode }) {
         refetchOnWindowFocus={false} // Disable aggressive refetch on focus
         refetchWhenOffline={false} // Don't refetch when offline
       >
-        <PostProvider>
-          <AuthWrapper>
-            {children}
-          </AuthWrapper>
-        </PostProvider>
+        <SentryUserContext>
+          <PostProvider>
+            <AuthWrapper>
+              {children}
+            </AuthWrapper>
+          </PostProvider>
+        </SentryUserContext>
       </SessionProvider>
     </ThemeProvider>
   );

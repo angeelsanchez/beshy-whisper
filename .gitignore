@@ -43,6 +43,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# Sentry
+.sentryclirc
+
 # SonarQube
 .scannerwork/
 

@@ -2,7 +2,7 @@
 
 ## Proyecto
 
-App social de journaling anónimo. Los usuarios publican "whispers" diarios (franja DÍA y NOCHE), dan likes, gestionan objetivos diarios, mantienen rachas de publicación, reciben push notifications y exportan whispers como imagen/PDF. Dominio: `whisper.beshy.es`.
+App social de journaling anónimo. Los usuarios publican "whispers" diarios (franja DÍA y NOCHE), dan likes, siguen a otros usuarios, gestionan objetivos diarios, trackean hábitos (daily/weekly), mantienen rachas de publicación, personalizan su perfil (foto + bio), reciben push notifications y exportan whispers como imagen/PDF. Dominio: `whisper.beshy.es`.
 
 ## Tech Stack
 
@@ -15,8 +15,10 @@ App social de journaling anónimo. Los usuarios publican "whispers" diarios (fra
 | Base de datos | Supabase (PostgreSQL + Realtime + RLS) |
 | Validación | Zod |
 | Hashing | bcryptjs (cost factor 12) |
+| Storage | Supabase Storage (avatars bucket, público) |
 | Push | web-push (VAPID) |
 | Image gen | Puppeteer (server-side HTML → screenshot) |
+| Image compress | browser-image-compression (client-side avatar → WebP ~15KB) |
 | reCAPTCHA | Google reCAPTCHA v3 |
 
 ## Arquitectura
@@ -25,23 +27,26 @@ App social de journaling anónimo. Los usuarios publican "whispers" diarios (fra
 src/
 ├── app/                     # Next.js App Router
 │   ├── api/                 # Route Handlers (REST API, server-side)
-│   ├── (pages)/             # Pages: feed, create, profile, login, guest, admin
+│   ├── (pages)/             # Pages: feed, create, profile, login, guest, admin, habits
 │   ├── layout.tsx           # Root layout (PWA meta, fonts, splash)
 │   └── providers.tsx        # ThemeProvider > SessionProvider > PostProvider > AuthWrapper
-├── components/              # React client components (1 componente = 1 archivo)
+├── components/              # React client components (Avatar, ProfileEditForm, HabitCard, etc.)
 ├── context/                 # PostContext (entries + realtime), ThemeContext (día/noche)
-├── hooks/                   # Custom hooks (auth, notifications, activity, streak, stats)
+├── hooks/                   # Custom hooks (auth, notifications, activity, streak, stats, habits)
 ├── lib/                     # Clientes externos
 │   ├── supabase.ts          # Cliente anon (client-side reads + writes con RLS)
 │   ├── supabase-admin.ts    # Cliente service_role (server-side, bypasses RLS)
 │   └── schemas/             # Zod schemas compartidos
 ├── types/                   # Declaraciones TypeScript (.d.ts)
-├── utils/                   # Funciones puras (format, UUID, html-escape, crypto)
+├── utils/                   # Funciones puras (format, UUID, html-escape, crypto, image-compress)
 └── middleware.ts             # Rate limiting por IP en /api/*
 ```
 
 ### Flujo de auth
 NextAuth maneja sesiones JWT. `auth.uid()` de Supabase siempre es NULL porque no usamos Supabase Auth. Los API routes usan `getServerSession()` + `supabaseAdmin` (service_role, bypasses RLS). El client-side usa `supabase` (anon key) con RLS permisivo para reads.
+
+### Sesión JWT (campos custom)
+`id`, `alias`, `bsy_id`, `name`, `role`, `profile_photo_url`, `bio`
 
 ### Jerarquía de providers
 ```
@@ -181,6 +186,26 @@ CRON_SECRET                       # Auth para cron endpoint
 WEBHOOK_SECRET                    # Auth para webhook de likes
 INTERNAL_API_KEY                  # Auth para endpoint de envío de notificaciones
 ```
+
+## Deployment
+
+### VPS (producción)
+- **Host**: `whisper.beshy.es` (IP: 147.189.175.230)
+- **Conexión**: comando `zap` (SSH como root)
+- **Usuario de app**: `beshy` (tiene las SSH keys de GitHub)
+- **Process manager**: PM2 ejecutado como usuario `beshy` via systemd (`pm2-beshy.service`)
+- **Puerto**: 4000
+
+### Secuencia de deploy
+```bash
+zap "su - beshy -c 'cd /home/beshy/beshy-whisper && git pull origin main && npm run build && pm2 restart beshy-whisper'"
+```
+
+### Reglas críticas
+- Git pull SIEMPRE como usuario `beshy` (`su - beshy -c '...'`), root no tiene SSH keys de GitHub
+- NUNCA crear procesos PM2 como root (causa EADDRINUSE en puerto 4000)
+- PM2 restart: `zap "su - beshy -c 'pm2 restart beshy-whisper'"`
+- PM2 logs: `zap "su - beshy -c 'pm2 logs beshy-whisper --lines 50'"`
 
 ## Integraciones Futuras
 

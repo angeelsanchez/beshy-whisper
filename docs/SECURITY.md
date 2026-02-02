@@ -45,7 +45,6 @@
 
 ### Tablas sin RLS
 - `quotes` — datos públicos de solo lectura
-- `follows` — feature en desarrollo
 
 ### Estrategia
 `auth.uid()` de Supabase siempre es NULL porque usamos NextAuth, no Supabase Auth. Las políticas RLS son permisivas para el anon key (client-side). La protección real está en los API routes (session check + ownership verification + supabaseAdmin).
@@ -92,6 +91,26 @@ if (!safeCompare(receivedToken, process.env.WEBHOOK_SECRET || '')) {
 - NUNCA usar `dangerouslySetInnerHTML` con contenido de usuario
 - Para HTML templates server-side (generate-image), usar `escapeHtml()` de `src/utils/html-escape.ts`
 - CSP restringe sources de scripts, styles, imágenes y conexiones
+
+## File Upload Security
+
+### Foto de perfil (`/api/user/update-photo`)
+- **Tamaño**: máx 512KB server-side (client-side comprime a ~15KB antes de subir)
+- **MIME type**: solo `image/jpeg`, `image/png`, `image/webp`
+- **Magic bytes**: validación server-side de cabeceras binarias
+  - JPEG: `FF D8 FF`
+  - PNG: `89 50 4E 47`
+  - WebP: `52 49 46 46...57 45 42 50`
+- **Naming**: `{userId}.webp` — no acepta nombres arbitrarios, previene path traversal
+- **Storage**: Supabase Storage bucket público con RLS policies (solo el owner puede escribir su propio avatar)
+
+## Brute-force Protection
+
+### Login attempts (`login_attempts` table)
+- Registro de cada intento de login (IP + email + timestamp + success)
+- Endpoint `/api/auth/check-lockout` verifica bloqueos antes de permitir login
+- Limpieza automática de registros >24h via `cleanup_old_login_attempts()`
+- Rate limiting adicional en middleware (5 req/min para auth endpoints)
 
 ## Hallazgos Remediados
 

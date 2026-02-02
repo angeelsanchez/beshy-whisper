@@ -37,6 +37,10 @@
 │  │  RLS   │ │Realtime  │ │  RPC Functions   │ │
 │  │Policies│ │Channels  │ │  (add_like, etc) │ │
 │  └────────┘ └─────────┘ └──────────────────┘ │
+│  ┌──────────────────────────────────────────┐ │
+│  │  Storage (bucket: avatars)               │ │
+│  │  Fotos de perfil, 200x200 WebP           │ │
+│  └──────────────────────────────────────────┘ │
 └───────────────────────────────────────────────┘
 ```
 
@@ -62,8 +66,30 @@ LikeButton → POST /api/likes (session check + supabaseAdmin)
 ```
 Login Page → NextAuth signIn (Google OAuth o Credentials)
           → auth.ts signIn callback → supabaseAdmin busca/crea usuario
-          → JWT generado con {id, alias, bsy_id, name, role}
+          → JWT con {id, alias, bsy_id, name, role, profile_photo_url, bio}
           → Session disponible via useSession() / getServerSession()
+          → Client-side refresh via update() (ej: al cambiar foto/bio)
+```
+
+### 3b. Follows
+```
+FollowButton → POST /api/follows (toggle)
+            → INSERT/DELETE en follows + triggers actualizan contadores
+            → Push notification al seguido
+```
+
+### 3c. Habits
+```
+HabitList → GET /api/habits → POST /api/habits/log (toggle por fecha)
+         → GET /api/habits/stats (rachas, porcentajes)
+```
+
+### 3d. Foto de perfil
+```
+ProfileEditForm → compressAvatar() client-side (200x200 WebP ~15KB)
+              → POST /api/user/update-photo (FormData, magic bytes check)
+              → Supabase Storage: avatars/{userId}.webp (upsert)
+              → URL + ?v={timestamp} para cache bust
 ```
 
 ### 4. Push Notifications
@@ -113,12 +139,19 @@ Implementado en `src/middleware.ts` con Map en memoria:
 
 | Ruta | Límite | Ventana |
 |------|--------|---------|
+| `/api/auth/check-lockout` | 5 req | 60s |
 | `/api/auth/register` | 5 req | 60s |
-| `/api/auth/callback` | 10 req | 60s |
+| `/api/auth/callback` | 5 req | 60s |
 | `/api/likes` | 30 req | 60s |
 | `/api/posts` | 20 req | 60s |
 | `/api/notifications` | 30 req | 60s |
 | `/api/webhooks` | 10 req | 60s |
+| `/api/follows` | 20 req | 60s |
+| `/api/feed` | 30 req | 60s |
+| `/api/habits` | 30 req | 60s |
+| `/api/user/update-photo` | 10 req | 60s |
+| `/api/user/delete-photo` | 10 req | 60s |
+| `/api/user/update-bio` | 15 req | 60s |
 | Resto de `/api/*` | 60 req | 60s |
 
 Cleanup automático cuando el Map supera 10K entries. Se resetea al reiniciar el proceso.

@@ -35,7 +35,6 @@ export default function HabitsPage() {
   const [editingHabitId, setEditingHabitId] = useState<string | null>(null);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
-  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
   const today = formatToday();
 
@@ -78,17 +77,17 @@ export default function HabitsPage() {
     return false;
   }, [editingHabitId, updateHabit, refetchStats]);
 
-  const handleDelete = useCallback(async () => {
-    if (!confirmDelete) return;
-    const success = await deleteHabit(confirmDelete);
+  const handleDelete = useCallback(async (): Promise<boolean> => {
+    if (!editingHabitId) return false;
+    const success = await deleteHabit(editingHabitId);
     if (success) {
-      setConfirmDelete(null);
       setEditingHabitId(null);
       setFormOpen(false);
       refetchStats();
       refetchLogs();
     }
-  }, [confirmDelete, deleteHabit, refetchStats, refetchLogs]);
+    return success;
+  }, [editingHabitId, deleteHabit, refetchStats, refetchLogs]);
 
   const calendarCompletions = useMemo(() => {
     const map: Record<string, number> = {};
@@ -173,42 +172,11 @@ export default function HabitsPage() {
           setEditingHabitId(null);
         }}
         onSubmit={editingHabitId ? handleEdit : handleCreate}
+        onDelete={editingHabitId ? handleDelete : undefined}
         isDay={isDay}
         initialData={editingHabit}
         mode={editingHabitId ? 'edit' : 'create'}
       />
-
-      {editingHabitId && formOpen && (
-        <div className="fixed bottom-4 inset-x-4 max-w-md mx-auto z-[60]">
-          {confirmDelete === editingHabitId ? (
-            <div className={`flex gap-2 p-3 rounded-xl ${isDay ? 'bg-[#F5F0E1] shadow-lg' : 'bg-[#2D1E1A] shadow-lg'}`}>
-              <button
-                onClick={() => setConfirmDelete(null)}
-                className={`flex-1 py-2 rounded-lg text-sm font-medium ${
-                  isDay
-                    ? 'bg-[#4A2E1B]/10 text-[#4A2E1B]'
-                    : 'bg-[#F5F0E1]/10 text-[#F5F0E1]'
-                }`}
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleDelete}
-                className="flex-1 py-2 rounded-lg text-sm font-medium bg-red-500 text-white"
-              >
-                Confirmar eliminación
-              </button>
-            </div>
-          ) : (
-            <button
-              onClick={() => setConfirmDelete(editingHabitId)}
-              className="w-full py-2.5 rounded-xl text-sm font-medium text-red-500 bg-red-500/10 hover:bg-red-500/20 transition-colors"
-            >
-              Eliminar hábito
-            </button>
-          )}
-        </div>
-      )}
 
       {showToast && (
         <div

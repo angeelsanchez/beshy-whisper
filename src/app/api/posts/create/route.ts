@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid request data', details: parsed.error.flatten() }, { status: 400 });
     }
 
-    const { mensaje, franja, is_private, objectives } = parsed.data;
+    const { mensaje, franja, is_private, objectives, mood } = parsed.data;
     const userId = session.user.id;
     const userName = session.user.name || session.user.alias || 'Alguien';
 
@@ -118,6 +118,7 @@ export async function POST(request: NextRequest) {
         franja,
         guest: false,
         is_private,
+        mood: mood ?? null,
       })
       .select()
       .single();

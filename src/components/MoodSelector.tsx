@@ -1,7 +1,6 @@
 'use client';
 
 import { MOOD_OPTIONS, type Mood } from '@/types/mood';
-import AppIcon from '@/components/AppIcon';
 
 interface MoodSelectorProps {
   readonly selected: Mood | null;
@@ -37,7 +36,7 @@ export default function MoodSelector({ selected, onChange, isDay }: MoodSelector
               aria-label={option.label}
               aria-pressed={isSelected}
             >
-              <AppIcon identifier={option.value} type="mood" className="w-5 h-5" color={option.color} />
+              <span className="text-xl">{option.emoji}</span>
               <span className="text-[10px] leading-tight opacity-70">{option.label}</span>
             </button>
           );

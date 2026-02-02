@@ -12,11 +12,14 @@ import dynamic from 'next/dynamic';
 import LikeButton from '@/components/LikeButton';
 import ObjectivesList from '@/components/ObjectivesList';
 import ActivityCalendar from '@/components/ActivityCalendar';
+import OnThisDaySection from '@/components/OnThisDaySection';
 import PullToRefresh from '@/components/PullToRefresh';
 import FollowButton from '@/components/FollowButton';
 import FollowCounts from '@/components/FollowCounts';
 import FollowListModal from '@/components/FollowListModal';
 import Avatar from '@/components/Avatar';
+import { isMood, getMoodEmoji } from '@/types/mood';
+import StatsSection from '@/components/StatsSection';
 
 const ProfileEditForm = dynamic(() => import('@/components/ProfileEditForm'), {
   ssr: false,
@@ -143,7 +146,8 @@ interface UserEntry {
     text: string;
     done: boolean;
   }>;
-  is_private: boolean; // Added for private posts
+  is_private: boolean;
+  mood?: string | null;
 }
 
 interface UserProfile {
@@ -446,7 +450,7 @@ export default function Profile() {
         // Get entries from the specified user that are not guest posts
         let query = supabase
           .from('entries')
-          .select('id, mensaje, fecha, franja, is_private')
+          .select('id, mensaje, fecha, franja, is_private, mood')
           .eq('user_id', userId)
           .eq('guest', false);
 
@@ -521,7 +525,7 @@ export default function Profile() {
         }));
         
         // Para las entradas de día, cargar los objetivos
-        const entriesWithObjectives = [...entriesWithLikesAndCounts];
+        const entriesWithObjectives: UserEntry[] = [...entriesWithLikesAndCounts];
         
         // Cargar objetivos solo para entradas de día
         const dayEntries = entriesWithLikesAndCounts.filter(entry => entry.franja === 'DIA');
@@ -755,10 +759,7 @@ export default function Profile() {
                 <div className="relative">
                   {showLogoutConfirmation ? (
                     <>
-                      <div 
-                        className="fixed inset-0 bg-black bg-opacity-50 z-40" 
-                        onClick={() => setShowLogoutConfirmation(false)}
-                      ></div>
+                      <button type="button" aria-label="Cerrar" className="fixed inset-0 bg-black bg-opacity-50 z-40 cursor-default" onClick={() => setShowLogoutConfirmation(false)} />
                       <div className="fixed sm:absolute bottom-auto sm:bottom-full left-1/2 sm:left-0 -translate-x-1/2 sm:translate-x-0 top-1/2 sm:top-auto -translate-y-1/2 sm:translate-y-0 sm:mb-2 p-4 rounded-lg shadow-lg z-50 w-[90vw] max-w-sm sm:w-80 bg-white">
                         <p className="text-sm text-gray-800 mb-3 font-medium">
                           ¿Estás seguro de que quieres cerrar sesión?
@@ -882,6 +883,16 @@ export default function Profile() {
         </div>
       )}
       
+      {/* Stats charts */}
+      {isOwnProfile && userProfile && (
+        <StatsSection userId={userId} isDay={isDay} />
+      )}
+
+      {/* On This Day - memories from same date in past */}
+      {isOwnProfile && userProfile && (
+        <OnThisDaySection userId={userId} isDay={isDay} />
+      )}
+
       {/* Activity Calendar - only for own profile */}
       {isOwnProfile && userProfile && (
         <div className="mb-8">
@@ -917,6 +928,9 @@ export default function Profile() {
                     {formatTime(entry.fecha)} {formatDate(entry.fecha)}
                   </span>
                   {entry.franja === 'DIA' ? <SunIcon isDay={isDay} /> : <MoonIcon isDay={isDay} />}
+                  {entry.mood && isMood(entry.mood) && (
+                    <span className="text-sm" title={entry.mood}>{getMoodEmoji(entry.mood)}</span>
+                  )}
                   {entry.is_private && <LockIcon isDay={isDay} />}
                 </div>
               </div>
@@ -1056,7 +1070,7 @@ export default function Profile() {
                       {/* Confirmación de eliminación */}
                       {deleteConfirmation === entry.id && (
                         <>
-                          <div className="modal-overlay" onClick={() => setDeleteConfirmation(null)}></div>
+                          <button type="button" aria-label="Cerrar" className="modal-overlay cursor-default" onClick={() => setDeleteConfirmation(null)} />
                           <div className="fixed sm:absolute bottom-auto sm:bottom-full left-1/2 sm:left-0 -translate-x-1/2 sm:translate-x-0 top-1/2 sm:top-auto -translate-y-1/2 sm:translate-y-0 sm:mb-2 p-3 rounded-lg shadow-lg z-50 w-[90vw] max-w-xs sm:w-64 bg-white">
                             <p className="text-xs text-gray-800 mb-2">
                               ¿Estás seguro de que quieres eliminar este post? Esta acción no se puede deshacer.

@@ -13,6 +13,7 @@ interface HabitFormProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (data: HabitFormData) => Promise<boolean>;
+  onDelete?: () => Promise<boolean>;
   isDay: boolean;
   initialData?: {
     name: string;
@@ -33,13 +34,15 @@ const DAY_LABELS = ['D', 'L', 'M', 'X', 'J', 'V', 'S'] as const;
 const ALL_DAYS = [0, 1, 2, 3, 4, 5, 6];
 const WEEKDAYS = [1, 2, 3, 4, 5];
 
-export default function HabitForm({ isOpen, onClose, onSubmit, isDay, initialData, mode }: HabitFormProps) {
+export default function HabitForm({ isOpen, onClose, onSubmit, onDelete, isDay, initialData, mode }: HabitFormProps) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [targetDays, setTargetDays] = useState<number[]>(ALL_DAYS);
   const [color, setColor] = useState('#4A2E1B');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (isOpen && initialData) {
@@ -52,12 +55,16 @@ export default function HabitForm({ isOpen, onClose, onSubmit, isDay, initialDat
       );
       setColor(initialData.color);
       setError(null);
+      setShowConfirmDelete(false);
+      setDeleting(false);
     } else if (isOpen) {
       setName('');
       setDescription('');
       setTargetDays(ALL_DAYS);
       setColor('#4A2E1B');
       setError(null);
+      setShowConfirmDelete(false);
+      setDeleting(false);
     }
   }, [isOpen, initialData]);
 
@@ -115,13 +122,28 @@ export default function HabitForm({ isOpen, onClose, onSubmit, isDay, initialDat
     }
   };
 
+  const handleDelete = async () => {
+    if (!onDelete) return;
+    if (!showConfirmDelete) {
+      setShowConfirmDelete(true);
+      return;
+    }
+    setDeleting(true);
+    const success = await onDelete();
+    setDeleting(false);
+    if (!success) {
+      setShowConfirmDelete(false);
+      setError('Error al eliminar el hábito');
+    }
+  };
+
   return (
     <>
       <button type="button" aria-label="Cerrar" className="fixed inset-0 bg-black/50 z-40 cursor-default" onClick={onClose} />
-      <div className={`fixed inset-x-4 top-1/2 -translate-y-1/2 max-w-md mx-auto rounded-xl shadow-xl z-50 ${
+      <div className={`fixed inset-x-4 top-1/2 -translate-y-1/2 max-w-md mx-auto max-h-[85vh] rounded-xl shadow-xl z-50 flex flex-col ${
         isDay ? 'bg-[#F5F0E1]' : 'bg-[#2D1E1A]'
       }`}>
-        <div className={`flex items-center justify-between p-4 border-b ${
+        <div className={`flex items-center justify-between p-4 border-b flex-shrink-0 ${
           isDay ? 'border-[#4A2E1B]/10' : 'border-[#F5F0E1]/10'
         }`}>
           <h3 className={`font-bold text-lg ${isDay ? 'text-[#4A2E1B]' : 'text-[#F5F0E1]'}`}>
@@ -140,7 +162,7 @@ export default function HabitForm({ isOpen, onClose, onSubmit, isDay, initialDat
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-4 space-y-4">
+        <form onSubmit={handleSubmit} className="p-4 space-y-4 overflow-y-auto flex-1 min-h-0">
           {error && (
             <p className="text-sm text-red-500 font-medium">{error}</p>
           )}
@@ -282,6 +304,45 @@ export default function HabitForm({ isOpen, onClose, onSubmit, isDay, initialDat
           >
             {submitting ? 'Guardando...' : mode === 'create' ? 'Crear hábito' : 'Guardar cambios'}
           </button>
+
+          {mode === 'edit' && onDelete && (
+            <div className={`pt-3 mt-3 border-t ${isDay ? 'border-[#4A2E1B]/10' : 'border-[#F5F0E1]/10'}`}>
+              {showConfirmDelete ? (
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmDelete(false)}
+                    disabled={deleting}
+                    className={`flex-1 py-2 rounded-lg text-sm font-medium ${
+                      isDay
+                        ? 'bg-[#4A2E1B]/10 text-[#4A2E1B]'
+                        : 'bg-[#F5F0E1]/10 text-[#F5F0E1]'
+                    }`}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleDelete}
+                    disabled={deleting}
+                    className={`flex-1 py-2 rounded-lg text-sm font-medium bg-red-500 text-white ${
+                      deleting ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
+                  >
+                    {deleting ? 'Eliminando...' : 'Confirmar'}
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  className="w-full py-2 rounded-lg text-sm font-medium text-red-500 bg-red-500/10 hover:bg-red-500/20 transition-colors"
+                >
+                  Eliminar hábito
+                </button>
+              )}
+            </div>
+          )}
         </form>
       </div>
     </>

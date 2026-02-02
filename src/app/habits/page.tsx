@@ -211,7 +211,10 @@ export default function HabitsPage() {
       )}
 
       {showToast && (
-        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-[#4A2E1B] text-[#F5F0E1] px-6 py-3 rounded-lg shadow-lg opacity-90 z-[70]">
+        <div
+          style={{ top: 'calc(env(safe-area-inset-top, 0px) + 1rem)' }}
+          className="fixed left-1/2 transform -translate-x-1/2 bg-[#4A2E1B] text-[#F5F0E1] px-6 py-3 rounded-lg shadow-lg opacity-90 z-[70]"
+        >
           {toastMessage}
         </div>
       )}

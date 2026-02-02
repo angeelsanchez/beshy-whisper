@@ -145,10 +145,11 @@ export default function PullToRefresh({
       {isIOS && (
         <div
           ref={refreshIndicatorRef}
-          className={`fixed top-0 z-40 pointer-events-none transition-all duration-300 ${
+          className={`fixed z-40 pointer-events-none transition-all duration-300 ${
             isPulling || isRefreshing ? 'visible' : 'invisible'
           }`}
           style={{
+            top: 'env(safe-area-inset-top, 0px)',
             left: '35%',
             transform: `translateX(-50%) translateY(${Math.max(pullDistance - 40, -40)}px)`,
             opacity: isPulling || isRefreshing ? Math.min(pullDistance / refreshThreshold, 1) : 0

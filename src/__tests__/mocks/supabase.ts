@@ -1,7 +1,7 @@
 import { vi } from 'vitest';
 
 function createMockQueryBuilder() {
-  const builder: Record<string, ReturnType<typeof vi.fn>> = {};
+  const builder: Record<string, ReturnType<typeof vi.fn> | undefined> = {};
 
   builder.select = vi.fn().mockReturnValue(builder);
   builder.insert = vi.fn().mockReturnValue(builder);

@@ -71,7 +71,8 @@ export async function recordLoginAttempt(ip: string, email: string, success: boo
     logger.error('Error recording login attempt', { detail: error.message });
   }
 
-  if (Math.random() < CLEANUP_PROBABILITY) {
+  const randomByte = crypto.getRandomValues(new Uint8Array(1))[0];
+  if ((randomByte / 255) < CLEANUP_PROBABILITY) {
     supabaseAdmin.rpc('cleanup_old_login_attempts').then(({ error: cleanupError }) => {
       if (cleanupError) {
         logger.error('Error cleaning up login attempts', { detail: cleanupError.message });

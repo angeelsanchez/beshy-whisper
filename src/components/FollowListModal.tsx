@@ -73,7 +73,7 @@ export default function FollowListModal({ isOpen, onClose, userId, type, isDay }
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/50 z-40" onClick={onClose} />
+      <button type="button" aria-label="Cerrar" className="fixed inset-0 bg-black/50 z-40 cursor-default" onClick={onClose} />
       <div className={`fixed inset-x-4 top-1/2 -translate-y-1/2 max-w-md mx-auto max-h-[70vh] rounded-xl shadow-xl z-50 flex flex-col ${
         isDay ? 'bg-[#F5F0E1]' : 'bg-[#2D1E1A]'
       }`}>

@@ -4,7 +4,7 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/auth';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { logger } from '@/lib/logger';
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     
@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
       if (!notifError) {
         notificationsCount = notifCount || 0;
       }
-    } catch (error) {
+    } catch (_error) {
       // Notifications table might not exist, that's okay
       logger.info('Notifications table not available');
     }

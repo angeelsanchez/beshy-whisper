@@ -53,8 +53,8 @@ export default function FeedPage() {
         await Promise.all(
           cacheNames.map(cacheName => caches.delete(cacheName))
         );
-      } catch (error) {
-        console.log('Cache clearing failed:', error);
+      } catch {
+        // Cache clearing is best-effort
       }
     }
   };

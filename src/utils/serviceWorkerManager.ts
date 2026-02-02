@@ -29,11 +29,10 @@ class ServiceWorkerManager {
     try {
       const existingRegistration = await navigator.serviceWorker.getRegistration('/sw.js');
       if (existingRegistration) {
-        console.log('Service worker already registered');
         return existingRegistration;
       }
     } catch (error) {
-      console.warn('Error checking existing registration:', error);
+      console.warn('Error checking existing SW registration:', error);
     }
 
     // Create new registration promise
@@ -43,8 +42,6 @@ class ServiceWorkerManager {
 
   private async performRegistration(): Promise<ServiceWorkerRegistration | null> {
     if (this.isRegistering) {
-      console.log('Registration already in progress, waiting...');
-      // Wait for current registration to complete
       while (this.isRegistering) {
         await new Promise(resolve => setTimeout(resolve, 100));
       }
@@ -54,33 +51,23 @@ class ServiceWorkerManager {
     this.isRegistering = true;
 
     try {
-      console.log('Registering service worker...');
-      
       const registration = await navigator.serviceWorker.register('/sw.js', {
         scope: '/',
         updateViaCache: 'imports'
       });
 
-      console.log('Service worker registered successfully:', registration.scope);
-
-      // Listen for updates
       registration.addEventListener('updatefound', () => {
-        console.log('Service worker update found');
         const newWorker = registration.installing;
         if (newWorker) {
           newWorker.addEventListener('statechange', () => {
             if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-              console.log('New service worker available');
-              // Optionally notify user about update
               this.notifyUpdate();
             }
           });
         }
       });
 
-      // Handle controller change
       navigator.serviceWorker.addEventListener('controllerchange', () => {
-        console.log('Service worker controller changed');
         window.location.reload();
       });
 
@@ -109,7 +96,6 @@ class ServiceWorkerManager {
       const registration = await navigator.serviceWorker.getRegistration('/sw.js');
       if (registration) {
         await registration.update();
-        console.log('Service worker update check completed');
       }
     } catch (error) {
       console.error('Service worker update failed:', error);
@@ -120,9 +106,7 @@ class ServiceWorkerManager {
     try {
       const registration = await navigator.serviceWorker.getRegistration('/sw.js');
       if (registration) {
-        const result = await registration.unregister();
-        console.log('Service worker unregistered:', result);
-        return result;
+        return await registration.unregister();
       }
       return false;
     } catch (error) {

@@ -4,7 +4,7 @@ import { authOptions } from '../../auth/[...nextauth]/auth';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { logger } from '@/lib/logger';
 
-export async function GET(req: NextRequest) {
+export async function GET(_req: NextRequest) {
   try {
     // Get the session to verify authentication
     const session = await getServerSession(authOptions);

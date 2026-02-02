@@ -2,7 +2,7 @@ import { ImageResponse } from 'next/og';
 
 export const runtime = 'edge';
 
-export const alt = 'BESHY Whisper - Tu espacio de journaling diario anónimo';
+export const alt = 'BESHY Whisper - Tu espacio de journaling diario anonimo';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
@@ -81,7 +81,7 @@ export default function OGImage(): ImageResponse {
                 textAlign: 'center',
               }}
             >
-              Tu espacio de journaling diario anónimo
+              Tu espacio de journaling diario anonimo
             </div>
           </div>
 

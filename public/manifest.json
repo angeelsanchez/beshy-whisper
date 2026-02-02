@@ -1,7 +1,7 @@
 {
   "name": "BESHY Whisper",
   "short_name": "Whisper",
-  "description": "Susurra tu progreso en silencio.",
+  "description": "Transforma tu vida con journaling diario anonimo. Escribe susurros, conecta con una comunidad y construye habitos de bienestar.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#000000",

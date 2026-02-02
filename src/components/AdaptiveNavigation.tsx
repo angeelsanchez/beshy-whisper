@@ -147,11 +147,13 @@ export default function AdaptiveNavigation() {
   return (
     <>
       {/* Mobile Bottom Navigation */}
-      <nav className={`lg:hidden fixed bottom-0 left-0 right-0 z-50 ${
-        isDay ? 'bg-[#F5F0E1]/95' : 'bg-[#2D1E1A]/95'
-      } backdrop-blur-sm border-t ${
-        isDay ? 'border-[#4A2E1B]/10' : 'border-[#F5F0E1]/10'
-      }`}>
+      <nav
+        aria-label="Navegacion principal"
+        className={`lg:hidden fixed bottom-0 left-0 right-0 z-50 ${
+          isDay ? 'bg-[#F5F0E1]/95' : 'bg-[#2D1E1A]/95'
+        } backdrop-blur-sm border-t ${
+          isDay ? 'border-[#4A2E1B]/10' : 'border-[#F5F0E1]/10'
+        }`}>
         <div className="flex items-center justify-around py-2 px-4 max-w-md mx-auto mobile-nav-safe safe-area-left safe-area-right pb-safe mb-4">
           {navItems.map((item) => {
             const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
@@ -162,15 +164,19 @@ export default function AdaptiveNavigation() {
                 href={item.href}
                 className={getNavItemStyles(item, isActive)}
                 title={item.label}
+                aria-current={isActive ? 'page' : undefined}
+                aria-label={item.label}
               >
                 <div className="flex flex-col items-center gap-1 relative">
                   <div className={item.isPostButton ? 'relative' : 'w-6 h-6'}>
                     {typeof item.icon === 'function' ? item.icon(isDay) : item.icon}
-                    {/* Badge for missing posts on create button */}
                     {item.isPostButton && session && !isGuest && contextualMissingCount > 0 && !statusLoading && (
-                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                      <output
+                        className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center"
+                        aria-label={`${contextualMissingCount} whispers pendientes`}
+                      >
                         {contextualMissingCount}
-                      </div>
+                      </output>
                     )}
                   </div>
                   {!item.isPostButton && (
@@ -184,11 +190,13 @@ export default function AdaptiveNavigation() {
       </nav>
 
       {/* Desktop Sidebar Navigation */}
-      <nav className={`hidden lg:flex fixed left-0 top-0 bottom-0 z-50 w-20 flex-col items-center py-8 safe-area-top safe-area-left ${
-        isDay ? 'bg-[#F5F0E1]/95' : 'bg-[#2D1E1A]/95'
-      } backdrop-blur-sm border-r ${
-        isDay ? 'border-[#4A2E1B]/10' : 'border-[#F5F0E1]/10'
-      }`}>
+      <nav
+        aria-label="Navegacion principal"
+        className={`hidden lg:flex fixed left-0 top-0 bottom-0 z-50 w-20 flex-col items-center py-8 safe-area-top safe-area-left ${
+          isDay ? 'bg-[#F5F0E1]/95' : 'bg-[#2D1E1A]/95'
+        } backdrop-blur-sm border-r ${
+          isDay ? 'border-[#4A2E1B]/10' : 'border-[#F5F0E1]/10'
+        }`}>
         <div className="flex-1 flex flex-col items-center justify-center gap-6">
           {navItems.map((item) => {
             const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
@@ -199,14 +207,19 @@ export default function AdaptiveNavigation() {
                 href={item.href}
                 className={`${getNavItemStyles(item, isActive)} group`}
                 title={item.label}
+                aria-current={isActive ? 'page' : undefined}
+                aria-label={item.label}
               >
                 <div className="flex items-center justify-center">
                   <div className={item.isPostButton ? 'relative' : 'w-6 h-6'}>
                     {typeof item.icon === 'function' ? item.icon(isDay) : item.icon}
                     {item.isPostButton && session && !isGuest && contextualMissingCount > 0 && !statusLoading && (
-                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                      <output
+                        className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center"
+                        aria-label={`${contextualMissingCount} whispers pendientes`}
+                      >
                         {contextualMissingCount}
-                      </div>
+                      </output>
                     )}
                   </div>
                 </div>

@@ -112,10 +112,53 @@ button:active, .btn:active {
   -webkit-overflow-scrolling: touch;
 }
 
+/* Skip link: hidden until focused */
+.sr-only-focusable {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+.sr-only-focusable:focus {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 10000;
+  width: auto;
+  height: auto;
+  padding: 1rem 1.5rem;
+  margin: 0;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+  font-size: 1rem;
+  font-weight: 600;
+  background-color: var(--app-primary);
+  color: var(--app-secondary);
+}
+
 /* Better focus states for accessibility */
 *:focus-visible {
-  outline: 2px solid currentColor;
+  outline: 3px solid var(--app-primary);
   outline-offset: 2px;
+}
+
+/* Respect reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* Keyboard active state optimizations */

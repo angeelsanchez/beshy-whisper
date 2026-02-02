@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import FollowButton from './FollowButton';
+import { useFocusTrap } from '@/hooks/useFocusTrap';
 
 interface FollowUser {
   id: string;
@@ -20,12 +21,14 @@ interface FollowListModalProps {
   isDay: boolean;
 }
 
-export default function FollowListModal({ isOpen, onClose, userId, type, isDay }: FollowListModalProps) {
+export default function FollowListModal({ isOpen, onClose, userId, type, isDay }: Readonly<FollowListModalProps>) {
   const [users, setUsers] = useState<FollowUser[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const limit = 20;
+  const modalRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(modalRef, { isActive: isOpen, onClose });
 
   const fetchUsers = useCallback(async (pageNum: number) => {
     setLoading(true);
@@ -73,14 +76,20 @@ export default function FollowListModal({ isOpen, onClose, userId, type, isDay }
 
   return (
     <>
-      <button type="button" aria-label="Cerrar" className="fixed inset-0 bg-black/50 z-40 cursor-default" onClick={onClose} />
-      <div className={`fixed inset-x-4 top-1/2 -translate-y-1/2 max-w-md mx-auto max-h-[70vh] rounded-xl shadow-xl z-50 flex flex-col ${
-        isDay ? 'bg-[#F5F0E1]' : 'bg-[#2D1E1A]'
-      }`}>
+      <div className="fixed inset-0 bg-black/50 z-40" aria-hidden="true" onClick={onClose} />
+      <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="follow-modal-title"
+        className={`fixed inset-x-4 top-1/2 -translate-y-1/2 max-w-md mx-auto max-h-[70vh] rounded-xl shadow-xl z-50 flex flex-col ${
+          isDay ? 'bg-[#F5F0E1]' : 'bg-[#2D1E1A]'
+        }`}
+      >
         <div className={`flex items-center justify-between p-4 border-b ${
           isDay ? 'border-[#4A2E1B]/10' : 'border-[#F5F0E1]/10'
         }`}>
-          <h3 className={`font-bold text-lg ${isDay ? 'text-[#4A2E1B]' : 'text-[#F5F0E1]'}`}>
+          <h3 id="follow-modal-title" className={`font-bold text-lg ${isDay ? 'text-[#4A2E1B]' : 'text-[#F5F0E1]'}`}>
             {type === 'followers' ? 'Seguidores' : 'Siguiendo'} ({total})
           </h3>
           <button
@@ -124,7 +133,7 @@ export default function FollowListModal({ isOpen, onClose, userId, type, isDay }
           </div>
 
           {loading && (
-            <div className={`text-center py-4 text-sm opacity-70 ${isDay ? 'text-[#4A2E1B]' : 'text-[#F5F0E1]'}`}>
+            <div aria-live="polite" className={`text-center py-4 text-sm opacity-70 ${isDay ? 'text-[#4A2E1B]' : 'text-[#F5F0E1]'}`}>
               Cargando...
             </div>
           )}

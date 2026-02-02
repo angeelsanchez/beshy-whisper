@@ -113,7 +113,15 @@ function GuestForm() {
               e.currentTarget.style.backgroundColor = colors.buttonHover;
               e.currentTarget.style.transform = 'translateY(-1px)';
             }}
+            onFocus={(e) => {
+              e.currentTarget.style.backgroundColor = colors.buttonHover;
+              e.currentTarget.style.transform = 'translateY(-1px)';
+            }}
             onMouseOut={(e) => {
+              e.currentTarget.style.backgroundColor = colors.primary;
+              e.currentTarget.style.transform = 'translateY(0)';
+            }}
+            onBlur={(e) => {
               e.currentTarget.style.backgroundColor = colors.primary;
               e.currentTarget.style.transform = 'translateY(0)';
             }}

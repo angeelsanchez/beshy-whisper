@@ -112,7 +112,9 @@ export const authOptions: NextAuthOptions = {
           alias: user.alias,
           name: user.name,
           bsy_id: user.bsy_id,
-          role: user.role || 'user'
+          role: user.role || 'user',
+          profile_photo_url: user.profile_photo_url ?? null,
+          bio: user.bio ?? null,
         };
       }
     })
@@ -177,6 +179,8 @@ export const authOptions: NextAuthOptions = {
         user.name = existingUser.name || `Usuario ${existingUser.alias}`;
         user.id = existingUser.id;
         user.role = existingUser.role || 'user';
+        user.profile_photo_url = existingUser.profile_photo_url ?? null;
+        user.bio = existingUser.bio ?? null;
         
         // Update provider information if not already set
         if (provider === 'google' && !existingUser.google_id) {
@@ -200,15 +204,31 @@ export const authOptions: NextAuthOptions = {
         session.user.bsy_id = token.bsy_id as string;
         session.user.name = token.name as string;
         session.user.role = token.role as string;
+        session.user.profile_photo_url = (token.profile_photo_url as string | null) ?? null;
+        session.user.bio = (token.bio as string | null) ?? null;
       }
       return session;
     },
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
       if (user) {
         token.alias = user.alias;
         token.bsy_id = user.bsy_id;
         token.name = user.name;
         token.role = user.role;
+        token.profile_photo_url = user.profile_photo_url ?? null;
+        token.bio = user.bio ?? null;
+      }
+      if (trigger === 'update' && session) {
+        const update = session as Record<string, unknown>;
+        if ('profile_photo_url' in update) {
+          token.profile_photo_url = update.profile_photo_url as string | null;
+        }
+        if ('bio' in update) {
+          token.bio = update.bio as string | null;
+        }
+        if ('name' in update) {
+          token.name = update.name as string;
+        }
       }
       return token;
     }

@@ -8,6 +8,8 @@ declare module "next-auth" {
       bsy_id: string;
       name?: string;
       role?: string;
+      profile_photo_url?: string | null;
+      bio?: string | null;
     } & DefaultSession["user"];
   }
 
@@ -16,6 +18,8 @@ declare module "next-auth" {
     bsy_id?: string;
     name?: string;
     role?: string;
+    profile_photo_url?: string | null;
+    bio?: string | null;
   }
 }
 
@@ -25,5 +29,7 @@ declare module "next-auth/jwt" {
     bsy_id?: string;
     name?: string;
     role?: string;
+    profile_photo_url?: string | null;
+    bio?: string | null;
   }
 }

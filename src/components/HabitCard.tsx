@@ -114,13 +114,14 @@ export default function HabitCard({
         </div>
       </button>
 
-      <div className={`flex items-center gap-2 flex-shrink-0 text-xs ${
-        isDay ? 'text-[#4A2E1B]/60' : 'text-[#F5F0E1]/60'
+      <div className={`flex items-center gap-2.5 flex-shrink-0 text-[11px] tabular-nums ${
+        isDay ? 'text-[#4A2E1B]/50' : 'text-[#F5F0E1]/50'
       }`}>
-        <span title="Tasa semanal">{completionRate}%</span>
+        <span>{completionRate}%<span className="hidden xs:inline"> sem</span></span>
         {currentStreak > 0 && (
-          <span title={`Racha: ${currentStreak} días`} className="tabular-nums">
-            {currentStreak}d
+          <span className="flex items-center gap-0.5">
+            <span className="text-orange-400 text-xs">🔥</span>
+            {currentStreak}
           </span>
         )}
       </div>

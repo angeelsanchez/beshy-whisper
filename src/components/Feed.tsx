@@ -499,12 +499,25 @@ export default function Feed() {
             <article
               key={entry.id}
               aria-label={`Whisper de ${entry.display_name}`}
-              className={`${
+              className={`relative overflow-hidden ${
                 isDay
                   ? 'bg-[#F5F0E1] shadow-[0_4px_12px_rgba(74,46,27,0.1)]'
                   : 'bg-[#2D1E1A] shadow-[0_4px_12px_rgba(0,0,0,0.3)]'
               } p-6 rounded-lg transition-all duration-300 hover:shadow-lg`}
             >
+              {challengeEntryIds.has(entry.id) && (
+                <>
+                  <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-amber-600/40 via-yellow-400/70 to-amber-600/40" />
+                  <div className={`absolute top-2.5 right-2.5 flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full backdrop-blur-sm ${
+                    isDay
+                      ? 'bg-amber-500/15 text-amber-700 ring-1 ring-amber-500/20'
+                      : 'bg-amber-400/10 text-amber-400 ring-1 ring-amber-400/20'
+                  }`}>
+                    <span className="text-xs">🏆</span>
+                    Reto
+                  </div>
+                </>
+              )}
               <div className="flex items-center justify-between mb-4 border-b pb-3 border-opacity-10 border-current">
                 {entry.guest ? (
                   <div className="flex items-center gap-2">
@@ -530,15 +543,6 @@ export default function Feed() {
                     <span className="text-sm" title={entry.mood}>{getMoodEmoji(entry.mood)}</span>
                   )}
                   {entry.is_private && <LockIcon />}
-                  {challengeEntryIds.has(entry.id) && (
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
-                      isDay
-                        ? 'bg-[#4A2E1B]/10 text-[#4A2E1B]'
-                        : 'bg-[#F5F0E1]/10 text-[#F5F0E1]'
-                    }`}>
-                      🏆 Reto
-                    </span>
-                  )}
                 </div>
               </div>
               

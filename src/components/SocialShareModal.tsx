@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
+import { useFocusTrap } from '@/hooks/useFocusTrap';
 
 interface Objective {
   id: string;
@@ -37,6 +38,8 @@ export default function SocialShareModal({
   const [error, setError] = useState<string | null>(null);
   const [objectives, setObjectives] = useState<Objective[]>([]);
   const [copied, setCopied] = useState(false);
+  const modalRef = useRef<HTMLDialogElement>(null);
+  useFocusTrap(modalRef, { isActive: isOpen, onClose });
 
   useEffect(() => {
     if (!isOpen || !entry.id) return;
@@ -165,8 +168,10 @@ export default function SocialShareModal({
         onClick={onClose}
       />
       <dialog
+        ref={modalRef}
         open
-        aria-label="Compartir whisper"
+        aria-modal="true"
+        aria-labelledby="share-modal-title"
         className={`
         relative m-0 p-0 border-none
         ${isDay ? 'bg-[#F5F0E1] text-[#4A2E1B]' : 'bg-[#2D1E1A] text-[#F5F0E1]'}
@@ -176,7 +181,7 @@ export default function SocialShareModal({
       `}>
         {/* Header */}
         <div className={`flex items-center justify-between px-5 py-3.5 border-b ${borderColor}`}>
-          <h3 className="text-sm font-semibold">Compartir</h3>
+          <h3 id="share-modal-title" className="text-sm font-semibold">Compartir</h3>
           <button
             onClick={onClose}
             className={`p-1 rounded-full transition-colors ${hoverBg}`}
@@ -191,7 +196,7 @@ export default function SocialShareModal({
         <div className="px-5 py-4">
           {/* Error */}
           {error && (
-            <div className={`mb-3 px-3 py-2 rounded-lg text-xs ${
+            <div role="alert" className={`mb-3 px-3 py-2 rounded-lg text-xs ${
               isDay
                 ? 'bg-red-50 border border-red-200 text-red-700'
                 : 'bg-red-900/20 border border-red-800/50 text-red-300'

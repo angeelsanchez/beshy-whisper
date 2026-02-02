@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { jsPDF } from 'jspdf';
+import { useFocusTrap } from '@/hooks/useFocusTrap';
 
 // Función para comprobar si el navegador soporta la descarga de archivos
 const canDownloadFile = () => {
@@ -35,17 +36,19 @@ interface DownloadPDFModalProps {
   isDay: boolean;
 }
 
-export default function DownloadPDFModal({ 
-  isOpen, 
-  onClose, 
-  entries, 
-  userName, 
+export default function DownloadPDFModal({
+  isOpen,
+  onClose,
+  entries,
+  userName,
   userId,
-  isDay 
-}: DownloadPDFModalProps) {
+  isDay
+}: Readonly<DownloadPDFModalProps>) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [canDownload, setCanDownload] = useState(true);
+  const modalRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(modalRef, { isActive: isOpen, onClose });
   
   // Comprobar si el navegador puede descargar archivos
   useEffect(() => {
@@ -301,11 +304,18 @@ export default function DownloadPDFModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/30">
-      <div className={`w-full max-w-md p-6 rounded-lg shadow-lg ${isDay ? 'bg-[#F5F0E1] text-[#4A2E1B]' : 'bg-[#2D1E1A] text-[#F5F0E1]'}`}>
-        <h2 className="text-xl font-bold mb-4">Descargar mis pensamientos</h2>
-        
+      <div className="fixed inset-0" aria-hidden="true" onClick={onClose} />
+      <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="pdf-modal-title"
+        className={`relative w-full max-w-md p-6 rounded-lg shadow-lg ${isDay ? 'bg-[#F5F0E1] text-[#4A2E1B]' : 'bg-[#2D1E1A] text-[#F5F0E1]'}`}
+      >
+        <h2 id="pdf-modal-title" className="text-xl font-bold mb-4">Descargar mis pensamientos</h2>
+
         {error && (
-          <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg">
+          <div role="alert" className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg">
             <p>{error}</p>
           </div>
         )}

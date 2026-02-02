@@ -16,6 +16,11 @@ import PullToRefresh from '@/components/PullToRefresh';
 import FollowButton from '@/components/FollowButton';
 import FollowCounts from '@/components/FollowCounts';
 import FollowListModal from '@/components/FollowListModal';
+import Avatar from '@/components/Avatar';
+
+const ProfileEditForm = dynamic(() => import('@/components/ProfileEditForm'), {
+  ssr: false,
+});
 
 // Dynamically import NameUpdateForm to avoid hydration issues
 const NameUpdateForm = dynamic(() => import('@/components/NameUpdateForm'), {
@@ -146,8 +151,10 @@ interface UserProfile {
   alias: string;
   bsy_id: string;
   name: string;
-  total_likes: number; // Total likes across all entries
-  completed_objectives: number; // Total completed objectives
+  total_likes: number;
+  completed_objectives: number;
+  profile_photo_url?: string | null;
+  bio?: string | null;
 }
 
 export default function Profile() {
@@ -418,7 +425,7 @@ export default function Profile() {
         // Get user profile
         const { data: userData, error: userError } = await supabase
           .from('users')
-          .select('id, alias, bsy_id, name')
+          .select('id, alias, bsy_id, name, profile_photo_url, bio')
           .eq('id', userId)
           .single();
         
@@ -632,18 +639,18 @@ export default function Profile() {
       {/* Header */}
       <header className="flex flex-col items-center mb-8">
         <div className="mb-2 flex flex-col items-center justify-center gap-3">
-          {/* Speech bubble with user profile */}
           <div className="relative">
-            <div className={`rounded-full border-4 border-white p-4 transition-all duration-300 ${
-              isDay 
-                ? 'bg-[#F5F0E1] shadow-[0_4px_12px_rgba(74,46,27,0.15)]' 
-                : 'bg-[#2D1E1A] shadow-[0_4px_12px_rgba(0,0,0,0.4)]'
+            <div className={`rounded-full border-4 border-white transition-all duration-300 ${
+              isDay
+                ? 'shadow-[0_4px_12px_rgba(74,46,27,0.15)]'
+                : 'shadow-[0_4px_12px_rgba(0,0,0,0.4)]'
             }`}>
-              <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" fill={isDay ? "#4A2E1B" : "#F5F0E1"} viewBox="0 0 16 16" className="h-16 w-16">
-                <path d="M3 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1H3Zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/>
-              </svg>
+              <Avatar
+                src={userProfile?.profile_photo_url}
+                name={userProfile?.name || (isOwnProfile ? session?.user?.name : 'Usuario')}
+                size="lg"
+              />
             </div>
-            {/* Three oval bubbles */}
             <div className={`absolute top-full left-[5%] -translate-x-1/2 -mt-3.5 w-3 h-2 rounded-full border-2 border-white transition-all duration-300 ${
               isDay ? 'bg-[#F5F0E1]' : 'bg-[#2D1E1A]'
             }`}></div>
@@ -654,8 +661,7 @@ export default function Profile() {
               isDay ? 'bg-[#F5F0E1]' : 'bg-[#2D1E1A]'
             }`}></div>
           </div>
-          
-          {/* Profile title */}
+
           <div>
             <h1 className="text-3xl font-bold text-center">
               Perfil
@@ -663,14 +669,14 @@ export default function Profile() {
             </h1>
           </div>
         </div>
-        <p className="text-lg mb-6">
+        <p className="text-lg mb-4">
           {isOwnProfile ? 'Gestiona tu perfil y susurros' : 'Explora los susurros de este usuario'}
         </p>
         
         {/* User name and ID */}
         {userProfile && (
           <div className="text-center mb-4">
-            <div className="flex items-center justify-center gap-2 mb-2">
+            <div className="flex items-center justify-center gap-2 mb-1">
               <span className="text-xl font-bold">
                 {userProfile?.name || (isOwnProfile ? session?.user?.name : 'Usuario')}
               </span>
@@ -678,6 +684,9 @@ export default function Profile() {
                 {userProfile.bsy_id || userProfile.alias}
               </span>
             </div>
+            {userProfile.bio && (
+              <p className="text-sm opacity-80 max-w-xs mx-auto">{userProfile.bio}</p>
+            )}
           </div>
         )}
         
@@ -819,15 +828,24 @@ export default function Profile() {
         />
       )}
       
-      {/* Name update form for own profile - only visible when expanded */}
-      {isOwnProfile && (
-        <div className="mb-6">
-          <NameUpdateForm 
-            onNameUpdated={handleNameUpdated} 
-            className={`bg-white/10 ${isDay ? 'text-[#4A2E1B]' : 'text-[#F5F0E1]'}`}
-            isExpanded={isEditFormExpanded}
-            onToggleExpand={toggleEditForm}
+      {isOwnProfile && isEditFormExpanded && (
+        <div className={`mb-6 p-4 rounded-lg ${isDay ? 'bg-white/10' : 'bg-white/5'}`}>
+          <ProfileEditForm
+            currentPhotoUrl={userProfile?.profile_photo_url}
+            currentBio={userProfile?.bio}
+            userName={userProfile?.name || session?.user?.name}
+            onUpdate={(fields) => {
+              setUserProfile(prev => prev ? { ...prev, ...fields } : prev);
+            }}
           />
+          <div className="mt-4 pt-4 border-t border-current/10">
+            <NameUpdateForm
+              onNameUpdated={handleNameUpdated}
+              className={`${isDay ? 'text-[#4A2E1B]' : 'text-[#F5F0E1]'}`}
+              isExpanded={true}
+              onToggleExpand={toggleEditForm}
+            />
+          </div>
         </div>
       )}
       

@@ -11,6 +11,7 @@ import { supabase } from '@/lib/supabase';
 import LikeButton from './LikeButton';
 import ObjectivesList from './ObjectivesList';
 import FeedFilter from './FeedFilter';
+import Avatar from './Avatar';
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
 
@@ -488,11 +489,15 @@ export default function Feed() {
             >
               <div className="flex items-center justify-between mb-4 border-b pb-3 border-opacity-10 border-current">
                 {entry.guest ? (
-                  <span className="font-medium text-base">
-                    {entry.display_id}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <Avatar src={null} name={entry.display_name} size="sm" />
+                    <span className="font-medium text-base">
+                      {entry.display_id}
+                    </span>
+                  </div>
                 ) : (
-                  <Link href={`/profile?user=${entry.user_id}`} className="hover:opacity-80 transition-opacity">
+                  <Link href={`/profile?user=${entry.user_id}`} className="hover:opacity-80 transition-opacity flex items-center gap-2">
+                    <Avatar src={entry.profile_photo_url} name={entry.display_name} size="sm" />
                     <span className="font-medium text-base">
                       {entry.display_name} <span className="font-normal opacity-70">{entry.display_id}</span>
                     </span>

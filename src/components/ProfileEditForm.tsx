@@ -234,7 +234,7 @@ export default function ProfileEditForm({
         />
         <div className="flex items-center justify-between mt-1">
           <span className={`text-xs ${
-            bio.length > BIO_MAX ? 'text-red-500' : 'text-[#8A7B6C]'
+            bio.length > BIO_MAX ? 'text-red-500' : isDay ? 'text-[#8A7B6C]' : 'text-[#8A7B6C]'
           }`}>
             {bio.length}/{BIO_MAX}
           </span>

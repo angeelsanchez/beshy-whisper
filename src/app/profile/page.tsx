@@ -739,78 +739,78 @@ export default function Profile() {
             
             {/* Edit profile button and Download button - only visible on own profile */}
             {isOwnProfile && (
-              <div className="flex items-center gap-3 mt-2">
-                <button 
+              <div className="flex flex-col items-center gap-2 mt-3 w-full max-w-sm">
+                <button
                   onClick={toggleEditForm}
-                  className={`px-4 py-2 rounded-md flex items-center gap-2 transition-colors ${
-                    isEditFormExpanded 
-                      ? isDay ? 'bg-[#4A2E1B] text-[#F5F0E1]' : 'bg-[#F5F0E1] text-[#2D1E1A]' 
-                      : isDay 
-                        ? 'bg-[#4A2E1B]/10 hover:bg-[#4A2E1B]/20 text-[#4A2E1B]' 
-                        : 'bg-[#F5F0E1]/10 hover:bg-[#F5F0E1]/20 text-[#F5F0E1]'
+                  className={`w-full px-4 py-2.5 rounded-lg flex items-center justify-center gap-2 text-sm font-medium transition-all duration-200 ${
+                    isEditFormExpanded
+                      ? isDay ? 'bg-[#4A2E1B] text-[#F5F0E1]' : 'bg-[#F5F0E1] text-[#2D1E1A]'
+                      : isDay
+                        ? 'bg-[#4A2E1B] text-[#F5F0E1] hover:bg-[#3A1E0B]'
+                        : 'bg-[#F5F0E1] text-[#2D1E1A] hover:bg-[#E5E0D1]'
                   }`}
                   aria-label="Editar perfil"
                 >
-                  <EditIcon isDay={isDay} />
-                  <span>{isEditFormExpanded ? 'Cerrar' : 'Editar Perfil'}</span>
+                  <EditIcon isDay={isEditFormExpanded ? !isDay : isDay} />
+                  <span>{isEditFormExpanded ? 'Cerrar editor' : 'Editar Perfil'}</span>
                 </button>
-                
-                {/* Botón de cerrar sesión */}
-                <div className="relative">
-                  {showLogoutConfirmation ? (
-                    <>
-                      <button type="button" aria-label="Cerrar" className="fixed inset-0 bg-black bg-opacity-50 z-40 cursor-default" onClick={() => setShowLogoutConfirmation(false)} />
-                      <div className="fixed sm:absolute bottom-auto sm:bottom-full left-1/2 sm:left-0 -translate-x-1/2 sm:translate-x-0 top-1/2 sm:top-auto -translate-y-1/2 sm:translate-y-0 sm:mb-2 p-4 rounded-lg shadow-lg z-50 w-[90vw] max-w-sm sm:w-80 bg-white">
-                        <p className="text-sm text-gray-800 mb-3 font-medium">
-                          ¿Estás seguro de que quieres cerrar sesión?
-                        </p>
-                        <div className="flex justify-end gap-3">
-                          <button
-                            onClick={() => setShowLogoutConfirmation(false)}
-                            className="px-3 py-2 bg-gray-200 text-gray-800 text-sm rounded-md hover:bg-gray-300 transition-colors"
-                          >
-                            Cancelar
-                          </button>
-                          <button
-                            onClick={() => signOut({ callbackUrl: '/login' })}
-                            className="px-3 py-2 bg-red-600 text-white text-sm rounded-md hover:bg-red-700 transition-colors"
-                          >
-                            Cerrar sesión
-                          </button>
+
+                <div className="flex gap-2 w-full">
+                  <div className="relative flex-1">
+                    {showLogoutConfirmation ? (
+                      <>
+                        <button type="button" aria-label="Cerrar" className="fixed inset-0 bg-black/50 z-40 cursor-default" onClick={() => setShowLogoutConfirmation(false)} />
+                        <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 p-4 rounded-lg shadow-lg z-50 w-[85vw] max-w-sm bg-white">
+                          <p className="text-sm text-gray-800 mb-3 font-medium">
+                            ¿Estás seguro de que quieres cerrar sesión?
+                          </p>
+                          <div className="flex justify-end gap-3">
+                            <button
+                              onClick={() => setShowLogoutConfirmation(false)}
+                              className="px-3 py-2 bg-gray-200 text-gray-800 text-sm rounded-md hover:bg-gray-300 transition-colors"
+                            >
+                              Cancelar
+                            </button>
+                            <button
+                              onClick={() => signOut({ callbackUrl: '/login' })}
+                              className="px-3 py-2 bg-red-600 text-white text-sm rounded-md hover:bg-red-700 transition-colors"
+                            >
+                              Cerrar sesión
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    </>
-                  ) : (
-                    <button 
-                      onClick={() => setShowLogoutConfirmation(true)}
-                      className={`px-4 py-2 rounded-md flex items-center gap-2 transition-colors ${
-                        isDay 
-                          ? 'bg-[#4A2E1B]/10 hover:bg-[#4A2E1B]/20 text-[#4A2E1B]' 
+                      </>
+                    ) : (
+                      <button
+                        onClick={() => setShowLogoutConfirmation(true)}
+                        className={`w-full px-3 py-2 rounded-lg flex items-center justify-center gap-2 text-sm transition-colors ${
+                          isDay
+                            ? 'bg-[#4A2E1B]/10 hover:bg-[#4A2E1B]/20 text-[#4A2E1B]'
+                            : 'bg-[#F5F0E1]/10 hover:bg-[#F5F0E1]/20 text-[#F5F0E1]'
+                        }`}
+                        aria-label="Cerrar sesión"
+                      >
+                        <LogoutIcon isDay={isDay} />
+                        <span>Cerrar sesión</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {entries.length > 0 && (
+                    <button
+                      onClick={() => setIsPDFModalOpen(true)}
+                      className={`flex-1 px-3 py-2 rounded-lg flex items-center justify-center gap-2 text-sm transition-colors ${
+                        isDay
+                          ? 'bg-[#4A2E1B]/10 hover:bg-[#4A2E1B]/20 text-[#4A2E1B]'
                           : 'bg-[#F5F0E1]/10 hover:bg-[#F5F0E1]/20 text-[#F5F0E1]'
                       }`}
-                      aria-label="Cerrar sesión"
+                      aria-label="Descargar mis pensamientos en PDF"
                     >
-                      <LogoutIcon isDay={isDay} />
-                      <span>Cerrar sesión</span>
+                      <DownloadIcon isDay={isDay} />
+                      <span>Descargar PDF</span>
                     </button>
                   )}
                 </div>
-
-                {/* Nuevo botón para descargar PDF */}
-                {entries.length > 0 && (
-                  <button 
-                    onClick={() => setIsPDFModalOpen(true)}
-                    className={`px-4 py-2 rounded-md flex items-center gap-2 transition-colors ${
-                      isDay 
-                        ? 'bg-[#4A2E1B]/10 hover:bg-[#4A2E1B]/20 text-[#4A2E1B]' 
-                        : 'bg-[#F5F0E1]/10 hover:bg-[#F5F0E1]/20 text-[#F5F0E1]'
-                    }`}
-                    aria-label="Descargar mis pensamientos en PDF"
-                  >
-                    <DownloadIcon isDay={isDay} />
-                    <span>Descargar mis pensamientos</span>
-                  </button>
-                )}
               </div>
             )}
           </div>

@@ -634,7 +634,7 @@ export default function Profile() {
   }
 
   return (
-    <div className="w-full min-h-screen" style={{ backgroundColor: isDay ? '#F5F0E1' : '#2D1E1A' }}>
+    <div className="w-full min-h-screen overflow-x-hidden" style={{ backgroundColor: isDay ? '#F5F0E1' : '#2D1E1A' }}>
       <Suspense fallback={null}>
         <SearchParamsWrapper onUserIdChange={setUserId} defaultUserId={session?.user?.id} />
       </Suspense>

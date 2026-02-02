@@ -132,7 +132,7 @@ PostContext mantiene canales Supabase para `public:entries` (INSERT/DELETE) y `p
 - Coverage target: 80% utils, 70% API routes
 - Mock de Supabase a nivel de módulo (no por test)
 - Mock de NextAuth `getServerSession` para tests de API routes
-- Scripts: `npm test`, `npm run test:run`, `npm run test:coverage`
+- Scripts: `pnpm test`, `pnpm run test:run`, `pnpm run test:coverage`
 
 ### Estructura de API Routes
 Patrón estándar para toda ruta:
@@ -198,7 +198,7 @@ INTERNAL_API_KEY                  # Auth para endpoint de envío de notificacion
 
 ### Secuencia de deploy
 ```bash
-zap "su - beshy -c 'cd /home/beshy/beshy-whisper && git pull origin main && npm run build && pm2 restart beshy-whisper'"
+zap "su - beshy -c 'cd /home/beshy/beshy-whisper && git pull origin main && pnpm install --frozen-lockfile && pnpm run build && pm2 restart beshy-whisper'"
 ```
 
 ### Reglas críticas
@@ -214,7 +214,7 @@ Estas integraciones están planificadas. Al implementarlas, consultar `docs/INTE
 | Integración | Propósito | Estado |
 |------------|----------|--------|
 | **Snyk** | Escaneo de vulnerabilidades en dependencias (CI) | Planificado |
-| **Sentry** | Error tracking + performance monitoring (client + server) | Planificado |
+| **Sentry** | Error tracking + performance monitoring (client + server) | Integrado |
 | **Microsoft Clarity** | Session recordings + heatmaps (solo client) | Planificado |
 | **SonarQube** | Análisis estático de código (quality gates) | Planificado |
 | **Offline-first PWA** | Funcionalidad offline completa en mobile (SW cache, sync queue, optimistic UI) | Planificado |

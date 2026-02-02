@@ -23,7 +23,7 @@ Una aplicación de journaling diario con modo día/noche automático.
 ## Requisitos
 
 - Node.js 18.x o superior
-- NPM 8.x o superior
+- pnpm 10.x o superior
 - Cuenta de Supabase
 - Credenciales OAuth de Google
 
@@ -39,7 +39,7 @@ cd beshy-whisper
 2. Instala las dependencias:
 
 ```bash
-npm install
+pnpm install
 ```
 
 3. Configura las variables de entorno:
@@ -91,7 +91,7 @@ RECAPTCHA_SECRET_KEY=tu_recaptcha_secret_key
 5. Inicia el servidor de desarrollo:
 
 ```bash
-npm run dev
+pnpm run dev
 ```
 
 La aplicación estará disponible en http://localhost:4000
@@ -169,8 +169,8 @@ La aplicación ahora incluye una funcionalidad de "Me gusta" para los susurros (
 Para desplegar en producción:
 
 ```bash
-npm run build
-npm start
+pnpm run build
+pnpm start
 ```
 
 ## Licencia

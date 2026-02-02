@@ -62,14 +62,14 @@ sudo yum install postgresql
 
 ### 2. Node.js
 - Node.js 16.0.0 o superior
-- npm o yarn
+- pnpm
 
 ## ⚙️ Instalación
 
 ### 1. Instalar Dependencias
 
 ```bash
-npm install
+pnpm install
 ```
 
 ### 2. Configurar Variables de Entorno
@@ -110,7 +110,7 @@ mkdir -p backups logs
 
 ```bash
 # Backup usando API de Supabase (recomendado para desarrollo)
-npm run backup:simple
+ppnpm run backup:simple
 ```
 
 ### Backup Completo con PostgreSQL (Linux/macOS)
@@ -123,23 +123,23 @@ sudo apt-get install postgresql-client
 brew install postgresql
 
 # Crear backup completo
-npm run backup:full
+ppnpm run backup:full
 
 # O usando pg_dump directamente
-npm run backup:pg
+ppnpm run backup:pg
 ```
 
 ### Restauración
 
 ```bash
 # Listar backups disponibles  
-npm run restore -- --list-backups
+pnpm run restore -- --list-backups
 
 # Restaurar backup simple (JSON)
-npm run restore -- --file ./backups/supabase_simple_backup_*.json.gz
+pnpm run restore -- --file ./backups/supabase_simple_backup_*.json.gz
 
 # Restaurar backup completo (PostgreSQL) - Solo en Linux/macOS
-npm run restore -- --file ./backups/supabase_complete_backup_*.backup
+pnpm run restore -- --file ./backups/supabase_complete_backup_*.backup
 ```
 
 ## 📁 Estructura de Archivos
@@ -206,10 +206,10 @@ Ejemplos:
 crontab -e
 
 # Backup diario a las 2:00 AM
-0 2 * * * cd /ruta/a/tu/proyecto && npm run backup >> /var/log/supabase-backup.log 2>&1
+0 2 * * * cd /ruta/a/tu/proyecto && pnpm run backup >> /var/log/supabase-backup.log 2>&1
 
 # Backup incremental cada 6 horas
-0 */6 * * * cd /ruta/a/tu/proyecto && npm run backup:incremental >> /var/log/supabase-backup.log 2>&1
+0 */6 * * * cd /ruta/a/tu/proyecto && pnpm run backup:incremental >> /var/log/supabase-backup.log 2>&1
 ```
 
 ### Task Scheduler (Windows)
@@ -250,14 +250,14 @@ jobs:
         sudo apt-get install -y postgresql-client
         
     - name: Install dependencies
-      run: npm install
+      run: pnpm install
       
     - name: Create backup
       env:
         NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
         SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         PGPASSWORD: ${{ secrets.DB_PASSWORD }}
-      run: npm run backup
+      run: pnpm run backup
       
     - name: Upload backup to storage
       # Aquí puedes agregar steps para subir a S3, Google Cloud, etc.

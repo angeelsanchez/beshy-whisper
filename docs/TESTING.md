@@ -9,9 +9,9 @@
 ## Scripts
 
 ```bash
-npm test              # Vitest en modo watch
-npm run test:run      # Ejecución única (CI)
-npm run test:coverage # Con reporte de cobertura
+pnpm test              # Vitest en modo watch
+pnpm run test:run      # Ejecución única (CI)
+pnpm run test:coverage # Con reporte de cobertura
 ```
 
 ## Estructura

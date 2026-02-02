@@ -17,6 +17,7 @@ export interface EntryWithUser {
   users?: {
     alias: string;
     name?: string;
+    profile_photo_url?: string | null;
   };
   display_id: string;
   display_name: string;
@@ -25,6 +26,7 @@ export interface EntryWithUser {
   has_objectives: boolean;
   edited?: boolean;
   is_private?: boolean;
+  profile_photo_url?: string | null;
 }
 
 interface PostContextType {
@@ -99,7 +101,8 @@ export function PostProvider({ children }: { children: ReactNode }) {
           *,
           users:user_id (
             alias,
-            name
+            name,
+            profile_photo_url
           )
         `)
         .order('fecha', { ascending: false })
@@ -134,7 +137,8 @@ export function PostProvider({ children }: { children: ReactNode }) {
             display_id,
             display_name,
             likes_count: 0,
-            has_objectives: entry.franja === 'DIA'
+            has_objectives: entry.franja === 'DIA',
+            profile_photo_url: entry.users?.profile_photo_url ?? null,
           };
         }).filter((entry): entry is EntryWithUser => entry !== null);
         

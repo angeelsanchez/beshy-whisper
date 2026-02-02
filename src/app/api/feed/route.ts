@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
 
       const { data: entries, error: entriesError, count } = await supabaseAdmin
         .from('entries')
-        .select(`*, users:user_id (alias, name, bsy_id)`, { count: 'exact' })
+        .select(`*, users:user_id (alias, name, bsy_id, profile_photo_url)`, { count: 'exact' })
         .in('user_id', followingIds)
         .eq('is_private', false)
         .eq('guest', false)
@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
 
     const { data: entries, error: entriesError, count } = await supabaseAdmin
       .from('entries')
-      .select(`*, users:user_id (alias, name, bsy_id)`, { count: 'exact' })
+      .select(`*, users:user_id (alias, name, bsy_id, profile_photo_url)`, { count: 'exact' })
       .order('fecha', { ascending: false })
       .range(offset, offset + limit - 1);
 
@@ -102,7 +102,7 @@ interface EntryRow {
   guest: boolean;
   is_private?: boolean;
   edited?: boolean;
-  users?: { alias: string; name?: string; bsy_id?: string } | null;
+  users?: { alias: string; name?: string; bsy_id?: string; profile_photo_url?: string | null } | null;
 }
 
 function formatEntries(entries: EntryRow[], currentUserId?: string) {
@@ -134,6 +134,7 @@ function formatEntries(entries: EntryRow[], currentUserId?: string) {
       likes_count: 0,
       has_objectives: entry.franja === 'DIA',
       is_own: entry.user_id === currentUserId,
+      profile_photo_url: entry.users?.profile_photo_url ?? null,
     };
   });
 }

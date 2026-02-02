@@ -77,16 +77,42 @@ export default function HabitList({
       </div>
 
       {habits.length === 0 ? (
-        <button
-          onClick={onAdd}
-          className={`w-full py-8 text-center text-sm rounded-lg border-2 border-dashed transition-colors ${
-            isDay
-              ? 'border-[#4A2E1B]/20 text-[#4A2E1B]/50 hover:border-[#4A2E1B]/40 hover:text-[#4A2E1B]/70'
-              : 'border-[#F5F0E1]/20 text-[#F5F0E1]/50 hover:border-[#F5F0E1]/40 hover:text-[#F5F0E1]/70'
-          }`}
-        >
-          Crea tu primer hábito
-        </button>
+        <div className={`text-center py-6 px-4 rounded-xl border-2 border-dashed ${
+          isDay
+            ? 'border-[#4A2E1B]/15 bg-[#4A2E1B]/[0.02]'
+            : 'border-[#F5F0E1]/15 bg-[#F5F0E1]/[0.02]'
+        }`}>
+          <p className={`text-sm font-medium mb-1 ${isDay ? 'text-[#4A2E1B]' : 'text-[#F5F0E1]'}`}>
+            Lleva el control de tus hábitos diarios
+          </p>
+          <p className={`text-xs mb-4 ${isDay ? 'text-[#4A2E1B]/50' : 'text-[#F5F0E1]/50'}`}>
+            Elige los días, marca tu progreso y construye rachas
+          </p>
+          <div className={`flex flex-wrap justify-center gap-1.5 mb-4 ${
+            isDay ? 'text-[#4A2E1B]/35' : 'text-[#F5F0E1]/35'
+          }`}>
+            {['Leer', 'Meditar', 'Ejercicio', 'Beber agua', 'Estudiar', 'Journaling'].map(example => (
+              <span key={example} className={`text-[10px] px-2 py-0.5 rounded-full ${
+                isDay ? 'bg-[#4A2E1B]/5' : 'bg-[#F5F0E1]/5'
+              }`}>
+                {example}
+              </span>
+            ))}
+          </div>
+          <button
+            onClick={onAdd}
+            className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              isDay
+                ? 'bg-[#4A2E1B] text-[#F5F0E1] hover:bg-[#3A1E0B] active:scale-95'
+                : 'bg-[#F5F0E1] text-[#2D1E1A] hover:bg-[#E8E0D0] active:scale-95'
+            }`}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+              <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
+            </svg>
+            Crear mi primer hábito
+          </button>
+        </div>
       ) : (
         <>
           {totalTodayCount === 0 ? (
@@ -155,9 +181,13 @@ export default function HabitList({
       )}
 
       {totalTodayCount > 0 && completedCount === totalTodayCount && (
-        <p className={`text-center text-sm mt-3 font-medium ${isDay ? 'text-[#4A2E1B]/70' : 'text-[#F5F0E1]/70'}`}>
-          Todos los hábitos de hoy completados
-        </p>
+        <div className={`text-center mt-3 py-2 px-3 rounded-lg ${
+          isDay ? 'bg-green-600/10' : 'bg-green-400/10'
+        }`}>
+          <p className={`text-sm font-medium ${isDay ? 'text-green-700' : 'text-green-400'}`}>
+            Día completado
+          </p>
+        </div>
       )}
     </div>
   );

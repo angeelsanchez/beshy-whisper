@@ -183,8 +183,8 @@ export const useReminderNotifications = () => {
         }),
       });
 
-      if (response.ok) {
-        console.log('Test reminder sent successfully');
+      if (!response.ok) {
+        console.error('Test reminder request failed:', response.status);
       }
     } catch (error) {
       console.error('Error sending test reminder:', error);

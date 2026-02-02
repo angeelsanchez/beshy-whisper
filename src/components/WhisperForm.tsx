@@ -379,19 +379,6 @@ export default function WhisperForm() {
     setObjectives(objectives.filter(obj => obj.id !== id));
   };
 
-  // Get user ID for placeholder
-  const getUserId = () => {
-    if (session?.user?.alias) {
-      return session.user.alias;
-    }
-    
-    if (sessionStorage.getItem('isGuest') === 'true') {
-      return sessionStorage.getItem('guestName') || 'Invitado';
-    }
-    
-    return 'BSY000';
-  };
-
   return (
     <div 
       className={`w-full max-w-[600px] mx-auto px-4 py-4 font-montserrat mobile-form-container ${

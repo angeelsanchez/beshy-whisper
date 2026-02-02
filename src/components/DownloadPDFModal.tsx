@@ -253,15 +253,12 @@ export default function DownloadPDFModal({
       const formattedDate = currentDate.toISOString().split('T')[0]; // YYYY-MM-DD
       const fileName = `beshy-pensamientos-${formattedDate}.pdf`;
       
-      console.log('Generando PDF...'); // Para depuración
-      
       // Usar setTimeout para asegurarnos de que la UI se actualice antes de guardar
       setTimeout(() => {
         try {
           // Intentar guardar usando el método estándar
           try {
             doc.save(fileName);
-            console.log('PDF generado y guardado correctamente');
           } catch (saveError) {
             console.warn('Error usando doc.save(), intentando método alternativo:', saveError);
             

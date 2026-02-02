@@ -236,7 +236,7 @@ export default function ObjectivesList({ entryId, authorId, isDay, isEditing = f
     <div className="mt-3 pt-2">
       <h4 className="text-sm font-medium mb-2">Objetivos:</h4>
       <ul className="space-y-2">
-        {visibleObjectives.map((objective, index) => (
+        {visibleObjectives.map((objective) => (
           <li 
             key={objective.id} 
             className={`flex items-center gap-2 p-2 rounded-md transition-opacity duration-200 ${

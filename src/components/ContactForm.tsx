@@ -38,7 +38,7 @@ export default function ContactForm({ isOpen, onClose }: ContactFormProps) {
         onClose();
       }, 2000);
       
-    } catch (error) {
+    } catch {
       setSubmitStatus('error');
     } finally {
       setIsSubmitting(false);

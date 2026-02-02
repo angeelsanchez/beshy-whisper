@@ -204,8 +204,8 @@ export default function Profile() {
         await Promise.all(
           cacheNames.map(cacheName => caches.delete(cacheName))
         );
-      } catch (error) {
-        console.log('Cache clearing failed:', error);
+      } catch {
+        // Cache clearing is best-effort
       }
     }
   };
@@ -495,12 +495,8 @@ export default function Profile() {
           if (likesError) {
             console.error('Error fetching likes data:', likesError);
           } else if (likesData && likesData.length > 0) {
-            console.log('Fetched likes data:', likesData);
-            
-            // Count total likes and likes per entry
             totalLikes = likesData.length;
-            
-            // Count likes per entry
+
             likesData.forEach(like => {
               if (like && like.entry_id) {
                 const entryId = like.entry_id;
@@ -508,8 +504,6 @@ export default function Profile() {
                 likesCountMap.set(entryId, currentCount + 1);
               }
             });
-            
-            console.log('Likes count map:', Object.fromEntries(likesCountMap));
           }
         }
         

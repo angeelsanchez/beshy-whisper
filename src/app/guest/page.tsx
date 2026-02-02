@@ -9,30 +9,29 @@ function GuestForm() {
   const [error, setError] = useState('');
   const [isNavigating, setIsNavigating] = useState(false);
   const { executeRecaptcha } = useGoogleReCaptcha();
-  const { isDay, colors } = useTheme();
+  const { colors } = useTheme();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (isNavigating) {
       return; // Prevent multiple submissions
     }
-    
+
     if (!name.trim()) {
       setError('Por favor ingresa tu nombre');
       return;
     }
-    
+
     if (!executeRecaptcha) {
       setError('reCAPTCHA no disponible');
       return;
     }
-    
+
     setIsNavigating(true);
-    
+
     try {
-      // Get reCAPTCHA token
-      const token = await executeRecaptcha('guest_mode');
+      await executeRecaptcha('guest_mode');
       
       // Store guest name in session storage
       try {

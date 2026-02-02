@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuthSession } from '@/hooks/useAuthSession';
-import { formatLikeCount } from '@/utils/format-utils';
+
 import { getCurrentUserId } from '@/utils/user-helpers';
 import { usePostContext, EntryWithUser } from '@/context/PostContext';
 import { useTheme } from '@/context/ThemeContext';
@@ -54,17 +54,6 @@ const ShareArrowIcon = () => (
   </svg>
 );
 
-// Heart icon for likes
-const HeartIcon = ({ filled = false }: { filled?: boolean }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-    {filled ? (
-      <path fillRule="evenodd" d="M8 1.314C12.438-3.248 23.534 4.735 8 15-7.534 4.736 3.562-3.248 8 1.314z"/>
-    ) : (
-      <path d="m8 2.748-.717-.737C5.6.281 2.514.878 1.4 3.053c-.523 1.023-.641 2.5.314 4.385.92 1.815 2.834 3.989 6.286 6.357 3.452-2.368 5.365-4.542 6.286-6.357.955-1.886.838-3.362.314-4.385C13.486.878 10.4.28 8.717 2.01L8 2.748zM8 15C-7.333 4.868 3.279-3.04 7.824 1.143c.06.055.119.112.176.171a3.12 3.12 0 0 1 .176-.17C12.72-3.042 23.333 4.867 8 15z"/>
-    )}
-  </svg>
-);
-
 // Three dots menu icon
 const MenuDotsIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
@@ -109,7 +98,7 @@ export default function Feed() {
   const [showLoadingError, setShowLoadingError] = useState(false);
   const [visibleCount, setVisibleCount] = useState(10);
   const { session, isAuthenticated } = useAuthSession();
-  const { isDay, colors } = useTheme();
+  const { isDay } = useTheme();
   const currentUserId = getCurrentUserId(session);
   const [deleteConfirmation, setDeleteConfirmation] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
@@ -137,7 +126,7 @@ export default function Feed() {
     const checkDbConnection = async () => {
       try {
         // Simple query to check connection
-        const { data, error } = await supabase.from('entries').select('count', { count: 'exact', head: true });
+        const { error } = await supabase.from('entries').select('count', { count: 'exact', head: true });
         
         if (abortController.signal.aborted) return;
         

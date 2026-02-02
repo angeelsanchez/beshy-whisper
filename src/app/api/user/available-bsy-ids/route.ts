@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { logger } from '@/lib/logger';
 
-export async function GET(req: NextRequest) {
+export async function GET(_req: NextRequest) {
   try {
     // Get the highest existing BSY ID
     const { data: users, error } = await supabaseAdmin

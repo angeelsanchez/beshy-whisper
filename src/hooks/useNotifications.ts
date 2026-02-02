@@ -45,7 +45,9 @@ export const useNotifications = () => {
   const [isRegistering, setIsRegistering] = useState(false);
 
   const initializationRef = useRef(false);
-  const registrationTimeoutRef = useRef<NodeJS.Timeout>();
+  const registrationTimeoutRef = useRef<ReturnType<typeof globalThis.setTimeout>>();
+  const morningTimeoutRef = useRef<ReturnType<typeof globalThis.setTimeout>>();
+  const nightTimeoutRef = useRef<ReturnType<typeof globalThis.setTimeout>>();
   const pushRegistrationRef = useRef<Promise<boolean> | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -87,6 +89,17 @@ export const useNotifications = () => {
     }
   }, [permission]);
 
+  const clearScheduledNotifications = useCallback(() => {
+    if (morningTimeoutRef.current) {
+      clearTimeout(morningTimeoutRef.current);
+      morningTimeoutRef.current = undefined;
+    }
+    if (nightTimeoutRef.current) {
+      clearTimeout(nightTimeoutRef.current);
+      nightTimeoutRef.current = undefined;
+    }
+  }, []);
+
   const scheduleNotifications = useCallback(() => {
     if (!session?.user?.id || permission !== 'granted' || !settings.enabled || loading) {
       return;
@@ -114,46 +127,29 @@ export const useNotifications = () => {
     if (!hasDayPost) {
       const timeUntilMorning = morningNotification.getTime() - now.getTime();
       if (timeUntilMorning > 0) {
-        const timeoutId = setTimeout(() => {
+        morningTimeoutRef.current = globalThis.setTimeout(() => {
           showNotification(
             'Tiempo de tu Whisper matutino',
             'No olvides compartir tu whisper del día',
             '/create'
           );
         }, timeUntilMorning);
-        localStorage.setItem('morningNotificationId', timeoutId.toString());
       }
     }
 
     if (!hasNightPost) {
       const timeUntilNight = nightNotification.getTime() - now.getTime();
       if (timeUntilNight > 0) {
-        const timeoutId = setTimeout(() => {
+        nightTimeoutRef.current = globalThis.setTimeout(() => {
           showNotification(
             'Tiempo de tu Whisper nocturno',
             'No olvides compartir tu whisper de la noche',
             '/create'
           );
         }, timeUntilNight);
-        localStorage.setItem('nightNotificationId', timeoutId.toString());
       }
     }
-  }, [session?.user?.id, permission, settings, hasDayPost, hasNightPost, loading, showNotification]);
-
-  const clearScheduledNotifications = useCallback(() => {
-    const morningId = localStorage.getItem('morningNotificationId');
-    const nightId = localStorage.getItem('nightNotificationId');
-
-    if (morningId) {
-      clearTimeout(Number(morningId));
-      localStorage.removeItem('morningNotificationId');
-    }
-
-    if (nightId) {
-      clearTimeout(Number(nightId));
-      localStorage.removeItem('nightNotificationId');
-    }
-  }, []);
+  }, [session?.user?.id, permission, settings, hasDayPost, hasNightPost, loading, showNotification, clearScheduledNotifications]);
 
   const isPushSupported = useCallback((): boolean => {
     if (typeof window === 'undefined') return false;

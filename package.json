@@ -13,7 +13,14 @@
     "backup:simple": "node scripts/backup-simple.js",
     "backup:full": "node scripts/backup.js",
     "backup:pg": "node scripts/backup-pg.js",
-    "restore": "node scripts/restore.js"
+    "restore": "node scripts/restore.js",
+    "prepare": "husky",
+    "lint:fix": "eslint src/ --fix"
+  },
+  "lint-staged": {
+    "src/**/*.{ts,tsx}": [
+      "eslint --max-warnings=0"
+    ]
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.93.3",
@@ -51,7 +58,9 @@
     "autoprefixer": "^10.4.23",
     "eslint": "^9.26.0",
     "eslint-config-next": "^15.5.11",
+    "husky": "^9.1.7",
     "jsdom": "^27.4.0",
+    "lint-staged": "^16.2.7",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.19",
     "typescript": "^5.9.3",

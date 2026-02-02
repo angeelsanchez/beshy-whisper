@@ -23,7 +23,7 @@ const FireIcon = ({ isDay }: { isDay: boolean }) => (
 );
 
 export default function ActivityCalendar({ userId, isDay }: ActivityCalendarProps) {
-  const { days, streak, totalPosts, loading, streakStartDate } = useActivityData(userId);
+  const { days, streak, loading, streakStartDate } = useActivityData(userId);
   const [hoveredDay, setHoveredDay] = useState<string | null>(null);
 
   if (loading) {
@@ -169,7 +169,7 @@ export default function ActivityCalendar({ userId, isDay }: ActivityCalendarProp
         <div className="flex gap-0.5">
           {weeks.map((week, weekIndex) => (
             <div key={weekIndex} className="flex flex-col gap-0.5">
-              {week.map((day, dayIndex) => (
+              {week.map((day) => (
                 <div
                   key={day.date}
                   className={`aspect-square rounded-sm cursor-pointer transition-all duration-150 hover:scale-110 ${getIntensityClass(

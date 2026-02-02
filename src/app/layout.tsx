@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import "./globals.css";
 import { Montserrat } from "next/font/google";
 import { Providers } from "./providers";
 import dynamic from "next/dynamic";
+
+const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 
 const AdaptiveNavigation = dynamic(() => import("@/components/AdaptiveNavigation"));
 const InstallPrompt = dynamic(() => import("@/components/InstallPrompt"));
@@ -16,8 +19,27 @@ const montserrat = Montserrat({
 });
 
 export const metadata: Metadata = {
-  title: "BESHY Whisper",
-  description: "Susurra tu progreso en silencio.",
+  metadataBase: new URL("https://whisper.beshy.es"),
+  title: {
+    default: "BESHY Whisper - Journaling Diario Anonimo",
+    template: "%s | BESHY Whisper",
+  },
+  description:
+    "Transforma tu vida con journaling diario anonimo. Escribe susurros, conecta con una comunidad, trackea habitos y construye una rutina de bienestar. Gratis y en espanol.",
+  keywords: [
+    "journaling diario",
+    "diario anonimo",
+    "bienestar",
+    "reflexion personal",
+    "habitos diarios",
+    "escritura terapeutica",
+    "mindfulness",
+    "diario personal",
+    "red social journaling",
+    "PWA journaling",
+  ],
+  authors: [{ name: "BESHY" }],
+  creator: "BESHY",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
@@ -26,6 +48,38 @@ export const metadata: Metadata = {
   },
   formatDetection: {
     telephone: false,
+  },
+  openGraph: {
+    type: "website",
+    locale: "es_ES",
+    url: "https://whisper.beshy.es",
+    siteName: "BESHY Whisper",
+    title: "BESHY Whisper - Journaling Diario Anonimo",
+    description:
+      "Transforma tu vida con journaling diario. Escribe susurros anonimos, conecta con otros y construye habitos de bienestar.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "BESHY Whisper - Journaling Diario Anonimo",
+    description:
+      "Transforma tu vida con journaling diario. Escribe susurros anonimos, conecta con otros y construye habitos de bienestar.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  alternates: {
+    canonical: "https://whisper.beshy.es",
+  },
+  verification: {
+    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION ?? "",
   },
 };
 
@@ -104,9 +158,6 @@ export default function RootLayout({
           }}
         />
         <link rel="preload" href="/beshy-logo.svg" as="image" />
-        <link rel="dns-prefetch" href="//fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" crossOrigin="" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <style
           dangerouslySetInnerHTML={{
             __html: `
@@ -116,6 +167,17 @@ export default function RootLayout({
         />
       </head>
       <body suppressHydrationWarning>
+        {GA_MEASUREMENT_ID && (
+          <>
+            <Script
+              src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
+              strategy="afterInteractive"
+            />
+            <Script id="google-analytics" strategy="afterInteractive">
+              {`window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${GA_MEASUREMENT_ID}');`}
+            </Script>
+          </>
+        )}
         <div id="splash-screen">
           <img src="/beshy-logo.svg" alt="Beshy Logo" />
         </div>

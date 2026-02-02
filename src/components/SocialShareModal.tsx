@@ -19,6 +19,7 @@ interface SocialShareModalProps {
     franja: 'DIA' | 'NOCHE';
     display_name: string;
     display_id: string;
+    profile_photo_url?: string | null;
   };
   isDay: boolean;
 }
@@ -83,7 +84,8 @@ export default function SocialShareModal({
           display_id: entry.display_id,
           fecha: entry.fecha,
           mode,
-          isDay
+          isDay,
+          profile_photo_url: entry.profile_photo_url ?? null,
         }),
         signal: controller.signal,
       });

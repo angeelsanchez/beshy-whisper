@@ -7,7 +7,7 @@ export default function LandingFooter() {
   return (
     <footer className="py-12 border-t border-app-divider bg-app-bg text-app-text">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
           <div className="text-center md:text-left">
             <Image
               src="/beshy-logo.svg"
@@ -19,7 +19,7 @@ export default function LandingFooter() {
             <p className="mt-2 text-sm opacity-70">Tu espacio de reflexión personal</p>
           </div>
 
-          <nav aria-label="Accesos" className="text-center md:text-right">
+          <nav aria-label="Accesos" className="text-center">
             <h4 className="font-semibold mb-3">Accesos</h4>
             <ul className="space-y-2 text-sm opacity-70">
               <li>
@@ -34,6 +34,14 @@ export default function LandingFooter() {
               </li>
             </ul>
           </nav>
+
+          <div className="text-center md:text-right">
+            <h4 className="font-semibold mb-3">Proyecto</h4>
+            <ul className="space-y-2 text-sm opacity-70">
+              <li>Trabajo Fin de Máster</li>
+              <li>whisper.beshy.es</li>
+            </ul>
+          </div>
         </div>
 
         <div className="text-center text-sm opacity-60 pt-8 border-t border-app-divider">

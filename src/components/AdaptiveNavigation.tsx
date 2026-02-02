@@ -189,10 +189,10 @@ export default function AdaptiveNavigation() {
       } backdrop-blur-sm border-r ${
         isDay ? 'border-[#4A2E1B]/10' : 'border-[#F5F0E1]/10'
       }`}>
-        <div className="flex flex-col items-center gap-6">
+        <div className="flex-1 flex flex-col items-center justify-center gap-6">
           {navItems.map((item) => {
             const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
-            
+
             return (
               <Link
                 key={item.id}
@@ -203,7 +203,6 @@ export default function AdaptiveNavigation() {
                 <div className="flex items-center justify-center">
                   <div className={item.isPostButton ? 'relative' : 'w-6 h-6'}>
                     {typeof item.icon === 'function' ? item.icon(isDay) : item.icon}
-                    {/* Badge for missing posts on create button */}
                     {item.isPostButton && session && !isGuest && contextualMissingCount > 0 && !statusLoading && (
                       <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
                         {contextualMissingCount}
@@ -211,11 +210,10 @@ export default function AdaptiveNavigation() {
                     )}
                   </div>
                 </div>
-                
-                {/* Tooltip on hover */}
+
                 <div className={`absolute left-full ml-3 px-2 py-1 rounded-md text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap ${
-                  isDay 
-                    ? 'bg-[#4A2E1B] text-[#F5F0E1]' 
+                  isDay
+                    ? 'bg-[#4A2E1B] text-[#F5F0E1]'
                     : 'bg-[#F5F0E1] text-[#2D1E1A]'
                 }`}>
                   {item.label}

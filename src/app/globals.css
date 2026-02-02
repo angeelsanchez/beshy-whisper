@@ -2,7 +2,28 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Critical styles are loaded inline - see critical.css */
+/* Semantic theme variables for server components */
+html.day-theme {
+  --app-bg: #F5F0E1;
+  --app-text: #4A2E1B;
+  --app-form-bg: #F5F0E1;
+  --app-input-bg: #FFFFFF;
+  --app-input-border: #4A2E1B;
+  --app-divider: rgba(74, 46, 27, 0.2);
+  --app-primary: #4A2E1B;
+  --app-secondary: #F5F0E1;
+}
+
+html.night-theme {
+  --app-bg: #2D1E1A;
+  --app-text: #F5F0E1;
+  --app-form-bg: #2D1E1A;
+  --app-input-bg: #382723;
+  --app-input-border: #F5F0E1;
+  --app-divider: rgba(245, 240, 225, 0.2);
+  --app-primary: #F5F0E1;
+  --app-secondary: #2D1E1A;
+}
 
 /* iOS Mobile Optimizations */
 html {
@@ -213,14 +234,6 @@ button:active, .btn:active {
 
 /* Responsive Adjustments */
 @media (max-width: 640px) {
-  h1 {
-    font-size: 1.75rem !important;
-  }
-  
-  p {
-    font-size: 0.95rem !important;
-  }
-  
   .container {
     padding-left: 1rem;
     padding-right: 1rem;
@@ -435,11 +448,6 @@ button:active, .btn:active {
 .stagger-animation > *:nth-child(5) { animation-delay: 0.5s; }
 .stagger-animation > *:nth-child(6) { animation-delay: 0.6s; }
 
-/* Smooth scroll behavior */
-html {
-  scroll-behavior: smooth;
-}
-
 /* Enhanced button hover effects */
 .btn-landing {
   position: relative;
@@ -517,104 +525,7 @@ html {
   }
 }
 
-/* Enhanced landing page animations */
-@keyframes slideInFromBottom {
-  from {
-    opacity: 0;
-    transform: translateY(50px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes slideInFromTop {
-  from {
-    opacity: 0;
-    transform: translateY(-50px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes slideInFromLeft {
-  from {
-    opacity: 0;
-    transform: translateX(-50px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-@keyframes slideInFromRight {
-  from {
-    opacity: 0;
-    transform: translateX(50px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-@keyframes bounceIn {
-  0% {
-    opacity: 0;
-    transform: scale(0.3);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1.05);
-  }
-  70% {
-    transform: scale(0.9);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-@keyframes fadeInScale {
-  from {
-    opacity: 0;
-    transform: scale(0.8);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-/* Animation utility classes */
-.animate-slide-in-bottom {
-  animation: slideInFromBottom 0.8s ease-out forwards;
-}
-
-.animate-slide-in-top {
-  animation: slideInFromTop 0.8s ease-out forwards;
-}
-
-.animate-slide-in-left {
-  animation: slideInFromLeft 0.8s ease-out forwards;
-}
-
-.animate-slide-in-right {
-  animation: slideInFromRight 0.8s ease-out forwards;
-}
-
-.animate-bounce-in {
-  animation: bounceIn 1s ease-out forwards;
-}
-
-.animate-fade-in-scale {
-  animation: fadeInScale 0.8s ease-out forwards;
-}
+/* Kept animations: fadeInUp, fadeInDown, fadeInLeft, fadeInRight, scaleIn, float variants, pulse-glow */
 
 /* Enhanced hover effects for cards */
 .card-hover {
@@ -712,7 +623,12 @@ html {
   will-change: opacity;
 }
 
-/* Smooth transitions for theme changes */
-* {
-  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+/* Theme transitions scoped to relevant elements only */
+body,
+main,
+section,
+header,
+footer,
+nav {
+  transition: background-color 0.3s ease, color 0.3s ease;
 }

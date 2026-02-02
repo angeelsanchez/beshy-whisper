@@ -3,13 +3,13 @@
 ## Snyk — Escaneo de Vulnerabilidades en Dependencias
 
 ### Propósito
-Detectar vulnerabilidades conocidas en paquetes npm y sus dependencias transitivas. Alerta automática cuando se descubre un CVE nuevo.
+Detectar vulnerabilidades conocidas en paquetes y sus dependencias transitivas. Alerta automática cuando se descubre un CVE nuevo.
 
 ### Setup
 
 1. Instalar Snyk CLI:
 ```bash
-npm install -g snyk
+pnpm add -g snyk
 snyk auth
 ```
 
@@ -46,7 +46,7 @@ Capturar errores en producción (client + server) con contexto completo (stack t
 
 1. Instalar SDK:
 ```bash
-npm install @sentry/nextjs
+pnpm add @sentry/nextjs
 npx @sentry/wizard@latest -i nextjs
 ```
 
@@ -182,10 +182,10 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: 20 }
-      - run: npm ci
-      - run: npm run lint
-      - run: npm run test:coverage
-      - run: npm run build
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run lint
+      - run: pnpm run test:coverage
+      - run: pnpm run build
       - name: Snyk
         uses: snyk/actions/node@master
         env: { SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }} }

@@ -86,8 +86,8 @@ export const metadata: Metadata = {
 export const viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
+  maximumScale: 5,
+  userScalable: true,
   viewportFit: "cover",
   interactiveWidget: "resizes-content",
   themeColor: [
@@ -178,14 +178,17 @@ export default function RootLayout({
             </Script>
           </>
         )}
-        <div id="splash-screen">
-          <img src="/beshy-logo.svg" alt="Beshy Logo" />
+        <a href="#main-content" className="sr-only-focusable">
+          Saltar al contenido principal
+        </a>
+        <div id="splash-screen" aria-hidden="true">
+          <img src="/beshy-logo.svg" alt="" />
         </div>
         <div id="main-content">
           <Providers>
-            <div className="lg:pl-20 pb-16 lg:pb-0 safe-area-top">
+            <main className="lg:pl-20 pb-16 lg:pb-0 safe-area-top">
               {children}
-            </div>
+            </main>
             <AdaptiveNavigation />
             <NotificationBanner />
             <InstallPrompt />

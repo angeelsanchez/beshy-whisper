@@ -414,6 +414,8 @@ export default function WhisperForm() {
       {/* Toast notification */}
       {showToast && (
         <div
+          role="status"
+          aria-live="polite"
           style={{ top: 'calc(env(safe-area-inset-top, 0px) + 1rem)' }}
           className="fixed left-1/2 transform -translate-x-1/2 bg-[#4A2E1B] text-[#F5F0E1] px-6 py-3 rounded-lg shadow-lg opacity-90 z-50"
         >
@@ -434,7 +436,7 @@ export default function WhisperForm() {
         
         <form onSubmit={handleSubmit}>
           {/* Help text moved above textarea */}
-          <p className="text-sm opacity-70 mb-2">Escribe tu whisper aquí</p>
+          <label htmlFor="whisper-textarea" className="text-sm opacity-70 mb-2 block">Escribe tu whisper aqui</label>
 
           {message.length === 0 && (
             <PromptSuggestions
@@ -446,6 +448,7 @@ export default function WhisperForm() {
 
           <div className="relative mb-4">
             <textarea
+              id="whisper-textarea"
               ref={textareaRef}
               value={message}
               onChange={handleTextChange}
@@ -483,11 +486,13 @@ export default function WhisperForm() {
                       isDay ? 'bg-[#4A2E1B]/10' : 'bg-[#F5F0E1]/10'
                     }`}
                   >
+                    <label htmlFor={`objective-${objective.id}`} className="sr-only">Objetivo</label>
                     <input
+                      id={`objective-${objective.id}`}
                       type="text"
                       value={objective.text}
                       onChange={(e) => handleObjectiveTextChange(objective.id, e.target.value)}
-                      placeholder="Escribe tu objetivo aquí"
+                      placeholder="Escribe tu objetivo aqui"
                       className={`flex-grow p-2 rounded-md ${
                         isDay 
                           ? 'bg-white border-[#4A2E1B]/20 focus:border-[#4A2E1B]' 
@@ -528,7 +533,7 @@ export default function WhisperForm() {
           )}
 
           {error && (
-            <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg">
+            <div role="alert" className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg">
               {error}
             </div>
           )}

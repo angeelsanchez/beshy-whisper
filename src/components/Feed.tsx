@@ -467,14 +467,13 @@ export default function Feed() {
 
       {/* Show error message if there's an error */}
       {error && (
-        <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg">
+        <div role="alert" className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg">
           <p>{error}</p>
         </div>
       )}
-      
-      {/* Show success message after deletion */}
+
       {deleteSuccess && (
-        <div className="mb-4 p-3 bg-green-100 text-green-700 rounded-lg">
+        <div role="status" className="mb-4 p-3 bg-green-100 text-green-700 rounded-lg">
           <p>{deleteSuccess}</p>
         </div>
       )}
@@ -497,11 +496,12 @@ export default function Feed() {
           {visibleEntries
             .filter(entry => !entry.id.startsWith('temp-')) // Filtrar posts temporales
             .map((entry) => (
-            <div 
+            <article
               key={entry.id}
+              aria-label={`Whisper de ${entry.display_name}`}
               className={`${
-                isDay 
-                  ? 'bg-[#F5F0E1] shadow-[0_4px_12px_rgba(74,46,27,0.1)]' 
+                isDay
+                  ? 'bg-[#F5F0E1] shadow-[0_4px_12px_rgba(74,46,27,0.1)]'
                   : 'bg-[#2D1E1A] shadow-[0_4px_12px_rgba(0,0,0,0.3)]'
               } p-6 rounded-lg transition-all duration-300 hover:shadow-lg`}
             >
@@ -635,47 +635,47 @@ export default function Feed() {
                       
                       {/* Menú desplegable de opciones */}
                       {showOptionsMenu === entry.id && (
-                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 rounded-lg shadow-lg z-10 w-48 overflow-hidden">
+                        <div role="menu" aria-label="Opciones del whisper" className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 rounded-lg shadow-lg z-10 w-48 overflow-hidden">
                           <div className={`${isDay ? 'bg-[#F5F0E1]' : 'bg-[#2D1E1A]'}`}>
-                            {/* Opción de editar */}
                             <button
+                              role="menuitem"
                               onClick={() => startEditingPost(entry)}
                               className={`flex items-center gap-2 w-full px-4 py-3 text-left text-sm ${
-                                isDay 
-                                  ? 'text-[#4A2E1B] hover:bg-[#4A2E1B]/10' 
+                                isDay
+                                  ? 'text-[#4A2E1B] hover:bg-[#4A2E1B]/10'
                                   : 'text-[#F5F0E1] hover:bg-[#F5F0E1]/10'
                               } transition-colors`}
                             >
                               <EditIcon /> Editar
                             </button>
-                            
-                            {/* Opción de privacidad */}
+
                             <button
+                              role="menuitem"
                               onClick={() => togglePostPrivacy(entry)}
                               disabled={privacyLoading === entry.id}
                               className={`flex items-center gap-2 w-full px-4 py-3 text-left text-sm ${
                                 privacyLoading === entry.id
                                   ? 'opacity-50 cursor-not-allowed'
-                                  : isDay 
-                                    ? 'text-[#4A2E1B] hover:bg-[#4A2E1B]/10' 
+                                  : isDay
+                                    ? 'text-[#4A2E1B] hover:bg-[#4A2E1B]/10'
                                     : 'text-[#F5F0E1] hover:bg-[#F5F0E1]/10'
                               } transition-colors`}
                             >
                               {entry.is_private ? <GlobeIcon /> : <LockIcon />}
-                              {privacyLoading === entry.id 
-                                ? 'Cambiando...' 
-                                : entry.is_private 
-                                  ? 'Hacer público' 
+                              {privacyLoading === entry.id
+                                ? 'Cambiando...'
+                                : entry.is_private
+                                  ? 'Hacer publico'
                                   : 'Hacer privado'
                               }
                             </button>
-                            
-                            {/* Opción de eliminar */}
+
                             <button
+                              role="menuitem"
                               onClick={() => setDeleteConfirmation(entry.id)}
                               className={`flex items-center gap-2 w-full px-4 py-3 text-left text-sm text-red-500 ${
-                                isDay 
-                                  ? 'hover:bg-[#4A2E1B]/10' 
+                                isDay
+                                  ? 'hover:bg-[#4A2E1B]/10'
                                   : 'hover:bg-[#F5F0E1]/10'
                               } transition-colors`}
                             >
@@ -688,10 +688,15 @@ export default function Feed() {
                       {/* Confirmación de eliminación */}
                       {deleteConfirmation === entry.id && (
                         <>
-                          <button type="button" aria-label="Cerrar" className="modal-overlay cursor-default" onClick={() => setDeleteConfirmation(null)} />
-                          <div className={`fixed sm:absolute bottom-auto sm:bottom-full left-1/2 -translate-x-1/2 top-1/2 sm:top-auto -translate-y-1/2 sm:translate-y-0 sm:mb-2 p-4 rounded-lg shadow-lg z-50 w-[90vw] max-w-xs sm:w-64 ${
-                            isDay ? 'bg-[#F5F0E1]' : 'bg-[#2D1E1A]'
-                          }`}>
+                          <div className="modal-overlay" aria-hidden="true" onClick={() => setDeleteConfirmation(null)} />
+                          <div
+                            role="alertdialog"
+                            aria-modal="true"
+                            aria-label="Confirmar eliminacion"
+                            className={`fixed sm:absolute bottom-auto sm:bottom-full left-1/2 -translate-x-1/2 top-1/2 sm:top-auto -translate-y-1/2 sm:translate-y-0 sm:mb-2 p-4 rounded-lg shadow-lg z-50 w-[90vw] max-w-xs sm:w-64 ${
+                              isDay ? 'bg-[#F5F0E1]' : 'bg-[#2D1E1A]'
+                            }`}
+                          >
                             <p className={`text-xs mb-3 ${
                               isDay ? 'text-[#4A2E1B]' : 'text-[#F5F0E1]'
                             }`}>
@@ -743,9 +748,9 @@ export default function Feed() {
                   <ShareArrowIcon />
                 </button>
               </div>
-            </div>
+            </article>
           ))}
-          
+
           {visibleEntries.length < (feedFilter === 'all' ? allEntries.length : followingEntries.length) && (
             <div className="flex justify-center mt-6">
               <button

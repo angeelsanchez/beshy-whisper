@@ -4,10 +4,11 @@ import crypto from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { logger } from '@/lib/logger';
+import { passwordSchema } from '@/lib/schemas/password';
 
 const registerSchema = z.object({
   email: z.string().email().max(255),
-  password: z.string().min(8).max(128),
+  password: passwordSchema,
   token: z.string().min(1),
   name: z.string().max(50).optional(),
 });

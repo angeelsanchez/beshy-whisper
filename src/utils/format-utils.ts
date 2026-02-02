@@ -8,16 +8,12 @@ export function formatLikeCount(count: number): string {
   if (count <= 999) {
     return count.toString();
   } else if (count >= 1000 && count <= 999999) {
-    // Format as XXX,XXmil
     const thousands = count / 1000;
-    // Format with 2 decimal places, then remove trailing zeros
-    const formatted = thousands.toFixed(2).replace(/\.?0+$/, '');
+    const formatted = String(Number.parseFloat(thousands.toFixed(2)));
     return formatted.replace('.', ',') + 'mil';
   } else {
-    // Format as XXX,XM for millions
     const millions = count / 1000000;
-    // Format with 1 decimal place, then remove trailing zeros
-    const formatted = millions.toFixed(1).replace(/\.?0+$/, '');
+    const formatted = String(Number.parseFloat(millions.toFixed(1)));
     return formatted.replace('.', ',') + 'M';
   }
 } 

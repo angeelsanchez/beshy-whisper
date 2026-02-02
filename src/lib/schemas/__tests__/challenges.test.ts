@@ -4,7 +4,7 @@ import { createChallengeSchema, participateSchema } from '../challenges';
 describe('createChallengeSchema', () => {
   const validBase = {
     title: 'Semana de Gratitud',
-    description: 'Escribe cada día sobre algo que agradeces',
+    description: 'Escribe cada dia sobre algo que agradeces',
     start_date: '2025-02-01',
     end_date: '2025-02-07',
   };

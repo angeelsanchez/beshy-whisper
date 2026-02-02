@@ -27,6 +27,8 @@ export interface EntryWithUser {
   edited?: boolean;
   is_private?: boolean;
   profile_photo_url?: string | null;
+  mood?: string | null;
+  challenge_id?: string | null;
 }
 
 interface PostContextType {
@@ -266,9 +268,9 @@ export function PostProvider({ children }: { children: ReactNode }) {
     }
 
     return () => {
-      channels.forEach(ch => {
-        try { supabase.removeChannel(ch); } catch { /* ignore */ }
-      });
+      for (const ch of channels) {
+        supabase.removeChannel(ch).catch(() => {});
+      }
     };
   }, [currentUserId, fetchEntries, handleLikesChange]);
 

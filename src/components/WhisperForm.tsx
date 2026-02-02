@@ -5,6 +5,11 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { usePostContext, EntryWithUser } from '@/context/PostContext';
+import PromptSuggestions from './PromptSuggestions';
+import MoodSelector from './MoodSelector';
+import ChallengeToggle from './ChallengeToggle';
+import { useActiveChallenge } from '@/hooks/useActiveChallenge';
+import type { Mood } from '@/types/mood';
 
 interface Objective {
   id: string;
@@ -45,8 +50,10 @@ export default function WhisperForm() {
   const [viewportHeight, setViewportHeight] = useState(0);
   const { addLocalPost, refreshPosts } = usePostContext();
   
-  // Estado para los objetivos
+  const [selectedMood, setSelectedMood] = useState<Mood | null>(null);
   const [objectives, setObjectives] = useState<Objective[]>([]);
+  const [participateInChallenge, setParticipateInChallenge] = useState(false);
+  const { challenge: activeChallenge } = useActiveChallenge();
   
   // Use our custom hook to determine time of day
   const isDay = useTimeOfDay();
@@ -251,7 +258,8 @@ export default function WhisperForm() {
           likes_count: 0,
           user_has_liked: false,
           has_objectives: franja === 'DIA',
-          is_private: isPrivate
+          is_private: isPrivate,
+          mood: selectedMood,
         };
 
         addLocalPost(localEntry);
@@ -268,12 +276,25 @@ export default function WhisperForm() {
             franja,
             is_private: isPrivate,
             objectives: objectiveTexts,
+            mood: selectedMood,
           }),
         });
 
         if (!res.ok) {
           const errData = await res.json();
           throw new Error(errData.error || 'Error al guardar el susurro');
+        }
+
+        if (participateInChallenge && activeChallenge) {
+          const resData = await res.clone().json().catch(() => null);
+          const realEntryId = resData?.entry?.id;
+          if (realEntryId) {
+            fetch('/api/challenges/participate', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ challengeId: activeChallenge.id, entryId: realEntryId }),
+            }).catch(() => {});
+          }
         }
 
         if (objectiveTexts.length > 0) {
@@ -299,13 +320,12 @@ export default function WhisperForm() {
           likes_count: 0,
           user_has_liked: false,
           has_objectives: franja === 'DIA',
-          is_private: false
+          is_private: false,
+          mood: selectedMood,
         };
-        
-        // Add to local feed immediately
+
         addLocalPost(localEntry);
-        
-        // Now save to Supabase
+
         const { data, error } = await supabase.from('entries').insert({
           user_id: null,
           nombre: guestName,
@@ -314,7 +334,8 @@ export default function WhisperForm() {
           ip,
           franja,
           guest: true,
-          is_private: false // Los posts de invitados siempre son públicos
+          is_private: false,
+          mood: selectedMood,
         }).select();
         
         if (error) {
@@ -336,6 +357,8 @@ export default function WhisperForm() {
       // Clear form
       setMessage('');
       setObjectives([]);
+      setSelectedMood(null);
+      setParticipateInChallenge(false);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Error al guardar el susurro');
     } finally {
@@ -412,7 +435,15 @@ export default function WhisperForm() {
         <form onSubmit={handleSubmit}>
           {/* Help text moved above textarea */}
           <p className="text-sm opacity-70 mb-2">Escribe tu whisper aquí</p>
-          
+
+          {message.length === 0 && (
+            <PromptSuggestions
+              franja={isDay ? 'DIA' : 'NOCHE'}
+              isDay={isDay}
+              onSelect={(text) => setMessage(text)}
+            />
+          )}
+
           <div className="relative mb-4">
             <textarea
               ref={textareaRef}
@@ -479,12 +510,29 @@ export default function WhisperForm() {
             </div>
           )}
           
+          <MoodSelector
+            selected={selectedMood}
+            onChange={setSelectedMood}
+            isDay={isDay}
+          />
+
+          {activeChallenge && session?.user && (
+            <div className="mb-4">
+              <ChallengeToggle
+                challenge={activeChallenge}
+                checked={participateInChallenge}
+                onChange={setParticipateInChallenge}
+                isDay={isDay}
+              />
+            </div>
+          )}
+
           {error && (
             <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg">
               {error}
             </div>
           )}
-          
+
           {/* Opción de post privado - solo visible para usuarios registrados */}
           {session?.user && (
             <div className="flex items-center gap-2 mb-4">

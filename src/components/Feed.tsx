@@ -14,6 +14,8 @@ import FeedFilter from './FeedFilter';
 import Avatar from './Avatar';
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
+import { isMood, getMoodEmoji } from '@/types/mood';
+import { useActiveChallenge } from '@/hooks/useActiveChallenge';
 
 const SocialShareModal = dynamic(() => import('./SocialShareModal'), {
   ssr: false,
@@ -113,6 +115,8 @@ export default function Feed() {
     entry: null
   });
   const [privacyLoading, setPrivacyLoading] = useState<string | null>(null);
+  const { challenge: activeChallenge } = useActiveChallenge();
+  const [challengeEntryIds, setChallengeEntryIds] = useState<Set<string>>(new Set());
   const [feedFilter, setFeedFilter] = useState<'all' | 'following'>('all');
   const [followingEntries, setFollowingEntries] = useState<EntryWithUser[]>([]);
   const [followingLoading, setFollowingLoading] = useState(false);
@@ -188,6 +192,20 @@ export default function Feed() {
     fetchFollowing();
     return () => controller.abort();
   }, [feedFilter, isAuthenticated]);
+
+  useEffect(() => {
+    if (!activeChallenge) return;
+    const fetchChallengeEntries = async () => {
+      const { data, error } = await supabase
+        .from('challenge_entries')
+        .select('entry_id')
+        .eq('challenge_id', activeChallenge.id);
+      if (!error && data) {
+        setChallengeEntryIds(new Set(data.map(d => d.entry_id)));
+      }
+    };
+    fetchChallengeEntries();
+  }, [activeChallenge, allEntries]);
 
   // Update visible entries when entries or visibleCount changes
   useEffect(() => {
@@ -508,7 +526,19 @@ export default function Feed() {
                     {formatTime(entry.fecha)} {formatDate(entry.fecha)}
                   </span>
                   {entry.franja === 'DIA' ? <SunIcon /> : <MoonIcon />}
+                  {entry.mood && isMood(entry.mood) && (
+                    <span className="text-sm" title={entry.mood}>{getMoodEmoji(entry.mood)}</span>
+                  )}
                   {entry.is_private && <LockIcon />}
+                  {challengeEntryIds.has(entry.id) && (
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+                      isDay
+                        ? 'bg-[#4A2E1B]/10 text-[#4A2E1B]'
+                        : 'bg-[#F5F0E1]/10 text-[#F5F0E1]'
+                    }`}>
+                      🏆 Reto
+                    </span>
+                  )}
                 </div>
               </div>
               
@@ -658,7 +688,7 @@ export default function Feed() {
                       {/* Confirmación de eliminación */}
                       {deleteConfirmation === entry.id && (
                         <>
-                          <div className="modal-overlay" onClick={() => setDeleteConfirmation(null)}></div>
+                          <button type="button" aria-label="Cerrar" className="modal-overlay cursor-default" onClick={() => setDeleteConfirmation(null)} />
                           <div className={`fixed sm:absolute bottom-auto sm:bottom-full left-1/2 -translate-x-1/2 top-1/2 sm:top-auto -translate-y-1/2 sm:translate-y-0 sm:mb-2 p-4 rounded-lg shadow-lg z-50 w-[90vw] max-w-xs sm:w-64 ${
                             isDay ? 'bg-[#F5F0E1]' : 'bg-[#2D1E1A]'
                           }`}>

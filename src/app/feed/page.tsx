@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAuthSession } from '@/hooks/useAuthSession';
 import Feed from '@/components/Feed';
 import PullToRefresh from '@/components/PullToRefresh';
+import ActiveChallengeBanner from '@/components/ActiveChallengeBanner';
 import Link from 'next/link';
 import Image from 'next/image';
 
@@ -186,6 +187,9 @@ export default function FeedPage() {
             </div>
           </header>
           
+          {/* Active Challenge Banner */}
+          <ActiveChallengeBanner isDay={isDay} />
+
           {/* Feed Component */}
           <Feed key={refreshKey} />
         </div>

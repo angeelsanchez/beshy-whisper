@@ -18,15 +18,15 @@
 ### Configuración
 - **`.env.local.example`** - Template de variables de entorno
 - **`BACKUP_README.md`** - Documentación completa del sistema
-- **`package.json`** - Scripts npm limpios y organizados
+- **`package.json`** - Scripts pnpm limpios y organizados
 
-## 🚀 Scripts NPM Disponibles
+## 🚀 Scripts Disponibles
 
 ```bash
-npm run backup:simple    # Backup API (recomendado para desarrollo)
-npm run backup:full      # Backup pg_dump completo  
-npm run backup:pg        # Backup PostgreSQL optimizado
-npm run restore          # Restaurar backups
+pnpm run backup:simple    # Backup API (recomendado para desarrollo)
+pnpm run backup:full      # Backup pg_dump completo
+pnpm run backup:pg        # Backup PostgreSQL optimizado
+pnpm run restore          # Restaurar backups
 ```
 
 ## ✅ Backups Creados y Probados
@@ -47,10 +47,10 @@ npm run restore          # Restaurar backups
 
 ### Pasos para Linux:
 1. Clonar repo
-2. `npm install`
+2. `pnpm install`
 3. `sudo apt-get install postgresql-client`
 4. Configurar `.env.local`
-5. `npm run backup:full` - funcionará inmediatamente
+5. `pnpm run backup:full` - funcionará inmediatamente
 
 ## 🏆 Lo que se logró:
 

@@ -1,3 +1,4 @@
+import { withSentryConfig } from '@sentry/nextjs';
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
@@ -76,11 +77,11 @@ const nextConfig: NextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://www.google.com https://www.gstatic.com https://www.googletagmanager.com",
+              "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://www.google.com https://www.gstatic.com https://www.googletagmanager.com https://*.sentry-cdn.com",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "img-src 'self' data: blob: https://lh3.googleusercontent.com https://jpjvphycemtihwzrsgoa.supabase.co",
               "font-src 'self' https://fonts.gstatic.com",
-              "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://www.google.com https://fcm.googleapis.com https://www.google-analytics.com https://www.googletagmanager.com",
+              "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://www.google.com https://fcm.googleapis.com https://www.google-analytics.com https://www.googletagmanager.com https://*.ingest.sentry.io https://*.ingest.de.sentry.io",
               "frame-src 'self' https://www.google.com",
               "worker-src 'self' blob:",
               "manifest-src 'self'",
@@ -99,4 +100,23 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withSentryConfig(nextConfig, {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  silent: !process.env.CI,
+  widenClientFileUpload: true,
+  telemetry: false,
+  sourcemaps: {
+    deleteSourcemapsAfterUpload: true,
+  },
+  bundleSizeOptimizations: {
+    excludeDebugStatements: true,
+    excludeReplayIframe: true,
+    excludeReplayShadowDom: true,
+  },
+  webpack: {
+    autoInstrumentServerFunctions: false,
+    autoInstrumentMiddleware: false,
+  },
+});

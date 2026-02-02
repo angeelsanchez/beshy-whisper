@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAuthSession } from '@/hooks/useAuthSession';
 import { useRouter } from 'next/navigation';
 import WhisperForm from '@/components/WhisperForm';
+import DailyQuote from '@/components/DailyQuote';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useDailyPostStatus } from '@/hooks/useDailyPostStatus';
@@ -303,6 +304,9 @@ export default function CreatePage() {
           </div>
         )}
         
+        {/* Daily Quote */}
+        <DailyQuote isDay={isDay} />
+
         {/* Whisper Creation Form */}
         <WhisperForm />
         

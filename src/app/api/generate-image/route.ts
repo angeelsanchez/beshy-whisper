@@ -110,19 +110,11 @@ export async function POST(request: NextRequest) {
 
     const page = await browser.newPage();
 
-    // Set viewport based on mode with higher resolution for better quality
+    // Set viewport — HTML templates already use doubled CSS dimensions for quality
     if (mode === 'bubble' || mode === 'sticker') {
-      await page.setViewport({ 
-        width: 960, // Double resolution for better quality
-        height: 1600,
-        deviceScaleFactor: 2 // High DPI scaling
-      });
+      await page.setViewport({ width: 960, height: 1600, deviceScaleFactor: 1 });
     } else {
-      await page.setViewport({ 
-        width: 2160, // Double resolution for better quality
-        height: 3840,
-        deviceScaleFactor: 2 // High DPI scaling
-      });
+      await page.setViewport({ width: 2160, height: 3840, deviceScaleFactor: 1 });
     }
 
     // Set content with optimized wait strategy
@@ -133,7 +125,36 @@ export async function POST(request: NextRequest) {
     
     // Wait for fonts to load
     await page.evaluateHandle('document.fonts.ready');
-    
+
+    // Load Twemoji to render emojis as SVG images (system fonts often lack emoji support)
+    try {
+      await page.addScriptTag({
+        url: 'https://cdn.jsdelivr.net/npm/@twemoji/api@15.1.0/dist/twemoji.min.js'
+      });
+
+      await page.evaluate(() => {
+        const win = window as unknown as Record<string, { parse?: (el: Element, opts: Record<string, string>) => void }>;
+        if (win.twemoji?.parse) {
+          win.twemoji.parse(document.body, { folder: 'svg', ext: '.svg' });
+        }
+      });
+
+      await page.evaluate(() =>
+        Promise.all(
+          Array.from(document.querySelectorAll('img.emoji')).map(img => {
+            const imgEl = img as HTMLImageElement;
+            if (imgEl.complete) return Promise.resolve();
+            return new Promise<void>(resolve => {
+              imgEl.addEventListener('load', () => resolve());
+              imgEl.addEventListener('error', () => resolve());
+            });
+          })
+        )
+      );
+    } catch {
+      logger.warn('Twemoji failed to load, falling back to system emoji fonts');
+    }
+
     // Take screenshot with optimized settings
     const screenshot = await page.screenshot({
       type: 'png',
@@ -210,7 +231,7 @@ function createNormalHTML(
         }
         
         body {
-          font-family: 'Montserrat', sans-serif;
+          font-family: 'Montserrat', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji', sans-serif;
           width: 2160px; /* Double resolution */
           height: 3840px; /* Double resolution */
           background-color: ${backgroundColor};
@@ -313,6 +334,14 @@ function createNormalHTML(
           color: ${textColor};
           opacity: 0.6;
         }
+
+        img.emoji {
+          height: 1em;
+          width: 1em;
+          margin: 0 0.05em 0 0.1em;
+          vertical-align: -0.1em;
+          display: inline;
+        }
       </style>
     </head>
     <body>
@@ -390,7 +419,7 @@ function createBubbleHTML(
         }
         
         body {
-          font-family: 'Montserrat', sans-serif;
+          font-family: 'Montserrat', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji', sans-serif;
           background: transparent; /* Transparent background for PNG */
           padding: 80px; /* Double resolution */
           display: inline-block;
@@ -510,6 +539,14 @@ function createBubbleHTML(
           font-weight: 600;
           opacity: 0.7;
         }
+
+        img.emoji {
+          height: 1em;
+          width: 1em;
+          margin: 0 0.05em 0 0.1em;
+          vertical-align: -0.1em;
+          display: inline;
+        }
       </style>
     </head>
     <body>
@@ -584,7 +621,7 @@ function createStickerHTML(
         }
         
         body {
-          font-family: 'Montserrat', sans-serif;
+          font-family: 'Montserrat', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji', sans-serif;
           background: transparent; /* Transparent background for PNG */
           padding: 80px; /* Double resolution */
           display: inline-block;
@@ -684,6 +721,14 @@ function createStickerHTML(
           font-weight: 600;
           opacity: 1;
           text-shadow: ${textShadow};
+        }
+
+        img.emoji {
+          height: 1em;
+          width: 1em;
+          margin: 0 0.05em 0 0.1em;
+          vertical-align: -0.1em;
+          display: inline;
         }
       </style>
     </head>

@@ -186,7 +186,7 @@ export default function RootLayout({
         </div>
         <div id="main-content">
           <Providers>
-            <main className="lg:pl-20 pb-16 lg:pb-0 safe-area-top">
+            <main className="lg:pl-20 pb-16 lg:pb-0 safe-area-top overflow-x-hidden">
               {children}
             </main>
             <AdaptiveNavigation />

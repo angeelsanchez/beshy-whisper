@@ -6,7 +6,12 @@ import { useAuthSession } from '@/hooks/useAuthSession';
 export interface HabitStatData {
   habitId: string;
   habitName: string;
+  trackingType: 'binary' | 'quantity';
+  targetValue: number | null;
+  unit: string | null;
   totalRepetitions: number;
+  totalValue: number | null;
+  avgDailyValue: number | null;
   currentStreak: number;
   longestStreak: number;
   completionRateWeekly: number;
@@ -14,7 +19,7 @@ export interface HabitStatData {
   lastCompletedAt: string | null;
   retomaCount: number;
   milestone: '21_reps' | '66_reps' | null;
-  completionsByDate: Record<string, boolean>;
+  completionsByDate: Record<string, boolean | number>;
 }
 
 export function useHabitStats(habitId?: string) {

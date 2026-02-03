@@ -3,7 +3,43 @@ import { getServerSession } from 'next-auth/next';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { authOptions } from '../../auth/[...nextauth]/auth';
 import { updateHabitSchema, derivedFromTargetDays } from '@/lib/schemas/habits';
+import { z } from 'zod';
 import { logger } from '@/lib/logger';
+
+type UpdateInput = z.infer<typeof updateHabitSchema>;
+
+const FIELD_MAP: Record<string, string> = {
+  name: 'name',
+  description: 'description',
+  color: 'color',
+  isActive: 'is_active',
+  sortOrder: 'sort_order',
+  trackingType: 'tracking_type',
+  targetValue: 'target_value',
+  unit: 'unit',
+  icon: 'icon',
+  category: 'category',
+  reminderTime: 'reminder_time',
+};
+
+function buildUpdatePayload(data: UpdateInput): Record<string, unknown> {
+  const updates: Record<string, unknown> = {};
+
+  for (const [camel, snake] of Object.entries(FIELD_MAP)) {
+    const val = data[camel as keyof UpdateInput];
+    if (val !== undefined) updates[snake] = val;
+  }
+
+  if (data.targetDays !== undefined) {
+    const sorted = [...data.targetDays].sort((a, b) => a - b);
+    const derived = derivedFromTargetDays(sorted);
+    updates.target_days = sorted;
+    updates.frequency = derived.frequency;
+    updates.target_days_per_week = derived.targetDaysPerWeek;
+  }
+
+  return updates;
+}
 
 interface RouteParams {
   params: Promise<{ habitId: string }>;
@@ -59,21 +95,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    const updates: Record<string, unknown> = {};
-    const { name, description, targetDays, color, isActive, sortOrder } = parsed.data;
-
-    if (name !== undefined) updates.name = name;
-    if (description !== undefined) updates.description = description;
-    if (targetDays !== undefined) {
-      const sorted = [...targetDays].sort((a, b) => a - b);
-      const derived = derivedFromTargetDays(sorted);
-      updates.target_days = sorted;
-      updates.frequency = derived.frequency;
-      updates.target_days_per_week = derived.targetDaysPerWeek;
-    }
-    if (color !== undefined) updates.color = color;
-    if (isActive !== undefined) updates.is_active = isActive;
-    if (sortOrder !== undefined) updates.sort_order = sortOrder;
+    const updates = buildUpdatePayload(parsed.data);
 
     if (Object.keys(updates).length === 0) {
       return NextResponse.json({ error: 'No fields to update' }, { status: 400 });

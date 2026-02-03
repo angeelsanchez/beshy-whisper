@@ -10,7 +10,12 @@ const RETOMA_THRESHOLD_DAYS = 7;
 interface HabitStats {
   habitId: string;
   habitName: string;
+  trackingType: 'binary' | 'quantity';
+  targetValue: number | null;
+  unit: string | null;
   totalRepetitions: number;
+  totalValue: number | null;
+  avgDailyValue: number | null;
   currentStreak: number;
   longestStreak: number;
   completionRateWeekly: number;
@@ -18,7 +23,7 @@ interface HabitStats {
   lastCompletedAt: string | null;
   retomaCount: number;
   milestone: '21_reps' | '66_reps' | null;
-  completionsByDate: Record<string, boolean>;
+  completionsByDate: Record<string, boolean | number>;
 }
 
 function toLocalDateStr(d: Date): string {
@@ -145,7 +150,7 @@ export async function GET(request: NextRequest) {
 
     let habitsQuery = supabaseAdmin
       .from('habits')
-      .select('id, name, target_days_per_week, target_days')
+      .select('id, name, target_days_per_week, target_days, tracking_type, target_value, unit')
       .eq('user_id', session.user.id)
       .eq('is_active', true);
 
@@ -168,7 +173,7 @@ export async function GET(request: NextRequest) {
 
     let logsQuery = supabaseAdmin
       .from('habit_logs')
-      .select('habit_id, completed_at')
+      .select('habit_id, completed_at, value')
       .in('habit_id', habitIds)
       .eq('user_id', session.user.id)
       .order('completed_at', { ascending: true });
@@ -183,40 +188,56 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch stats' }, { status: 500 });
     }
 
-    const logsByHabit = new Map<string, string[]>();
-    for (const log of logs ?? []) {
+    interface LogEntry { habit_id: string; completed_at: string; value: number | null }
+
+    const logsByHabit = new Map<string, LogEntry[]>();
+    for (const log of (logs ?? []) as LogEntry[]) {
       const existing = logsByHabit.get(log.habit_id) ?? [];
-      existing.push(log.completed_at);
+      existing.push(log);
       logsByHabit.set(log.habit_id, existing);
     }
 
-    let allLogsForMilestones: { habit_id: string; completed_at: string }[] | null = null;
+    let allLogsForMilestones: LogEntry[] | null = null;
     if (from || to) {
       const { data: fullLogs } = await supabaseAdmin
         .from('habit_logs')
-        .select('habit_id, completed_at')
+        .select('habit_id, completed_at, value')
         .in('habit_id', habitIds)
         .eq('user_id', session.user.id)
         .order('completed_at', { ascending: true });
-      allLogsForMilestones = fullLogs;
+      allLogsForMilestones = fullLogs as LogEntry[] | null;
     }
 
     const stats: HabitStats[] = habits.map(habit => {
-      const dates = logsByHabit.get(habit.id) ?? [];
+      const habitLogs = logsByHabit.get(habit.id) ?? [];
 
-      const milestoneDates = allLogsForMilestones
-        ? (allLogsForMilestones.filter(l => l.habit_id === habit.id).map(l => l.completed_at))
-        : dates;
+      const milestoneEntries = allLogsForMilestones
+        ? allLogsForMilestones.filter(l => l.habit_id === habit.id)
+        : habitLogs;
+      const milestoneDates = milestoneEntries.map(l => l.completed_at);
 
-      const completionsByDate: Record<string, boolean> = {};
-      for (const d of dates) {
-        completionsByDate[d] = true;
+      const isQuantity = habit.tracking_type === 'quantity';
+      const completionsByDate: Record<string, boolean | number> = {};
+      for (const log of habitLogs) {
+        completionsByDate[log.completed_at] = isQuantity ? (log.value ?? 0) : true;
+      }
+
+      let totalValue: number | null = null;
+      let avgDailyValue: number | null = null;
+      if (isQuantity && milestoneEntries.length > 0) {
+        totalValue = milestoneEntries.reduce((sum, l) => sum + (l.value ?? 0), 0);
+        avgDailyValue = Math.round((totalValue / milestoneEntries.length) * 10) / 10;
       }
 
       return {
         habitId: habit.id,
         habitName: habit.name,
+        trackingType: (habit.tracking_type ?? 'binary') as 'binary' | 'quantity',
+        targetValue: habit.target_value ?? null,
+        unit: habit.unit ?? null,
         totalRepetitions: milestoneDates.length,
+        totalValue,
+        avgDailyValue,
         currentStreak: calculateCurrentStreak(milestoneDates),
         longestStreak: calculateLongestStreak(milestoneDates),
         completionRateWeekly: calculateCompletionRateWeekly(

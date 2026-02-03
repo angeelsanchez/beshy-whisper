@@ -8,7 +8,6 @@ import { useHabits } from '@/hooks/useHabits';
 import { useHabitLogs } from '@/hooks/useHabitLogs';
 import { useHabitStats } from '@/hooks/useHabitStats';
 import HabitList from '@/components/HabitList';
-import HabitForm from '@/components/HabitForm';
 import HabitCalendar from '@/components/HabitCalendar';
 import HabitStats from '@/components/HabitStats';
 
@@ -22,17 +21,15 @@ function getCurrentMonth(): string {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 }
 
-export default function HabitsPage() {
+export default function HabitsPage(): React.ReactElement | null {
   const router = useRouter();
   const { session, isLoading: authLoading } = useAuthSession();
   const { isDay } = useTheme();
-  const { habits, loading: habitsLoading, createHabit, updateHabit, deleteHabit } = useHabits();
+  const { habits, loading: habitsLoading } = useHabits();
   const habitIds = useMemo(() => habits.map(h => h.id), [habits]);
-  const { isCompleted, toggleLog, toggling, refetch: refetchLogs } = useHabitLogs(habitIds, getCurrentMonth());
+  const { isCompleted, getValue, toggleLog, incrementLog, toggling } = useHabitLogs(habitIds, getCurrentMonth());
   const { stats, refetch: refetchStats } = useHabitStats();
 
-  const [formOpen, setFormOpen] = useState(false);
-  const [editingHabitId, setEditingHabitId] = useState<string | null>(null);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
 
@@ -52,42 +49,13 @@ export default function HabitsPage() {
     refetchStats();
   }, [toggleLog, refetchStats, showToastMessage]);
 
-  const handleCreate = useCallback(async (data: { name: string; description: string; targetDays: number[]; color: string }) => {
-    const habit = await createHabit({ name: data.name, description: data.description, targetDays: data.targetDays, color: data.color });
-    if (habit) {
-      refetchStats();
-      refetchLogs();
-      return true;
+  const handleIncrement = useCallback(async (habitId: string, amount: number) => {
+    const result = await incrementLog(habitId, amount);
+    if (result?.milestone) {
+      showToastMessage(result.milestone.message);
     }
-    return false;
-  }, [createHabit, refetchStats, refetchLogs]);
-
-  const handleEdit = useCallback(async (data: { name: string; description: string; targetDays: number[]; color: string }) => {
-    if (!editingHabitId) return false;
-    const success = await updateHabit(editingHabitId, {
-      name: data.name,
-      description: data.description,
-      targetDays: data.targetDays,
-      color: data.color,
-    });
-    if (success) {
-      refetchStats();
-      return true;
-    }
-    return false;
-  }, [editingHabitId, updateHabit, refetchStats]);
-
-  const handleDelete = useCallback(async (): Promise<boolean> => {
-    if (!editingHabitId) return false;
-    const success = await deleteHabit(editingHabitId);
-    if (success) {
-      setEditingHabitId(null);
-      setFormOpen(false);
-      refetchStats();
-      refetchLogs();
-    }
-    return success;
-  }, [editingHabitId, deleteHabit, refetchStats, refetchLogs]);
+    refetchStats();
+  }, [incrementLog, refetchStats, showToastMessage]);
 
   const calendarCompletions = useMemo(() => {
     const map: Record<string, number> = {};
@@ -98,8 +66,6 @@ export default function HabitsPage() {
     }
     return map;
   }, [stats]);
-
-  const editingHabit = editingHabitId ? habits.find(h => h.id === editingHabitId) : undefined;
 
   if (authLoading) {
     return (
@@ -137,18 +103,14 @@ export default function HabitsPage() {
               habits={habits}
               isDay={isDay}
               isCompleted={isCompleted}
+              getValue={getValue}
               toggling={toggling}
               stats={stats}
               today={today}
               onToggle={handleToggle}
-              onEdit={(habitId) => {
-                setEditingHabitId(habitId);
-                setFormOpen(true);
-              }}
-              onAdd={() => {
-                setEditingHabitId(null);
-                setFormOpen(true);
-              }}
+              onIncrement={handleIncrement}
+              onEdit={(habitId) => router.push(`/habits/edit/${habitId}`)}
+              onAdd={() => router.push('/habits/new')}
             />
 
             {habits.length > 0 && (
@@ -164,19 +126,6 @@ export default function HabitsPage() {
           </>
         )}
       </div>
-
-      <HabitForm
-        isOpen={formOpen}
-        onClose={() => {
-          setFormOpen(false);
-          setEditingHabitId(null);
-        }}
-        onSubmit={editingHabitId ? handleEdit : handleCreate}
-        onDelete={editingHabitId ? handleDelete : undefined}
-        isDay={isDay}
-        initialData={editingHabit}
-        mode={editingHabitId ? 'edit' : 'create'}
-      />
 
       {showToast && (
         <div

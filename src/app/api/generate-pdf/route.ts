@@ -201,6 +201,14 @@ function createPdfHTML(
       padding: 10mm 20mm;
     }
 
+    img.emoji {
+      height: 1.2em;
+      width: 1.2em;
+      vertical-align: -0.2em;
+      display: inline;
+      margin: 0 1px;
+    }
+
     .section-title {
       font-size: 14pt;
       font-weight: 700;

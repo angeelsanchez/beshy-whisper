@@ -4,7 +4,6 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/auth';
 import { generatePdfSchema, type PdfEntry } from '@/lib/schemas/pdf';
 import { logger } from '@/lib/logger';
 import { escapeHtml } from '@/utils/html-escape';
-import { isMood, getMoodEmoji } from '@/types/mood';
 import {
   fetchAvatarAsDataUri,
   getCachedLogo,
@@ -17,8 +16,7 @@ import {
 } from '@/utils/puppeteer-helpers';
 
 function formatDateForPdf(dateString: string): string {
-  const isDateOnly = /^\d{4}-\d{2}-\d{2}$/.test(dateString.trim());
-  const date = new Date(isDateOnly ? `${dateString.trim()}T12:00:00` : dateString);
+  const date = new Date(dateString + 'T12:00:00');
   if (isNaN(date.getTime())) return 'Fecha desconocida';
   const day = String(date.getDate()).padStart(2, '0');
   const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -50,9 +48,8 @@ function renderEntryCard(
     ? `<span style="font-size: 8pt; padding: 2px 8px; border-radius: 4px; background: ${textColor}15; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Privado</span>`
     : '';
 
-  const moodDisplay = entry.mood && isMood(entry.mood) ? getMoodEmoji(entry.mood) : escapeHtml(entry.mood ?? '');
   const moodBadge = entry.mood
-    ? `<span style="font-size: 10pt;">${moodDisplay}</span>`
+    ? `<span style="font-size: 10pt;">${escapeHtml(entry.mood)}</span>`
     : '';
 
   let objectivesHTML = '';
@@ -199,14 +196,6 @@ function createPdfHTML(
 
     .entries-container {
       padding: 10mm 20mm;
-    }
-
-    img.emoji {
-      height: 1.2em;
-      width: 1.2em;
-      vertical-align: -0.2em;
-      display: inline;
-      margin: 0 1px;
     }
 
     .section-title {

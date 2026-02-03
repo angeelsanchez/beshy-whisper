@@ -16,6 +16,7 @@ const RATE_LIMITS: Record<string, { max: number; windowMs: number }> = {
   '/api/user/update-photo': { max: 10, windowMs: 60_000 },
   '/api/user/delete-photo': { max: 10, windowMs: 60_000 },
   '/api/user/update-bio': { max: 15, windowMs: 60_000 },
+  '/api/generate-pdf': { max: 5, windowMs: 60_000 },
 };
 
 const DEFAULT_LIMIT = { max: 60, windowMs: 60_000 };

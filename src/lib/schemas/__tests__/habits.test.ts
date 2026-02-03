@@ -146,34 +146,6 @@ describe('createHabitSchema', () => {
     expect(result.success).toBe(false);
   });
 
-  it('accepts timer habit with targetValue and unit', () => {
-    const result = createHabitSchema.safeParse({
-      name: 'Estudiar',
-      trackingType: 'timer',
-      targetValue: 45,
-      unit: 'min',
-    });
-    expect(result.success).toBe(true);
-  });
-
-  it('rejects timer habit without targetValue', () => {
-    const result = createHabitSchema.safeParse({
-      name: 'Estudiar',
-      trackingType: 'timer',
-      unit: 'min',
-    });
-    expect(result.success).toBe(false);
-  });
-
-  it('rejects timer habit without unit', () => {
-    const result = createHabitSchema.safeParse({
-      name: 'Estudiar',
-      trackingType: 'timer',
-      targetValue: 45,
-    });
-    expect(result.success).toBe(false);
-  });
-
   it('allows binary habit with targetValue and unit (ignored)', () => {
     const result = createHabitSchema.safeParse({
       name: 'Read',

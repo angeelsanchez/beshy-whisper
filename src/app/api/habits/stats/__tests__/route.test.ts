@@ -258,4 +258,117 @@ describe('GET /api/habits/stats', () => {
     expect(json.stats[0].milestone).toBe('66_reps');
     expect(json.stats[0].totalRepetitions).toBe(66);
   });
+
+  it('returns quantity stats with totalValue and avgDailyValue', async () => {
+    mockGetServerSession.mockResolvedValue(mockSession);
+
+    const habits = [
+      {
+        id: HABIT_UUID,
+        name: 'Beber agua',
+        target_days_per_week: 7,
+        target_days: [0, 1, 2, 3, 4, 5, 6],
+        tracking_type: 'quantity',
+        target_value: 8,
+        unit: 'vasos',
+      },
+    ];
+    habitsBuilder.eq
+      .mockReturnValueOnce(habitsBuilder)
+      .mockResolvedValueOnce({ data: habits, error: null });
+
+    const today = new Date();
+    const logs = Array.from({ length: 5 }, (_, i) => {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      return { habit_id: HABIT_UUID, completed_at: toDateStr(d), value: 6 + i };
+    });
+    logsBuilder.order.mockResolvedValueOnce({ data: logs, error: null });
+
+    const res = await GET(makeRequest());
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    const stat = json.stats[0];
+    expect(stat.trackingType).toBe('quantity');
+    expect(stat.targetValue).toBe(8);
+    expect(stat.unit).toBe('vasos');
+    expect(stat.totalValue).toBe(6 + 7 + 8 + 9 + 10);
+    expect(stat.avgDailyValue).toBeGreaterThan(0);
+    expect(stat.totalRepetitions).toBe(5);
+  });
+
+  it('returns completionsByDate as numbers for quantity habits', async () => {
+    mockGetServerSession.mockResolvedValue(mockSession);
+
+    const habits = [
+      {
+        id: HABIT_UUID,
+        name: 'Water',
+        target_days_per_week: 7,
+        target_days: [0, 1, 2, 3, 4, 5, 6],
+        tracking_type: 'quantity',
+        target_value: 8,
+        unit: 'vasos',
+      },
+    ];
+    habitsBuilder.eq
+      .mockReturnValueOnce(habitsBuilder)
+      .mockResolvedValueOnce({ data: habits, error: null });
+
+    const todayStr = toDateStr(new Date());
+    const logs = [{ habit_id: HABIT_UUID, completed_at: todayStr, value: 5 }];
+    logsBuilder.order.mockResolvedValueOnce({ data: logs, error: null });
+
+    const res = await GET(makeRequest());
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.stats[0].completionsByDate[todayStr]).toBe(5);
+  });
+
+  it('returns completionsByDate as boolean for binary habits', async () => {
+    mockGetServerSession.mockResolvedValue(mockSession);
+
+    const habits = [
+      {
+        id: HABIT_UUID,
+        name: 'Read',
+        target_days_per_week: 7,
+        target_days: [0, 1, 2, 3, 4, 5, 6],
+        tracking_type: 'binary',
+      },
+    ];
+    habitsBuilder.eq
+      .mockReturnValueOnce(habitsBuilder)
+      .mockResolvedValueOnce({ data: habits, error: null });
+
+    const todayStr = toDateStr(new Date());
+    const logs = [{ habit_id: HABIT_UUID, completed_at: todayStr, value: null }];
+    logsBuilder.order.mockResolvedValueOnce({ data: logs, error: null });
+
+    const res = await GET(makeRequest());
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.stats[0].completionsByDate[todayStr]).toBe(true);
+  });
+
+  it('returns null totalValue for binary habits', async () => {
+    mockGetServerSession.mockResolvedValue(mockSession);
+
+    const habits = [
+      { id: HABIT_UUID, name: 'Read', target_days_per_week: 7, target_days: [0, 1, 2, 3, 4, 5, 6] },
+    ];
+    habitsBuilder.eq
+      .mockReturnValueOnce(habitsBuilder)
+      .mockResolvedValueOnce({ data: habits, error: null });
+
+    const todayStr = toDateStr(new Date());
+    const logs = [{ habit_id: HABIT_UUID, completed_at: todayStr, value: null }];
+    logsBuilder.order.mockResolvedValueOnce({ data: logs, error: null });
+
+    const res = await GET(makeRequest());
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.stats[0].totalValue).toBeNull();
+    expect(json.stats[0].avgDailyValue).toBeNull();
+  });
 });

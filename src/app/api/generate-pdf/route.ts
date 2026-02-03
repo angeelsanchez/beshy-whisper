@@ -4,6 +4,7 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/auth';
 import { generatePdfSchema, type PdfEntry } from '@/lib/schemas/pdf';
 import { logger } from '@/lib/logger';
 import { escapeHtml } from '@/utils/html-escape';
+import { isMood, getMoodEmoji } from '@/types/mood';
 import {
   fetchAvatarAsDataUri,
   getCachedLogo,
@@ -49,8 +50,9 @@ function renderEntryCard(
     ? `<span style="font-size: 8pt; padding: 2px 8px; border-radius: 4px; background: ${textColor}15; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Privado</span>`
     : '';
 
+  const moodDisplay = entry.mood && isMood(entry.mood) ? getMoodEmoji(entry.mood) : escapeHtml(entry.mood ?? '');
   const moodBadge = entry.mood
-    ? `<span style="font-size: 10pt;">${escapeHtml(entry.mood)}</span>`
+    ? `<span style="font-size: 10pt;">${moodDisplay}</span>`
     : '';
 
   let objectivesHTML = '';

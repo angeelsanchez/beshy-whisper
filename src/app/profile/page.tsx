@@ -794,12 +794,14 @@ export default function Profile() {
       
       {/* Modal para descargar PDF */}
       {isOwnProfile && (
-        <DownloadPDFModal 
+        <DownloadPDFModal
           isOpen={isPDFModalOpen}
           onClose={() => setIsPDFModalOpen(false)}
           entries={entries}
           userName={userProfile?.name || (session?.user?.name as string) || 'Usuario'}
           userId={userProfile?.bsy_id || userProfile?.alias || ''}
+          bsyId={userProfile?.bsy_id || userProfile?.alias || ''}
+          profilePhotoUrl={userProfile?.profile_photo_url}
           isDay={isDay}
         />
       )}

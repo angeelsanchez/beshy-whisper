@@ -1,26 +1,28 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { jsPDF } from 'jspdf';
 import { useFocusTrap } from '@/hooks/useFocusTrap';
 
 interface DownloadPDFModalProps {
   isOpen: boolean;
   onClose: () => void;
-  entries: Array<{
+  entries: ReadonlyArray<{
     id: string;
     mensaje: string;
     fecha: string;
     franja: 'DIA' | 'NOCHE';
-    objectives?: Array<{
+    objectives?: ReadonlyArray<{
       id: string;
       text: string;
       done: boolean;
     }>;
     is_private?: boolean;
+    mood?: string | null;
   }>;
   userName: string;
   userId: string;
+  bsyId: string;
+  profilePhotoUrl?: string | null;
   isDay: boolean;
 }
 
@@ -30,224 +32,79 @@ export default function DownloadPDFModal({
   entries,
   userName,
   userId,
-  isDay
+  bsyId,
+  profilePhotoUrl,
+  isDay,
 }: Readonly<DownloadPDFModalProps>) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [progressMessage, setProgressMessage] = useState('Generando tu PDF...');
   const modalRef = useRef<HTMLDivElement>(null);
   useFocusTrap(modalRef, { isActive: isOpen, onClose });
-  
-  if (!isOpen) return null;
-  
-  // Función para formatear la fecha como dd/mm/yy
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const year = String(date.getFullYear()).slice(-2);
-    
-    return `${day}/${month}/${year}`;
-  };
 
-  // Función para generar el PDF
-  const generatePDF = async () => {
+  if (!isOpen) return null;
+
+  const generatePDF = async (): Promise<void> => {
     setError(null);
+    setIsGenerating(true);
+    setProgressMessage('Generando tu PDF...');
+
+    const slowTimer = setTimeout(() => {
+      setProgressMessage('Esto puede tardar unos segundos más...');
+    }, 3000);
 
     try {
-      setIsGenerating(true);
-      
-      // Crear un nuevo documento PDF
-      const doc = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4'
+      const response = await fetch('/api/generate-pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          entries,
+          userName,
+          userId,
+          isDay,
+          bsyId,
+          profilePhotoUrl: profilePhotoUrl ?? null,
+        }),
       });
-      
-      // Configuración de colores según el modo día/noche
-      const textColor = isDay ? '#4A2E1B' : '#F5F0E1';
-      const bgColor = isDay ? '#F5F0E1' : '#2D1E1A';
-      
-      // Establecer color de fondo según el modo
-      doc.setFillColor(bgColor === '#2D1E1A' ? 45 : 245, bgColor === '#2D1E1A' ? 30 : 240, bgColor === '#2D1E1A' ? 26 : 225);
-      doc.rect(0, 0, 210, 297, 'F');
-      
-      // Configurar fuente
-      doc.setFont('helvetica', 'normal');
-      
-      // Configurar color de texto
-      doc.setTextColor(textColor === '#4A2E1B' ? 74 : 245, textColor === '#4A2E1B' ? 46 : 240, textColor === '#4A2E1B' ? 27 : 225);
-      
-      // Crear header con logo-bw.svg usando SVG paths
-      try {
-        // Logo-bw.svg como path SVG inline con colores del tema
-        const logoColor = textColor === '#4A2E1B' ? [74, 46, 27] : [245, 240, 225];
-        
-        // Configurar color del logo
-        doc.setFillColor(logoColor[0], logoColor[1], logoColor[2]);
-        
-        // Dibujar el bocadillo circular con muy poca opacidad
-        doc.setDrawColor(200, 200, 200); // Borde muy suave
-        doc.setLineWidth(0.3); // Línea muy delgada
-        doc.setFillColor(bgColor === '#2D1E1A' ? 45 : 245, bgColor === '#2D1E1A' ? 30 : 240, bgColor === '#2D1E1A' ? 26 : 225);
-        doc.circle(105, 18, 8, 'FD');
-        
-        // Agregar logo-bw simplificado dentro del círculo con opacidad reducida
-        doc.setFillColor(logoColor[0] * 0.6, logoColor[1] * 0.6, logoColor[2] * 0.6); // Reducir opacidad
-        doc.setFontSize(6);
-        doc.setFont('helvetica', 'bold');
-        doc.text('BESHY', 105, 20, { align: 'center' });
-        
-        // Dibujar los tres óvalos del bocadillo con muy poca opacidad
-        doc.setFillColor(230, 230, 230); // Color muy suave
-        doc.setDrawColor(230, 230, 230); // Sin borde casi
-        doc.setLineWidth(0.1);
-        // Primer óvalo (más grande)
-        doc.ellipse(98, 28, 1.5, 1, 'FD');
-        // Segundo óvalo (mediano)
-        doc.ellipse(93, 30, 1.2, 0.8, 'FD');
-        // Tercer óvalo (más pequeño)
-        doc.ellipse(89, 31, 1, 0.6, 'FD');
-        
-        // Logo "Mis Whisper's" usando path SVG simplificado
-        doc.setFillColor(logoColor[0], logoColor[1], logoColor[2]);
-        doc.setFontSize(14);
-        doc.setFont('helvetica', 'normal');
-        doc.text("Mis Whisper's", 105, 40, { align: 'center' });
-        
-        // Información del usuario
-        doc.setFontSize(10);
-        doc.text(`${userName} (${userId})`, 105, 47, { align: 'center' });
-        
-        // Fecha de generación
-        const today = new Date();
-        doc.setFontSize(8);
-        doc.text(`Generado el ${today.toLocaleDateString('es-ES')}`, 105, 53, { align: 'center' });
-        
-      } catch {
-        doc.setFontSize(18);
-        doc.text("Mis Whisper's", 105, 25, { align: 'center' });
-        doc.setFontSize(12);
-        doc.text(`${userName} (${userId})`, 105, 35, { align: 'center' });
+
+      if (!response.ok) {
+        if (response.status === 408) {
+          setError('La generación tardó demasiado. Intenta de nuevo.');
+          return;
+        }
+        if (response.status === 429) {
+          setError('Demasiadas solicitudes. Espera un momento antes de intentar de nuevo.');
+          return;
+        }
+        const data = await response.json().catch(() => null);
+        setError(data?.error || 'Error al generar el PDF. Intenta de nuevo.');
+        return;
       }
-      
-      // Línea separadora
-      doc.setDrawColor(textColor === '#4A2E1B' ? 74 : 245, textColor === '#4A2E1B' ? 46 : 240, textColor === '#4A2E1B' ? 27 : 225);
-      doc.setLineWidth(0.5);
-      doc.line(20, 58, 190, 58);
-      
-      // Posición inicial para el contenido
-      let y = 75;
-      
-      // Iterar sobre cada entrada y añadirla al PDF
-      for (const entry of entries) {
-        // Si no hay suficiente espacio en la página actual, crear una nueva
-        if (y > 250) {
-          doc.addPage();
-          // Aplicar el fondo y configuración de colores a la nueva página
-          doc.setFillColor(bgColor === '#2D1E1A' ? 45 : 245, bgColor === '#2D1E1A' ? 30 : 240, bgColor === '#2D1E1A' ? 26 : 225);
-          doc.rect(0, 0, 210, 297, 'F');
-          doc.setTextColor(textColor === '#4A2E1B' ? 74 : 245, textColor === '#4A2E1B' ? 46 : 240, textColor === '#4A2E1B' ? 27 : 225);
-          y = 20;
-        }
-        
-        // Añadir fecha y hora
-        doc.setFontSize(10);
-        doc.text(`${formatDate(entry.fecha)} - ${entry.franja === 'DIA' ? 'Día' : 'Noche'}`, 20, y);
-        
-        // Añadir indicador de privacidad si el post es privado
-        if (entry.is_private) {
-          doc.text("(Privado)", 60, y);
-        }
-        
-        y += 8;
-        
-        // Añadir mensaje
-        doc.setFontSize(12);
-        
-        // Dividir el mensaje en líneas para evitar que se salga de la página
-        const splitText = doc.splitTextToSize(entry.mensaje, 170);
-        doc.text(splitText, 20, y);
-        
-        // Actualizar la posición Y para la siguiente entrada
-        y += splitText.length * 7 + 5;
-        
-        // Añadir objetivos si existen y es una entrada de día
-        if (entry.franja === 'DIA' && entry.objectives && entry.objectives.length > 0) {
-          y += 5;
-          doc.setFontSize(11);
-          doc.text('Objetivos:', 20, y);
-          y += 5;
-          
-          // Iterar sobre cada objetivo
-          for (const objective of entry.objectives) {
-            // Si no hay suficiente espacio en la página actual, crear una nueva
-            if (y > 270) {
-              doc.addPage();
-              // Aplicar el fondo y configuración de colores a la nueva página
-              doc.setFillColor(bgColor === '#2D1E1A' ? 45 : 245, bgColor === '#2D1E1A' ? 30 : 240, bgColor === '#2D1E1A' ? 26 : 225);
-              doc.rect(0, 0, 210, 297, 'F');
-              doc.setTextColor(textColor === '#4A2E1B' ? 74 : 245, textColor === '#4A2E1B' ? 46 : 240, textColor === '#4A2E1B' ? 27 : 225);
-              y = 20;
-            }
-            
-            // Dibujar el checkbox
-            doc.setDrawColor(textColor === '#4A2E1B' ? 74 : 245, textColor === '#4A2E1B' ? 46 : 240, textColor === '#4A2E1B' ? 27 : 225);
-            doc.setLineWidth(0.2);
-            doc.rect(20, y - 3, 4, 4);
-            
-            // Si el objetivo está completado, marcar el checkbox
-            if (objective.done) {
-              doc.setFillColor(textColor === '#4A2E1B' ? 74 : 245, textColor === '#4A2E1B' ? 46 : 240, textColor === '#4A2E1B' ? 27 : 225);
-              doc.rect(21, y - 2, 2, 2, 'F');
-            }
-            
-            // Añadir el texto del objetivo
-            doc.setFontSize(10);
-            const objectiveText = objective.text;
-            const splitObjectiveText = doc.splitTextToSize(objectiveText, 160);
-            doc.text(splitObjectiveText, 26, y);
-            
-            // Actualizar la posición Y para el siguiente objetivo
-            y += splitObjectiveText.length * 5 + 5;
-          }
-          
-          y += 5;
-        } else {
-          y += 10;
-        }
-        
-        // Añadir línea separadora entre entradas
-        doc.setDrawColor(textColor === '#4A2E1B' ? 74 : 245, textColor === '#4A2E1B' ? 46 : 240, textColor === '#4A2E1B' ? 27 : 225);
-        doc.setLineWidth(0.2);
-        doc.line(20, y - 5, 190, y - 5);
-      }
-      
+
+      const blob = await response.blob();
       const formattedDate = new Date().toISOString().split('T')[0];
-      const fileName = `beshy-pensamientos-${formattedDate}.pdf`;
+      const fileName = `beshy-whispers-${userId}-${formattedDate}.pdf`;
 
-      try {
-        doc.save(fileName);
-      } catch {
-        const pdfBlob = doc.output('blob');
-        const blobUrl = URL.createObjectURL(pdfBlob);
-        const downloadLink = document.createElement('a');
-        downloadLink.href = blobUrl;
-        downloadLink.download = fileName;
-        document.body.appendChild(downloadLink);
-        downloadLink.click();
+      const blobUrl = URL.createObjectURL(blob);
+      const downloadLink = document.createElement('a');
+      downloadLink.href = blobUrl;
+      downloadLink.download = fileName;
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
 
-        setTimeout(() => {
-          downloadLink.remove();
-          URL.revokeObjectURL(blobUrl);
-        }, 100);
-      }
+      setTimeout(() => {
+        downloadLink.remove();
+        URL.revokeObjectURL(blobUrl);
+      }, 100);
 
       setTimeout(() => {
         onClose();
         setIsGenerating(false);
       }, 500);
     } catch {
-      setError('Error al generar el PDF. Por favor, intenta de nuevo.');
+      setError('Error de conexión. Comprueba tu red e intenta de nuevo.');
+    } finally {
+      clearTimeout(slowTimer);
       setIsGenerating(false);
     }
   };
@@ -269,45 +126,45 @@ export default function DownloadPDFModal({
             <p>{error}</p>
           </div>
         )}
-        
+
         {isGenerating ? (
           <div className="text-center py-6">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-current mb-4"></div>
-            <p className="mb-2">Generando tu PDF...</p>
-            <p className="text-sm opacity-75">Esto puede tardar unos segundos.</p>
+            <p className="mb-2">{progressMessage}</p>
+            <p className="text-sm opacity-75">Se generará un PDF con {entries.length} whispers.</p>
           </div>
         ) : (
           <>
             <p className="mb-6">
               Estás a punto de guardar una copia de todo lo que has escrito aquí. Nadie más verá este archivo: es solo para ti.
             </p>
-            
+
             <p className="text-sm opacity-75 mb-6">
               Guárdalo en un lugar seguro.
             </p>
           </>
         )}
-        
+
         <div className="flex justify-end gap-4">
           <button
             onClick={onClose}
             disabled={isGenerating}
             className={`px-4 py-2 rounded-md transition-colors cursor-pointer ${
-              isDay 
-                ? 'bg-[#4A2E1B]/10 hover:bg-[#4A2E1B]/20 text-[#4A2E1B]' 
+              isDay
+                ? 'bg-[#4A2E1B]/10 hover:bg-[#4A2E1B]/20 text-[#4A2E1B]'
                 : 'bg-[#F5F0E1]/10 hover:bg-[#F5F0E1]/20 text-[#F5F0E1]'
             } disabled:opacity-50 disabled:cursor-not-allowed`}
             aria-label="Cancelar descarga"
           >
             Cancelar
           </button>
-          
+
           <button
             onClick={generatePDF}
             disabled={isGenerating}
             className={`px-4 py-2 rounded-md transition-all duration-200 cursor-pointer ${
-              isDay 
-                ? 'bg-[#4A2E1B] text-[#F5F0E1] hover:bg-[#3A1E0B]' 
+              isDay
+                ? 'bg-[#4A2E1B] text-[#F5F0E1] hover:bg-[#3A1E0B]'
                 : 'bg-[#F5F0E1] text-[#2D1E1A] hover:bg-[#E5E0D1]'
             } disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 shadow-sm hover:shadow-md`}
             style={{ cursor: isGenerating ? 'wait' : 'pointer' }}
@@ -319,4 +176,4 @@ export default function DownloadPDFModal({
       </div>
     </div>
   );
-} 
+}

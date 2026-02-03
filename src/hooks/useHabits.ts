@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useAuthSession } from '@/hooks/useAuthSession';
+import type { TrackingType } from '@/lib/habit-templates';
 
 export interface Habit {
   id: string;
@@ -12,7 +13,7 @@ export interface Habit {
   target_days_per_week: number;
   target_days: number[];
   color: string;
-  tracking_type: 'binary' | 'quantity';
+  tracking_type: TrackingType;
   target_value: number | null;
   unit: string | null;
   icon: string | null;
@@ -29,7 +30,7 @@ interface CreateHabitData {
   description?: string;
   targetDays?: number[];
   color?: string;
-  trackingType?: 'binary' | 'quantity';
+  trackingType?: TrackingType;
   targetValue?: number;
   unit?: string;
   icon?: string;
@@ -42,7 +43,7 @@ interface UpdateHabitData {
   description?: string | null;
   targetDays?: number[];
   color?: string;
-  trackingType?: 'binary' | 'quantity';
+  trackingType?: TrackingType;
   targetValue?: number | null;
   unit?: string | null;
   icon?: string | null;

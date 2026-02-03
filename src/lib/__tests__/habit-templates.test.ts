@@ -18,7 +18,7 @@ describe('HABIT_TEMPLATES', () => {
       expect(t.icon.length).toBeGreaterThan(0);
       expect(t.category.length).toBeGreaterThan(0);
       expect(t.color).toMatch(/^#[0-9a-fA-F]{6}$/);
-      expect(['binary', 'quantity']).toContain(t.trackingType);
+      expect(['binary', 'quantity', 'timer']).toContain(t.trackingType);
       expect(t.suggestedDays.length).toBeGreaterThan(0);
     }
   });
@@ -37,6 +37,16 @@ describe('HABIT_TEMPLATES', () => {
   it('binary templates do not require targetValue or unit', () => {
     const binaryTemplates = HABIT_TEMPLATES.filter(t => t.trackingType === 'binary');
     expect(binaryTemplates.length).toBeGreaterThan(0);
+  });
+
+  it('timer templates have targetValue and unit "min"', () => {
+    const timerTemplates = HABIT_TEMPLATES.filter(t => t.trackingType === 'timer');
+    expect(timerTemplates.length).toBeGreaterThan(0);
+    for (const t of timerTemplates) {
+      expect(t.targetValue).toBeDefined();
+      expect(t.targetValue).toBeGreaterThan(0);
+      expect(t.unit).toBe('min');
+    }
   });
 
   it('all suggestedDays are valid (0-6)', () => {

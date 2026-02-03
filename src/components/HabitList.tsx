@@ -10,7 +10,7 @@ interface Habit {
   readonly description: string | null;
   readonly color: string;
   readonly target_days: number[];
-  readonly tracking_type: 'binary' | 'quantity';
+  readonly tracking_type: 'binary' | 'quantity' | 'timer';
   readonly target_value: number | null;
   readonly unit: string | null;
   readonly icon: string | null;
@@ -24,8 +24,12 @@ interface HabitListProps {
   readonly toggling: boolean;
   readonly stats: HabitStatData[];
   readonly today: string;
+  readonly activeTimerHabitId: string | null;
+  readonly elapsedSeconds: number;
   readonly onToggle: (habitId: string) => void;
   readonly onIncrement: (habitId: string, amount: number) => void;
+  readonly onTimerStart: (habitId: string) => void;
+  readonly onTimerStop: () => void;
   readonly onEdit: (habitId: string) => void;
   readonly onAdd: () => void;
 }
@@ -69,8 +73,12 @@ function HabitCardList({
   isDay,
   isDueToday,
   today,
+  activeTimerHabitId,
+  elapsedSeconds,
   onToggle,
   onIncrement,
+  onTimerStart,
+  onTimerStop,
   onEdit,
 }: {
   readonly habits: Habit[];
@@ -81,8 +89,12 @@ function HabitCardList({
   readonly isDay: boolean;
   readonly isDueToday: boolean;
   readonly today: string;
+  readonly activeTimerHabitId: string | null;
+  readonly elapsedSeconds: number;
   readonly onToggle: (habitId: string) => void;
   readonly onIncrement: (habitId: string, amount: number) => void;
+  readonly onTimerStart: (habitId: string) => void;
+  readonly onTimerStop: () => void;
   readonly onEdit: (habitId: string) => void;
 }): React.ReactElement {
   return (
@@ -97,8 +109,12 @@ function HabitCardList({
           stat={stats.find(s => s.habitId === habit.id)}
           isDay={isDay}
           isDueToday={isDueToday}
+          isTimerRunning={activeTimerHabitId === habit.id}
+          elapsedSeconds={activeTimerHabitId === habit.id ? elapsedSeconds : 0}
           onToggle={() => onToggle(habit.id)}
           onIncrement={(amount) => onIncrement(habit.id, amount)}
+          onTimerStart={() => onTimerStart(habit.id)}
+          onTimerStop={onTimerStop}
           onEdit={() => onEdit(habit.id)}
         />
       ))}
@@ -114,8 +130,12 @@ function OtherDaysSection({
   stats,
   isDay,
   today,
+  activeTimerHabitId,
+  elapsedSeconds,
   onToggle,
   onIncrement,
+  onTimerStart,
+  onTimerStop,
   onEdit,
 }: {
   readonly habits: Habit[];
@@ -125,8 +145,12 @@ function OtherDaysSection({
   readonly stats: HabitStatData[];
   readonly isDay: boolean;
   readonly today: string;
+  readonly activeTimerHabitId: string | null;
+  readonly elapsedSeconds: number;
   readonly onToggle: (habitId: string) => void;
   readonly onIncrement: (habitId: string, amount: number) => void;
+  readonly onTimerStart: (habitId: string) => void;
+  readonly onTimerStop: () => void;
   readonly onEdit: (habitId: string) => void;
 }): React.ReactElement | null {
   const [showOtherDays, setShowOtherDays] = useState(false);
@@ -165,8 +189,12 @@ function OtherDaysSection({
             isDay={isDay}
             isDueToday={false}
             today={today}
+            activeTimerHabitId={activeTimerHabitId}
+            elapsedSeconds={elapsedSeconds}
             onToggle={onToggle}
             onIncrement={onIncrement}
+            onTimerStart={onTimerStart}
+            onTimerStop={onTimerStop}
             onEdit={onEdit}
           />
         </div>
@@ -195,8 +223,12 @@ export default function HabitList({
   toggling,
   stats,
   today,
+  activeTimerHabitId,
+  elapsedSeconds,
   onToggle,
   onIncrement,
+  onTimerStart,
+  onTimerStop,
   onEdit,
   onAdd,
 }: HabitListProps): React.ReactElement {
@@ -259,8 +291,12 @@ export default function HabitList({
               isDay={isDay}
               isDueToday
               today={today}
+              activeTimerHabitId={activeTimerHabitId}
+              elapsedSeconds={elapsedSeconds}
               onToggle={onToggle}
               onIncrement={onIncrement}
+              onTimerStart={onTimerStart}
+              onTimerStop={onTimerStop}
               onEdit={onEdit}
             />
           )}
@@ -273,8 +309,12 @@ export default function HabitList({
             stats={stats}
             isDay={isDay}
             today={today}
+            activeTimerHabitId={activeTimerHabitId}
+            elapsedSeconds={elapsedSeconds}
             onToggle={onToggle}
             onIncrement={onIncrement}
+            onTimerStart={onTimerStart}
+            onTimerStop={onTimerStop}
             onEdit={onEdit}
           />
         </>

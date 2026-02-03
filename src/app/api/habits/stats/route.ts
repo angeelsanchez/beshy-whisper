@@ -10,7 +10,7 @@ const RETOMA_THRESHOLD_DAYS = 7;
 interface HabitStats {
   habitId: string;
   habitName: string;
-  trackingType: 'binary' | 'quantity';
+  trackingType: 'binary' | 'quantity' | 'timer';
   targetValue: number | null;
   unit: string | null;
   totalRepetitions: number;
@@ -216,7 +216,7 @@ export async function GET(request: NextRequest) {
         : habitLogs;
       const milestoneDates = milestoneEntries.map(l => l.completed_at);
 
-      const isQuantity = habit.tracking_type === 'quantity';
+      const isQuantity = habit.tracking_type === 'quantity' || habit.tracking_type === 'timer';
       const completionsByDate: Record<string, boolean | number> = {};
       for (const log of habitLogs) {
         completionsByDate[log.completed_at] = isQuantity ? (log.value ?? 0) : true;
@@ -232,7 +232,7 @@ export async function GET(request: NextRequest) {
       return {
         habitId: habit.id,
         habitName: habit.name,
-        trackingType: (habit.tracking_type ?? 'binary') as 'binary' | 'quantity',
+        trackingType: (habit.tracking_type ?? 'binary') as 'binary' | 'quantity' | 'timer',
         targetValue: habit.target_value ?? null,
         unit: habit.unit ?? null,
         totalRepetitions: milestoneDates.length,

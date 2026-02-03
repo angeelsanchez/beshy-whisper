@@ -273,7 +273,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 
-    if (habit.tracking_type === 'quantity') {
+    if (habit.tracking_type === 'quantity' || habit.tracking_type === 'timer') {
       return handleQuantityLog({
         existingLog,
         habitId,

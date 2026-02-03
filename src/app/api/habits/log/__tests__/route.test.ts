@@ -458,3 +458,87 @@ describe('POST /api/habits/log (quantity)', () => {
     expect(json.action).toBe('already_logged');
   });
 });
+
+describe('POST /api/habits/log (timer)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+
+    for (const key of Object.keys(habitsBuilder)) {
+      habitsBuilder[key].mockReset().mockReturnValue(habitsBuilder);
+    }
+    habitsBuilder.single.mockReset().mockResolvedValue({ data: null, error: null });
+    habitsBuilder.maybeSingle.mockReset().mockResolvedValue({ data: null, error: null });
+
+    for (const key of Object.keys(logsBuilder)) {
+      logsBuilder[key].mockReset().mockReturnValue(logsBuilder);
+    }
+    logsBuilder.single.mockReset().mockResolvedValue({ data: null, error: null });
+    logsBuilder.maybeSingle.mockReset().mockResolvedValue({ data: null, error: null });
+  });
+
+  const timerHabit = {
+    id: HABIT_UUID,
+    user_id: USER_UUID,
+    name: 'Estudiar',
+    is_active: true,
+    tracking_type: 'timer',
+    target_value: 45,
+  };
+
+  it('creates initial timer log with elapsed minutes', async () => {
+    mockGetServerSession.mockResolvedValue(mockSession);
+    habitsBuilder.maybeSingle.mockResolvedValueOnce({ data: timerHabit, error: null });
+    logsBuilder.maybeSingle.mockResolvedValueOnce({ data: null, error: null });
+    logsBuilder.insert.mockReturnValueOnce({ error: null });
+    logsBuilder.order.mockResolvedValueOnce({
+      data: [{ completed_at: '2026-01-31' }],
+      error: null,
+    });
+
+    const res = await POST(makeRequest({ habitId: HABIT_UUID, value: 20 }));
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.action).toBe('logged');
+    expect(json.value).toBe(20);
+    expect(json.completed).toBe(false);
+  });
+
+  it('accumulates timer sessions on same day', async () => {
+    mockGetServerSession.mockResolvedValue(mockSession);
+    habitsBuilder.maybeSingle.mockResolvedValueOnce({ data: timerHabit, error: null });
+    logsBuilder.maybeSingle.mockResolvedValueOnce({
+      data: { id: 'log-id', value: 20 },
+      error: null,
+    });
+    logsBuilder.eq
+      .mockReturnValueOnce(logsBuilder)
+      .mockReturnValueOnce(logsBuilder)
+      .mockResolvedValueOnce({ error: null });
+
+    const res = await POST(makeRequest({ habitId: HABIT_UUID, value: 15 }));
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.action).toBe('updated');
+    expect(json.value).toBe(35);
+    expect(json.completed).toBe(false);
+  });
+
+  it('marks timer as completed when reaching target', async () => {
+    mockGetServerSession.mockResolvedValue(mockSession);
+    habitsBuilder.maybeSingle.mockResolvedValueOnce({ data: timerHabit, error: null });
+    logsBuilder.maybeSingle.mockResolvedValueOnce({
+      data: { id: 'log-id', value: 30 },
+      error: null,
+    });
+    logsBuilder.eq
+      .mockReturnValueOnce(logsBuilder)
+      .mockReturnValueOnce(logsBuilder)
+      .mockResolvedValueOnce({ error: null });
+
+    const res = await POST(makeRequest({ habitId: HABIT_UUID, value: 20 }));
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.completed).toBe(true);
+    expect(json.value).toBe(50);
+  });
+});

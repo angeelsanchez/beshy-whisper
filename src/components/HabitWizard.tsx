@@ -11,8 +11,6 @@ import {
   type TrackingType,
   type HabitTemplate,
 } from '@/lib/habit-templates';
-import AppIcon from '@/components/AppIcon';
-import { Bell, BellOff } from 'lucide-react';
 
 const PRESET_COLORS = [
   '#4A2E1B', '#8B5E3C', '#A0522D', '#CD853F',
@@ -32,17 +30,13 @@ const DAY_PRESETS = [
   { label: 'Fines', days: WEEKEND_DAYS },
 ];
 
-export type FrequencyMode = 'specific_days' | 'weekly_count';
-
 export interface HabitWizardData {
   name: string;
   description: string;
   trackingType: TrackingType;
   targetValue?: number;
   unit?: string;
-  frequencyMode: FrequencyMode;
   targetDays: number[];
-  weeklyTarget?: number;
   color: string;
   icon?: string;
   category?: HabitCategory;
@@ -55,9 +49,7 @@ interface InitialHabitData {
   readonly tracking_type: TrackingType;
   readonly target_value: number | null;
   readonly unit: string | null;
-  readonly frequency_mode: FrequencyMode;
   readonly target_days: number[];
-  readonly weekly_target: number | null;
   readonly color: string;
   readonly icon: string | null;
   readonly category: HabitCategory | null;
@@ -69,7 +61,6 @@ interface HabitWizardProps {
   readonly initialData?: InitialHabitData;
   readonly onSubmit: (data: HabitWizardData) => Promise<boolean>;
   readonly onDelete?: () => Promise<boolean>;
-  readonly additionalContent?: React.ReactNode;
 }
 
 interface FormState {
@@ -78,9 +69,7 @@ interface FormState {
   trackingType: TrackingType;
   targetValueStr: string;
   unit: string;
-  frequencyMode: FrequencyMode;
   targetDays: number[];
-  weeklyTargetStr: string;
   color: string;
   icon: string;
   category: HabitCategory | null;
@@ -98,9 +87,7 @@ function getInitialForm(initialData?: InitialHabitData): FormState {
       trackingType: 'binary',
       targetValueStr: '',
       unit: '',
-      frequencyMode: 'specific_days',
       targetDays: ALL_DAYS,
-      weeklyTargetStr: '3',
       color: '#4A2E1B',
       icon: '',
       category: null,
@@ -115,11 +102,9 @@ function getInitialForm(initialData?: InitialHabitData): FormState {
     trackingType: initialData.tracking_type,
     targetValueStr: initialData.target_value?.toString() ?? '',
     unit: initialData.unit ?? '',
-    frequencyMode: initialData.frequency_mode ?? 'specific_days',
     targetDays: Array.isArray(initialData.target_days) && initialData.target_days.length > 0
       ? [...initialData.target_days].sort((a, b) => a - b)
       : ALL_DAYS,
-    weeklyTargetStr: initialData.weekly_target?.toString() ?? '3',
     color: initialData.color,
     icon: initialData.icon ?? '',
     category: initialData.category,
@@ -179,14 +164,14 @@ function TemplateCard({
           : 'bg-[#F5F0E1]/5 hover:bg-[#F5F0E1]/10'
       }`}
     >
-      <div className="mb-1"><AppIcon identifier={template.icon} type="habit" className="w-6 h-6" /></div>
+      <div className="text-2xl mb-1">{template.icon}</div>
       <div className={`text-sm font-medium truncate ${isDay ? 'text-[#4A2E1B]' : 'text-[#F5F0E1]'}`}>
         {template.name}
       </div>
       <div className={`text-[10px] mt-0.5 ${isDay ? 'text-[#4A2E1B]/50' : 'text-[#F5F0E1]/50'}`}>
-        {template.trackingType === 'binary'
-          ? 'Sí/No'
-          : `${template.targetValue} ${template.unit}/día`}
+        {template.trackingType === 'quantity'
+          ? `${template.targetValue} ${template.unit}/día`
+          : 'Sí/No'}
       </div>
     </button>
   );
@@ -224,7 +209,7 @@ function TemplateStep({
                   : isDay ? 'bg-[#4A2E1B]/10 text-[#4A2E1B]/70' : 'bg-[#F5F0E1]/10 text-[#F5F0E1]/70'
               }`}
             >
-              <AppIcon identifier={cat.icon} type="category" className="w-3.5 h-3.5" />
+              <span>{cat.icon}</span>
               <span>{cat.label}</span>
             </button>
           );
@@ -252,82 +237,6 @@ function TemplateStep({
       >
         Crear personalizado
       </button>
-    </div>
-  );
-}
-
-const WEEKLY_TARGET_OPTIONS = [1, 2, 3, 4, 5, 6, 7];
-
-function FrequencySection({
-  form,
-  isDay,
-  onChange,
-  onDayToggle,
-  onDayPreset,
-}: {
-  readonly form: FormState;
-  readonly isDay: boolean;
-  readonly onChange: FieldUpdater;
-  readonly onDayToggle: (day: number) => void;
-  readonly onDayPreset: (days: number[]) => void;
-}): React.ReactElement {
-  const modeOptions: { value: FrequencyMode; label: string }[] = [
-    { value: 'specific_days', label: 'Días específicos' },
-    { value: 'weekly_count', label: 'X días/semana' },
-  ];
-
-  return (
-    <div>
-      <span className={`block text-sm font-medium mb-2 ${isDay ? 'text-[#4A2E1B]' : 'text-[#F5F0E1]'}`}>
-        Frecuencia
-      </span>
-      <div className="flex gap-1.5 mb-3">
-        {modeOptions.map(opt => (
-          <button
-            key={opt.value}
-            type="button"
-            onClick={() => onChange('frequencyMode', opt.value)}
-            className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${
-              form.frequencyMode === opt.value
-                ? isDay ? 'bg-[#4A2E1B] text-[#F5F0E1]' : 'bg-[#F5F0E1] text-[#2D1E1A]'
-                : isDay ? 'bg-[#4A2E1B]/10 text-[#4A2E1B]/50' : 'bg-[#F5F0E1]/10 text-[#F5F0E1]/50'
-            }`}
-          >
-            {opt.label}
-          </button>
-        ))}
-      </div>
-
-      {form.frequencyMode === 'specific_days' ? (
-        <DaySelector
-          targetDays={form.targetDays}
-          isDay={isDay}
-          onToggle={onDayToggle}
-          onPreset={onDayPreset}
-        />
-      ) : (
-        <div>
-          <span className={`block text-xs mb-2 ${isDay ? 'text-[#4A2E1B]/60' : 'text-[#F5F0E1]/60'}`}>
-            Cumple cualquier día de la semana
-          </span>
-          <div className="flex gap-1.5">
-            {WEEKLY_TARGET_OPTIONS.map(n => (
-              <button
-                key={n}
-                type="button"
-                onClick={() => onChange('weeklyTargetStr', n.toString())}
-                className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${
-                  form.weeklyTargetStr === n.toString()
-                    ? isDay ? 'bg-[#4A2E1B] text-[#F5F0E1]' : 'bg-[#F5F0E1] text-[#2D1E1A]'
-                    : isDay ? 'bg-[#4A2E1B]/10 text-[#4A2E1B]/50' : 'bg-[#F5F0E1]/10 text-[#F5F0E1]/50'
-                }`}
-              >
-                {n}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -462,28 +371,17 @@ function ConfigureStep({
         />
       )}
 
-      {form.trackingType === 'timer' && (
-        <TimerFields
-          targetValueStr={form.targetValueStr}
-          isDay={isDay}
-          inputCls={inputCls}
-          labelCls={labelCls}
-          onTargetChange={val => onChange('targetValueStr', val)}
-        />
-      )}
-
       <CategorySelector
         value={form.category}
         isDay={isDay}
         onChange={val => onChange('category', val)}
       />
 
-      <FrequencySection
-        form={form}
+      <DaySelector
+        targetDays={form.targetDays}
         isDay={isDay}
-        onChange={onChange}
-        onDayToggle={onDayToggle}
-        onDayPreset={onDayPreset}
+        onToggle={onDayToggle}
+        onPreset={onDayPreset}
       />
 
       <ColorPicker
@@ -524,7 +422,6 @@ function TrackingTypeToggle({
   const options: { key: TrackingType; label: string }[] = [
     { key: 'binary', label: 'Sí/No' },
     { key: 'quantity', label: 'Cantidad' },
-    { key: 'timer', label: 'Tiempo' },
   ];
 
   return (
@@ -619,56 +516,6 @@ function QuantityFields({
   );
 }
 
-const TIMER_PRESETS = [15, 20, 30, 45, 60];
-
-function TimerFields({
-  targetValueStr,
-  isDay,
-  inputCls,
-  labelCls,
-  onTargetChange,
-}: {
-  readonly targetValueStr: string;
-  readonly isDay: boolean;
-  readonly inputCls: string;
-  readonly labelCls: string;
-  readonly onTargetChange: (val: string) => void;
-}): React.ReactElement {
-  return (
-    <>
-      <div>
-        <label className={labelCls}>Objetivo en minutos *</label>
-        <input
-          type="number"
-          value={targetValueStr}
-          onChange={e => onTargetChange(e.target.value)}
-          min={1}
-          max={999999}
-          placeholder="30"
-          className={inputCls}
-          inputMode="decimal"
-        />
-      </div>
-      <div className="flex flex-wrap gap-1.5">
-        {TIMER_PRESETS.map(mins => (
-          <button
-            key={mins}
-            type="button"
-            onClick={() => onTargetChange(String(mins))}
-            className={`px-2.5 py-1 rounded-md text-xs transition-colors ${
-              targetValueStr === String(mins)
-                ? isDay ? 'bg-[#4A2E1B]/20 text-[#4A2E1B] font-medium' : 'bg-[#F5F0E1]/20 text-[#F5F0E1] font-medium'
-                : isDay ? 'bg-[#4A2E1B]/5 text-[#4A2E1B]/60' : 'bg-[#F5F0E1]/5 text-[#F5F0E1]/60'
-            }`}
-          >
-            {mins} min
-          </button>
-        ))}
-      </div>
-    </>
-  );
-}
-
 function CategorySelector({
   value,
   isDay,
@@ -698,7 +545,7 @@ function CategorySelector({
                   : isDay ? 'bg-[#4A2E1B]/5 text-[#4A2E1B]/60' : 'bg-[#F5F0E1]/5 text-[#F5F0E1]/60'
               }`}
             >
-              <AppIcon identifier={cat.icon} type="category" className="w-3.5 h-3.5" />
+              <span>{cat.icon}</span>
               <span>{cat.label}</span>
             </button>
           );
@@ -757,18 +604,18 @@ function IconPicker({
         Icono
       </span>
       <div className="flex flex-wrap gap-2">
-        {ICON_OPTIONS.map(iconId => (
+        {ICON_OPTIONS.map(emoji => (
           <button
-            key={iconId}
+            key={emoji}
             type="button"
-            onClick={() => onChange(value === iconId ? '' : iconId)}
-            className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all ${
-              value === iconId
+            onClick={() => onChange(value === emoji ? '' : emoji)}
+            className={`w-9 h-9 rounded-lg flex items-center justify-center text-lg transition-all ${
+              value === emoji
                 ? isDay ? 'bg-[#4A2E1B]/15 scale-110' : 'bg-[#F5F0E1]/15 scale-110'
                 : isDay ? 'bg-[#4A2E1B]/5 hover:bg-[#4A2E1B]/10' : 'bg-[#F5F0E1]/5 hover:bg-[#F5F0E1]/10'
             }`}
           >
-            <AppIcon identifier={iconId} type="habit" className="w-5 h-5" />
+            {emoji}
           </button>
         ))}
       </div>
@@ -786,7 +633,7 @@ function PreviewCard({
   return (
     <div className={`rounded-xl p-4 ${isDay ? 'bg-[#4A2E1B]/5' : 'bg-[#F5F0E1]/5'}`}>
       <div className="flex items-center gap-3">
-        {form.icon && <AppIcon identifier={form.icon} type="habit" className="w-6 h-6 flex-shrink-0" />}
+        {form.icon && <span className="text-2xl flex-shrink-0">{form.icon}</span>}
         <div className="flex-1 min-w-0">
           <div className={`font-medium truncate ${isDay ? 'text-[#4A2E1B]' : 'text-[#F5F0E1]'}`}>
             {form.name}
@@ -806,25 +653,17 @@ function PreviewCard({
         <div className="flex justify-between">
           <span>Tipo</span>
           <span className="font-medium">
-            {form.trackingType === 'binary'
-              ? 'Sí/No'
-              : form.trackingType === 'timer'
-                ? `${form.targetValueStr} min/día`
-                : `${form.targetValueStr} ${form.unit}/día`}
+            {form.trackingType === 'quantity' ? `${form.targetValueStr} ${form.unit}/día` : 'Sí/No'}
           </span>
         </div>
         <div className="flex justify-between">
-          <span>Frecuencia</span>
-          <span className="font-medium">
-            {form.frequencyMode === 'weekly_count'
-              ? `${form.weeklyTargetStr} días/semana`
-              : formatDaysLabel(form.targetDays)}
-          </span>
+          <span>Días</span>
+          <span className="font-medium">{formatDaysLabel(form.targetDays)}</span>
         </div>
         {form.category && (
           <div className="flex justify-between">
             <span>Categoría</span>
-            <span className="font-medium flex items-center gap-1"><AppIcon identifier={CATEGORIES[form.category].icon} type="category" className="w-3.5 h-3.5" /> {CATEGORIES[form.category].label}</span>
+            <span className="font-medium">{CATEGORIES[form.category].icon} {CATEGORIES[form.category].label}</span>
           </div>
         )}
       </div>
@@ -845,73 +684,116 @@ function ReminderToggle({
   readonly onToggle: () => void;
   readonly onTimeChange: (val: string) => void;
 }): React.ReactElement {
-  if (!enabled) {
-    return (
-      <button
-        type="button"
-        onClick={onToggle}
-        className={`w-full flex items-center gap-3 p-3 rounded-xl border border-dashed transition-colors ${
-          isDay
-            ? 'border-[#4A2E1B]/20 hover:border-[#4A2E1B]/40 hover:bg-[#4A2E1B]/5'
-            : 'border-[#F5F0E1]/20 hover:border-[#F5F0E1]/40 hover:bg-[#F5F0E1]/5'
-        }`}
-      >
-        <div className={`flex items-center justify-center w-8 h-8 rounded-lg ${
-          isDay ? 'bg-[#4A2E1B]/10' : 'bg-[#F5F0E1]/10'
-        }`}>
-          <BellOff className={`w-4 h-4 ${isDay ? 'text-[#4A2E1B]/40' : 'text-[#F5F0E1]/40'}`} strokeWidth={2} />
-        </div>
-        <div className="text-left flex-1">
-          <p className={`text-sm font-medium ${isDay ? 'text-[#4A2E1B]/60' : 'text-[#F5F0E1]/60'}`}>
-            Activar recordatorio
-          </p>
-          <p className={`text-xs ${isDay ? 'text-[#4A2E1B]/35' : 'text-[#F5F0E1]/35'}`}>
-            Recibe una notificación push diaria
-          </p>
-        </div>
-      </button>
-    );
-  }
+  const inputCls = `w-full px-3 py-2 rounded-lg border text-sm ${
+    isDay
+      ? 'bg-white/60 border-[#4A2E1B]/20 text-[#4A2E1B]'
+      : 'bg-white/5 border-[#F5F0E1]/20 text-[#F5F0E1]'
+  }`;
 
   return (
-    <div className={`rounded-xl border p-3 space-y-3 ${
-      isDay ? 'border-[#4A2E1B]/20 bg-[#4A2E1B]/5' : 'border-[#F5F0E1]/20 bg-[#F5F0E1]/5'
-    }`}>
-      <div className="flex items-center gap-3">
-        <div className={`flex items-center justify-center w-8 h-8 rounded-lg ${
-          isDay ? 'bg-[#4A2E1B]/15' : 'bg-[#F5F0E1]/15'
-        }`}>
-          <Bell className={`w-4 h-4 ${isDay ? 'text-[#4A2E1B]' : 'text-[#F5F0E1]'}`} strokeWidth={2} />
-        </div>
-        <div className="flex-1">
-          <p className={`text-sm font-medium ${isDay ? 'text-[#4A2E1B]' : 'text-[#F5F0E1]'}`}>
-            Recordatorio activo
-          </p>
+    <>
+      <div className={`flex items-center justify-between p-3 rounded-xl ${
+        isDay ? 'bg-[#4A2E1B]/5' : 'bg-[#F5F0E1]/5'
+      }`}>
+        <div>
+          <div className={`text-sm font-medium ${isDay ? 'text-[#4A2E1B]' : 'text-[#F5F0E1]'}`}>
+            Recordatorio
+          </div>
+          <div className={`text-xs ${isDay ? 'text-[#4A2E1B]/50' : 'text-[#F5F0E1]/50'}`}>
+            Notificación push diaria
+          </div>
         </div>
         <button
           type="button"
           onClick={onToggle}
-          className={`text-xs font-medium px-2 py-1 rounded-md transition-colors ${
-            isDay
-              ? 'text-[#4A2E1B]/50 hover:text-[#4A2E1B] hover:bg-[#4A2E1B]/10'
-              : 'text-[#F5F0E1]/50 hover:text-[#F5F0E1] hover:bg-[#F5F0E1]/10'
+          className={`relative w-11 h-6 rounded-full transition-colors ${
+            enabled
+              ? isDay ? 'bg-[#4A2E1B]' : 'bg-[#F5F0E1]'
+              : isDay ? 'bg-[#4A2E1B]/20' : 'bg-[#F5F0E1]/20'
           }`}
+          role="switch"
+          aria-checked={enabled}
         >
-          Desactivar
+          <span className={`absolute top-0.5 w-5 h-5 rounded-full transition-transform ${
+            enabled ? 'translate-x-[22px]' : 'translate-x-0.5'
+          } ${
+            enabled
+              ? isDay ? 'bg-[#F5F0E1]' : 'bg-[#2D1E1A]'
+              : isDay ? 'bg-[#4A2E1B]/40' : 'bg-[#F5F0E1]/40'
+          }`} />
         </button>
       </div>
-      <div className={`rounded-lg border overflow-hidden ${
-        isDay ? 'bg-white/60 border-[#4A2E1B]/15' : 'bg-white/5 border-[#F5F0E1]/15'
-      }`}>
-        <input
-          type="time"
-          value={time}
-          onChange={e => onTimeChange(e.target.value)}
-          className={`w-full px-3 py-2 text-sm border-none bg-transparent ${
-            isDay ? 'text-[#4A2E1B]' : 'text-[#F5F0E1]'
-          }`}
-        />
+      {enabled && (
+        <div>
+          <span className={`block text-sm font-medium mb-1 ${isDay ? 'text-[#4A2E1B]' : 'text-[#F5F0E1]'}`}>
+            Hora del recordatorio
+          </span>
+          <input
+            type="time"
+            value={time}
+            onChange={e => onTimeChange(e.target.value)}
+            className={inputCls}
+          />
+        </div>
+      )}
+    </>
+  );
+}
+
+function DeleteSection({
+  showConfirm,
+  deleting,
+  isDay,
+  onDelete,
+  onCancel,
+}: {
+  readonly showConfirm: boolean;
+  readonly deleting: boolean;
+  readonly isDay: boolean;
+  readonly onDelete: () => void;
+  readonly onCancel: () => void;
+}): React.ReactElement {
+  if (showConfirm) {
+    return (
+      <div className={`pt-3 mt-2 border-t ${isDay ? 'border-[#4A2E1B]/10' : 'border-[#F5F0E1]/10'}`}>
+        <p className={`text-xs text-center mb-2 ${isDay ? 'text-[#4A2E1B]/60' : 'text-[#F5F0E1]/60'}`}>
+          Se desactivará el hábito y sus registros
+        </p>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={deleting}
+            className={`flex-1 py-2 rounded-lg text-sm font-medium ${
+              isDay ? 'bg-[#4A2E1B]/10 text-[#4A2E1B]' : 'bg-[#F5F0E1]/10 text-[#F5F0E1]'
+            }`}
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            onClick={onDelete}
+            disabled={deleting}
+            className={`flex-1 py-2 rounded-lg text-sm font-medium bg-red-500 text-white ${
+              deleting ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
+          >
+            {deleting ? 'Eliminando...' : 'Confirmar'}
+          </button>
+        </div>
       </div>
+    );
+  }
+
+  return (
+    <div className={`pt-3 mt-2 border-t ${isDay ? 'border-[#4A2E1B]/10' : 'border-[#F5F0E1]/10'}`}>
+      <button
+        type="button"
+        onClick={onDelete}
+        className="w-full py-2 rounded-lg text-sm font-medium text-red-500 bg-red-500/10 hover:bg-red-500/20 transition-colors"
+      >
+        Eliminar hábito
+      </button>
     </div>
   );
 }
@@ -924,6 +806,7 @@ function ConfirmStep({
   submitting,
   onChange,
   onSubmit,
+  deleteProps,
 }: {
   readonly form: FormState;
   readonly isDay: boolean;
@@ -932,6 +815,12 @@ function ConfirmStep({
   readonly submitting: boolean;
   readonly onChange: FieldUpdater;
   readonly onSubmit: () => void;
+  readonly deleteProps?: {
+    readonly onDelete: () => void;
+    readonly showConfirm: boolean;
+    readonly deleting: boolean;
+    readonly onCancel: () => void;
+  };
 }): React.ReactElement {
   return (
     <div className="space-y-4">
@@ -961,11 +850,21 @@ function ConfirmStep({
       >
         {submitting ? 'Guardando...' : mode === 'create' ? 'Crear hábito' : 'Guardar cambios'}
       </button>
+
+      {deleteProps && (
+        <DeleteSection
+          showConfirm={deleteProps.showConfirm}
+          deleting={deleteProps.deleting}
+          isDay={isDay}
+          onDelete={deleteProps.onDelete}
+          onCancel={deleteProps.onCancel}
+        />
+      )}
     </div>
   );
 }
 
-export default function HabitWizard({ mode, initialData, onSubmit, onDelete, additionalContent }: HabitWizardProps): React.ReactElement {
+export default function HabitWizard({ mode, initialData, onSubmit, onDelete }: HabitWizardProps): React.ReactElement {
   const router = useRouter();
   const { isDay } = useTheme();
 
@@ -988,9 +887,7 @@ export default function HabitWizard({ mode, initialData, onSubmit, onDelete, add
       trackingType: template.trackingType,
       targetValueStr: template.targetValue?.toString() ?? '',
       unit: template.unit ?? '',
-      frequencyMode: 'specific_days',
       targetDays: [...template.suggestedDays].sort((a, b) => a - b),
-      weeklyTargetStr: '3',
       color: template.color,
       icon: template.icon,
       category: template.category,
@@ -1043,13 +940,6 @@ export default function HabitWizard({ mode, initialData, onSubmit, onDelete, add
         return false;
       }
     }
-    if (form.trackingType === 'timer') {
-      const val = Number(form.targetValueStr);
-      if (!form.targetValueStr || isNaN(val) || val <= 0) {
-        setError('Introduce un objetivo en minutos válido');
-        return false;
-      }
-    }
     return true;
   }, [form.name, form.trackingType, form.targetValueStr, form.unit]);
 
@@ -1077,20 +967,12 @@ export default function HabitWizard({ mode, initialData, onSubmit, onDelete, add
       name: form.name.trim(),
       description: form.description.trim(),
       trackingType: form.trackingType,
-      frequencyMode: form.frequencyMode,
       targetDays: form.targetDays,
       color: form.color,
     };
-    if (form.frequencyMode === 'weekly_count') {
-      data.weeklyTarget = Number(form.weeklyTargetStr) || 3;
-    }
     if (form.trackingType === 'quantity') {
       data.targetValue = Number(form.targetValueStr);
       data.unit = form.unit.trim();
-    }
-    if (form.trackingType === 'timer') {
-      data.targetValue = Number(form.targetValueStr);
-      data.unit = 'min';
     }
     if (form.icon) data.icon = form.icon;
     if (form.category) data.category = form.category;
@@ -1153,55 +1035,10 @@ export default function HabitWizard({ mode, initialData, onSubmit, onDelete, add
               <path fillRule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z"/>
             </svg>
           </button>
-          <h1 className={`text-xl font-bold flex-1 ${isDay ? 'text-[#4A2E1B]' : 'text-[#F5F0E1]'}`}>
+          <h1 className={`text-xl font-bold ${isDay ? 'text-[#4A2E1B]' : 'text-[#F5F0E1]'}`}>
             {stepTitles[step]}
           </h1>
-          {mode === 'edit' && onDelete && (
-            <button
-              onClick={handleDelete}
-              disabled={deleting}
-              className={`p-2 -mr-2 rounded-lg transition-colors ${
-                deleting ? 'opacity-50 cursor-not-allowed' : ''
-              } text-red-500 hover:bg-red-500/10`}
-              aria-label="Eliminar hábito"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
-                <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
-                <path fillRule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H5.5l1-1h3l1 1H13.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
-              </svg>
-            </button>
-          )}
         </div>
-
-        {showConfirmDelete && (
-          <div className={`mb-4 p-3 rounded-xl ${isDay ? 'bg-red-50 border border-red-200' : 'bg-red-500/10 border border-red-500/20'}`}>
-            <p className={`text-xs text-center mb-2 ${isDay ? 'text-red-700' : 'text-red-400'}`}>
-              Se desactivará el hábito y sus registros
-            </p>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setShowConfirmDelete(false)}
-                disabled={deleting}
-                className={`flex-1 py-2 rounded-lg text-sm font-medium ${
-                  isDay ? 'bg-[#4A2E1B]/10 text-[#4A2E1B]' : 'bg-[#F5F0E1]/10 text-[#F5F0E1]'
-                }`}
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={handleDelete}
-                disabled={deleting}
-                className={`flex-1 py-2 rounded-lg text-sm font-medium bg-red-500 text-white ${
-                  deleting ? 'opacity-50 cursor-not-allowed' : ''
-                }`}
-              >
-                {deleting ? 'Eliminando...' : 'Eliminar'}
-              </button>
-            </div>
-          </div>
-        )}
 
         <StepIndicator step={step} isDay={isDay} />
 
@@ -1234,10 +1071,14 @@ export default function HabitWizard({ mode, initialData, onSubmit, onDelete, add
             submitting={submitting}
             onChange={updateField}
             onSubmit={handleSubmit}
+            deleteProps={mode === 'edit' && onDelete ? {
+              onDelete: handleDelete,
+              showConfirm: showConfirmDelete,
+              deleting,
+              onCancel: () => setShowConfirmDelete(false),
+            } : undefined}
           />
         )}
-
-        {additionalContent}
       </div>
     </div>
   );

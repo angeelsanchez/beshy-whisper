@@ -12,6 +12,12 @@ export interface Habit {
   target_days_per_week: number;
   target_days: number[];
   color: string;
+  tracking_type: 'binary' | 'quantity';
+  target_value: number | null;
+  unit: string | null;
+  icon: string | null;
+  category: 'health' | 'mind' | 'productivity' | 'wellness' | 'social' | 'creativity' | null;
+  reminder_time: string | null;
   is_active: boolean;
   sort_order: number;
   created_at: string;
@@ -23,6 +29,12 @@ interface CreateHabitData {
   description?: string;
   targetDays?: number[];
   color?: string;
+  trackingType?: 'binary' | 'quantity';
+  targetValue?: number;
+  unit?: string;
+  icon?: string;
+  category?: 'health' | 'mind' | 'productivity' | 'wellness' | 'social' | 'creativity';
+  reminderTime?: string;
 }
 
 interface UpdateHabitData {
@@ -30,6 +42,12 @@ interface UpdateHabitData {
   description?: string | null;
   targetDays?: number[];
   color?: string;
+  trackingType?: 'binary' | 'quantity';
+  targetValue?: number | null;
+  unit?: string | null;
+  icon?: string | null;
+  category?: 'health' | 'mind' | 'productivity' | 'wellness' | 'social' | 'creativity' | null;
+  reminderTime?: string | null;
   isActive?: boolean;
   sortOrder?: number;
 }

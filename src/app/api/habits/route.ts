@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { name, description, targetDays, color } = parsed.data;
+    const { name, description, targetDays, color, trackingType, targetValue, unit, icon, category, reminderTime } = parsed.data;
     const sorted = [...targetDays].sort((a, b) => a - b);
     const { frequency, targetDaysPerWeek } = derivedFromTargetDays(sorted);
 
@@ -82,6 +82,12 @@ export async function POST(request: NextRequest) {
         target_days_per_week: targetDaysPerWeek,
         target_days: sorted,
         color,
+        tracking_type: trackingType,
+        target_value: trackingType === 'quantity' ? targetValue : null,
+        unit: trackingType === 'quantity' ? unit : null,
+        icon: icon ?? null,
+        category: category ?? null,
+        reminder_time: reminderTime ?? null,
       })
       .select()
       .single();

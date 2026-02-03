@@ -13,6 +13,21 @@ interface MilestoneResult {
   message: string;
 }
 
+interface ExistingLog {
+  id: string;
+  value: number | null;
+}
+
+interface QuantityLogParams {
+  existingLog: ExistingLog | null;
+  habitId: string;
+  userId: string;
+  date: string;
+  incomingValue: number;
+  targetValue: number;
+  habitName: string;
+}
+
 function getTodayDate(): string {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
@@ -29,8 +44,7 @@ function isValidDate(dateStr: string): boolean {
 }
 
 function isFutureDate(dateStr: string): boolean {
-  const today = getTodayDate();
-  return dateStr > today;
+  return dateStr > getTodayDate();
 }
 
 async function sendMilestoneNotification(userId: string, milestone: MilestoneResult, habitName: string): Promise<void> {
@@ -78,6 +92,130 @@ function countRetomas(dates: string[]): number {
   return retomas;
 }
 
+async function checkMilestonesAndNotify(
+  habitId: string,
+  userId: string,
+  habitName: string
+): Promise<MilestoneResult | null> {
+  const { data: allLogs, error: logsError } = await supabaseAdmin
+    .from('habit_logs')
+    .select('completed_at')
+    .eq('habit_id', habitId)
+    .order('completed_at', { ascending: true });
+
+  if (logsError || !allLogs) return null;
+
+  const totalReps = allLogs.length;
+  const sortedDates = allLogs.map(l => l.completed_at);
+  const retomaCount = countRetomas(sortedDates);
+  const previousDates = sortedDates.slice(0, -1);
+  const previousRetomaCount = countRetomas(previousDates);
+
+  const milestone = detectMilestone(totalReps, totalReps - 1, retomaCount, previousRetomaCount);
+  if (milestone) {
+    sendMilestoneNotification(userId, milestone, habitName).catch(() => {});
+  }
+  return milestone;
+}
+
+async function handleQuantityLog(params: QuantityLogParams): Promise<NextResponse> {
+  const { existingLog, habitId, userId, date, incomingValue, targetValue, habitName } = params;
+
+  if (existingLog) {
+    const currentValue = existingLog.value ?? 0;
+    const newValue = Math.max(0, currentValue + incomingValue);
+
+    if (newValue <= 0) {
+      const { error } = await supabaseAdmin.from('habit_logs').delete().eq('id', existingLog.id);
+      if (error) {
+        logger.error('Error removing quantity log', { detail: error.message });
+        return NextResponse.json({ error: 'Failed to update log' }, { status: 500 });
+      }
+      logger.info('Quantity log removed', { userId, habitId, date });
+      return NextResponse.json({ action: 'removed', completed: false, date, value: 0 });
+    }
+
+    const { error } = await supabaseAdmin
+      .from('habit_logs')
+      .update({ value: newValue })
+      .eq('id', existingLog.id);
+
+    if (error) {
+      logger.error('Error updating quantity log', { detail: error.message });
+      return NextResponse.json({ error: 'Failed to update log' }, { status: 500 });
+    }
+
+    const completed = newValue >= targetValue;
+    logger.info('Quantity log updated', { userId, habitId, date, value: newValue });
+    return NextResponse.json({ action: 'updated', completed, date, value: newValue });
+  }
+
+  const initialValue = Math.max(0, incomingValue);
+  const { error: insertError } = await supabaseAdmin
+    .from('habit_logs')
+    .insert({ habit_id: habitId, user_id: userId, completed_at: date, value: initialValue });
+
+  if (insertError) {
+    if (insertError.code === '23505') {
+      return NextResponse.json({ action: 'already_logged', completed: false, date, value: 0 });
+    }
+    logger.error('Error creating quantity log', { detail: insertError.message });
+    return NextResponse.json({ error: 'Failed to log habit' }, { status: 500 });
+  }
+
+  const completed = initialValue >= targetValue;
+  const milestone = await checkMilestonesAndNotify(habitId, userId, habitName);
+
+  logger.info('Quantity log created', { userId, habitId, date, value: initialValue });
+  return NextResponse.json({
+    action: 'logged',
+    completed,
+    date,
+    value: initialValue,
+    milestone: milestone ? { type: milestone.type, message: milestone.message } : null,
+  });
+}
+
+async function handleBinaryLog(
+  existingLog: ExistingLog | null,
+  habitId: string,
+  userId: string,
+  date: string,
+  habitName: string
+): Promise<NextResponse> {
+  if (existingLog) {
+    const { error } = await supabaseAdmin.from('habit_logs').delete().eq('id', existingLog.id);
+    if (error) {
+      logger.error('Error removing habit log', { detail: error.message });
+      return NextResponse.json({ error: 'Failed to remove log' }, { status: 500 });
+    }
+    logger.info('Habit log removed', { userId, habitId, date });
+    return NextResponse.json({ action: 'removed', completed: false, date });
+  }
+
+  const { error: insertError } = await supabaseAdmin
+    .from('habit_logs')
+    .insert({ habit_id: habitId, user_id: userId, completed_at: date });
+
+  if (insertError) {
+    if (insertError.code === '23505') {
+      return NextResponse.json({ action: 'already_logged', completed: true, date });
+    }
+    logger.error('Error creating habit log', { detail: insertError.message });
+    return NextResponse.json({ error: 'Failed to log habit' }, { status: 500 });
+  }
+
+  const milestone = await checkMilestonesAndNotify(habitId, userId, habitName);
+
+  logger.info('Habit log created', { userId, habitId, date });
+  return NextResponse.json({
+    action: 'logged',
+    completed: true,
+    date,
+    milestone: milestone ? { type: milestone.type, message: milestone.message } : null,
+  });
+}
+
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -107,7 +245,7 @@ export async function POST(request: NextRequest) {
 
     const { data: habit, error: habitError } = await supabaseAdmin
       .from('habits')
-      .select('id, user_id, name, is_active')
+      .select('id, user_id, name, is_active, tracking_type, target_value')
       .eq('id', habitId)
       .maybeSingle();
 
@@ -125,7 +263,7 @@ export async function POST(request: NextRequest) {
 
     const { data: existingLog, error: checkError } = await supabaseAdmin
       .from('habit_logs')
-      .select('id')
+      .select('id, value')
       .eq('habit_id', habitId)
       .eq('completed_at', date)
       .maybeSingle();
@@ -135,67 +273,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 
-    if (existingLog) {
-      const { error: deleteError } = await supabaseAdmin
-        .from('habit_logs')
-        .delete()
-        .eq('id', existingLog.id);
-
-      if (deleteError) {
-        logger.error('Error removing habit log', { detail: deleteError.message });
-        return NextResponse.json({ error: 'Failed to remove log' }, { status: 500 });
-      }
-
-      logger.info('Habit log removed', { userId: session.user.id, habitId, date });
-      return NextResponse.json({ action: 'removed', completed: false, date });
-    }
-
-    const { error: insertError } = await supabaseAdmin
-      .from('habit_logs')
-      .insert({
-        habit_id: habitId,
-        user_id: session.user.id,
-        completed_at: date,
+    if (habit.tracking_type === 'quantity') {
+      return handleQuantityLog({
+        existingLog,
+        habitId,
+        userId: session.user.id,
+        date,
+        incomingValue: parsed.data.value ?? 1,
+        targetValue: habit.target_value ?? 1,
+        habitName: habit.name,
       });
-
-    if (insertError) {
-      if (insertError.code === '23505') {
-        return NextResponse.json({ action: 'already_logged', completed: true, date });
-      }
-      logger.error('Error creating habit log', { detail: insertError.message });
-      return NextResponse.json({ error: 'Failed to log habit' }, { status: 500 });
     }
 
-    const { data: allLogs, error: logsError } = await supabaseAdmin
-      .from('habit_logs')
-      .select('completed_at')
-      .eq('habit_id', habitId)
-      .order('completed_at', { ascending: true });
-
-    let milestone: MilestoneResult | null = null;
-
-    if (!logsError && allLogs) {
-      const totalReps = allLogs.length;
-      const previousTotalReps = totalReps - 1;
-      const sortedDates = allLogs.map(l => l.completed_at);
-      const retomaCount = countRetomas(sortedDates);
-      const previousDates = sortedDates.slice(0, -1);
-      const previousRetomaCount = countRetomas(previousDates);
-
-      milestone = detectMilestone(totalReps, previousTotalReps, retomaCount, previousRetomaCount);
-
-      if (milestone) {
-        sendMilestoneNotification(session.user.id, milestone, habit.name).catch(() => {});
-      }
-    }
-
-    logger.info('Habit log created', { userId: session.user.id, habitId, date });
-    return NextResponse.json({
-      action: 'logged',
-      completed: true,
-      date,
-      milestone: milestone ? { type: milestone.type, message: milestone.message } : null,
-    });
+    return handleBinaryLog(existingLog, habitId, session.user.id, date, habit.name);
   } catch (error) {
     logger.error('Error in habit log POST', { detail: error instanceof Error ? error.message : String(error) });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

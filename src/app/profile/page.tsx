@@ -4,14 +4,14 @@ import { useState, useEffect, Suspense } from 'react';
 import { useAuthSession } from '@/hooks/useAuthSession';
 import { useRouter } from 'next/navigation';
 import { signOut } from 'next-auth/react';
-import Link from 'next/link';
+
 import { SearchParamsWrapper } from '@/components/SearchParamsWrapper';
 import { supabase } from '@/lib/supabase';
 import { formatLikeCount } from '@/utils/format-utils';
 import dynamic from 'next/dynamic';
 import LikeButton from '@/components/LikeButton';
 import ObjectivesList from '@/components/ObjectivesList';
-import ActivityCalendar from '@/components/ActivityCalendar';
+
 import OnThisDaySection from '@/components/OnThisDaySection';
 import PullToRefresh from '@/components/PullToRefresh';
 import FollowButton from '@/components/FollowButton';
@@ -709,20 +709,6 @@ export default function Profile() {
           </div>
         )}
 
-        {/* Navigation back */}
-        <div className="flex items-center justify-between w-full mb-4">
-          <Link href="/feed" className={`flex items-center gap-2 px-4 py-2.5 rounded-full transition-all duration-300 ${
-            isDay 
-              ? 'bg-[#4A2E1B] text-[#F5F0E1] hover:bg-[#3A1E0B] shadow-[0_2px_8px_rgba(74,46,27,0.2)]' 
-              : 'bg-[#F5F0E1] text-[#2D1E1A] hover:bg-[#E5E0D1] shadow-[0_2px_8px_rgba(0,0,0,0.2)]'
-          } hover:shadow-lg hover:scale-[1.02] active:scale-[0.98]`}>
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" className="flex-shrink-0">
-              <path fillRule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z"/>
-            </svg>
-            <span className="font-medium">Volver al Feed</span>
-          </Link>
-          <div className="w-10"></div>
-        </div>
       </header>
       
       {/* Show success message after deletion */}
@@ -893,13 +879,6 @@ export default function Profile() {
         <OnThisDaySection userId={userId} isDay={isDay} />
       )}
 
-      {/* Activity Calendar - only for own profile */}
-      {isOwnProfile && userProfile && (
-        <div className="mb-8">
-          <ActivityCalendar userId={userId} isDay={isDay} />
-        </div>
-      )}
-      
       {entries.length === 0 ? (
         <div className={`bg-white/10 p-6 text-center rounded-lg shadow-md transition-all duration-300`}>
           <p className="font-montserrat">

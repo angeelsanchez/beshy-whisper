@@ -3,7 +3,7 @@ import { z } from 'zod';
 const hexColorRegex = /^#[0-9a-fA-F]{6}$/;
 const timeRegex = /^([01]\d|2[0-3]):[0-5]\d$/;
 
-const trackingTypeSchema = z.enum(['binary', 'quantity']);
+const trackingTypeSchema = z.enum(['binary', 'quantity', 'timer']);
 
 const categorySchema = z.enum([
   'health', 'mind', 'productivity', 'wellness', 'social', 'creativity',
@@ -30,12 +30,12 @@ export const createHabitSchema = z.object({
   reminderTime: z.string().regex(timeRegex, 'Time must be HH:MM').optional(),
 }).refine(
   (data) => {
-    if (data.trackingType === 'quantity') {
+    if (data.trackingType === 'quantity' || data.trackingType === 'timer') {
       return data.targetValue !== undefined && data.unit !== undefined;
     }
     return true;
   },
-  { message: 'Quantity habits require targetValue and unit', path: ['targetValue'] }
+  { message: 'Quantity and timer habits require targetValue and unit', path: ['targetValue'] }
 );
 
 export const updateHabitSchema = z.object({

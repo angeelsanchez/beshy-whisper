@@ -3,13 +3,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 
 const STORAGE_KEY = 'beshy-active-timer';
-const TIMER_CHANGED_EVENT = 'beshy-timer-changed';
 const TICK_INTERVAL_MS = 1000;
 const MAX_TIMER_DURATION_MS = 24 * 60 * 60 * 1000;
-
-function notifyTimerChanged(): void {
-  globalThis.dispatchEvent(new Event(TIMER_CHANGED_EVENT));
-}
 
 interface TimerState {
   habitId: string;
@@ -151,25 +146,8 @@ export function useTimer(): UseTimerReturn {
       }
     }
 
-    globalThis.addEventListener('storage', handleStorageChange);
-    return () => globalThis.removeEventListener('storage', handleStorageChange);
-  }, [stopInterval, startInterval]);
-
-  useEffect(() => {
-    function handleTimerChanged(): void {
-      const stored = readStoredTimer();
-      if (stored) {
-        setActiveTimer(stored);
-        startInterval(stored.startedAt);
-      } else {
-        stopInterval();
-        setActiveTimer(null);
-        setElapsedSeconds(0);
-      }
-    }
-
-    globalThis.addEventListener(TIMER_CHANGED_EVENT, handleTimerChanged);
-    return () => globalThis.removeEventListener(TIMER_CHANGED_EVENT, handleTimerChanged);
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, [stopInterval, startInterval]);
 
   useEffect(() => {
@@ -186,7 +164,6 @@ export function useTimer(): UseTimerReturn {
     writeStoredTimer(timer);
     setActiveTimer(timer);
     startInterval(timer.startedAt);
-    notifyTimerChanged();
   }, [startInterval]);
 
   const stop = useCallback((): number => {
@@ -197,7 +174,6 @@ export function useTimer(): UseTimerReturn {
     stopInterval();
     setActiveTimer(null);
     setElapsedSeconds(0);
-    notifyTimerChanged();
     return elapsedMinutes;
   }, [activeTimer, stopInterval]);
 
@@ -206,7 +182,6 @@ export function useTimer(): UseTimerReturn {
     stopInterval();
     setActiveTimer(null);
     setElapsedSeconds(0);
-    notifyTimerChanged();
   }, [stopInterval]);
 
   return { activeTimer, elapsedSeconds, isRunning, start, stop, cancel };

@@ -358,4 +358,56 @@ describe('POST /api/habits', () => {
     }));
     expect(res.status).toBe(400);
   });
+
+  it('returns 201 for timer habit with targetValue and unit', async () => {
+    mockGetServerSession.mockResolvedValue(mockSession);
+    habitsBuilder.eq
+      .mockReturnValueOnce(habitsBuilder)
+      .mockResolvedValueOnce({ count: 0, error: null });
+
+    const createdHabit = {
+      id: '550e8400-e29b-41d4-a716-446655440099',
+      name: 'Estudiar',
+      tracking_type: 'timer',
+      target_value: 45,
+      unit: 'min',
+      target_days: [1, 2, 3, 4, 5],
+      color: '#1565C0',
+    };
+    habitsBuilder.single.mockResolvedValueOnce({ data: createdHabit, error: null });
+
+    const res = await POST(makePostRequest({
+      name: 'Estudiar',
+      trackingType: 'timer',
+      targetValue: 45,
+      unit: 'min',
+      targetDays: [1, 2, 3, 4, 5],
+      color: '#1565C0',
+    }));
+    expect(res.status).toBe(201);
+    const json = await res.json();
+    expect(json.habit.tracking_type).toBe('timer');
+    expect(json.habit.target_value).toBe(45);
+    expect(json.habit.unit).toBe('min');
+  });
+
+  it('returns 400 for timer habit without targetValue', async () => {
+    mockGetServerSession.mockResolvedValue(mockSession);
+    const res = await POST(makePostRequest({
+      name: 'Estudiar',
+      trackingType: 'timer',
+      unit: 'min',
+    }));
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 400 for timer habit without unit', async () => {
+    mockGetServerSession.mockResolvedValue(mockSession);
+    const res = await POST(makePostRequest({
+      name: 'Estudiar',
+      trackingType: 'timer',
+      targetValue: 45,
+    }));
+    expect(res.status).toBe(400);
+  });
 });

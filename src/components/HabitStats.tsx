@@ -93,7 +93,7 @@ export default function HabitStats({ stats, isDay }: Readonly<HabitStatsProps>):
   const bestStreak = Math.max(...stats.map(s => s.longestStreak), 0);
   const totalRetomas = stats.reduce((sum, s) => sum + s.retomaCount, 0);
   const milestones = stats.filter(s => s.milestone !== null);
-  const quantityStats = stats.filter(s => s.trackingType === 'quantity');
+  const quantityStats = stats.filter(s => s.trackingType === 'quantity' || s.trackingType === 'timer');
 
   const subtle = isDay ? 'text-[#4A2E1B]/50' : 'text-[#F5F0E1]/50';
   const text = isDay ? 'text-[#4A2E1B]' : 'text-[#F5F0E1]';
@@ -180,7 +180,7 @@ export default function HabitStats({ stats, isDay }: Readonly<HabitStatsProps>):
                     </span>
                   )}
                 </div>
-                {s.trackingType === 'quantity'
+                {s.trackingType === 'quantity' || s.trackingType === 'timer'
                   ? <HabitDetailQuantity stat={s} subtle={subtle} />
                   : <HabitDetailBinary stat={s} subtle={subtle} />
                 }

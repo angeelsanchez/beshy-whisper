@@ -7,6 +7,7 @@ import { useTheme } from '@/context/ThemeContext';
 import { useHabits } from '@/hooks/useHabits';
 import { useHabitLogs } from '@/hooks/useHabitLogs';
 import { useHabitStats } from '@/hooks/useHabitStats';
+import { useTimer } from '@/hooks/useTimer';
 import HabitList from '@/components/HabitList';
 import HabitCalendar from '@/components/HabitCalendar';
 import HabitStats from '@/components/HabitStats';
@@ -29,6 +30,7 @@ export default function HabitsPage(): React.ReactElement | null {
   const habitIds = useMemo(() => habits.map(h => h.id), [habits]);
   const { isCompleted, getValue, toggleLog, incrementLog, toggling } = useHabitLogs(habitIds, getCurrentMonth());
   const { stats, refetch: refetchStats } = useHabitStats();
+  const { activeTimer, elapsedSeconds, start: startTimer, stop: stopTimer, cancel: cancelTimer } = useTimer();
 
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
@@ -56,6 +58,27 @@ export default function HabitsPage(): React.ReactElement | null {
     }
     refetchStats();
   }, [incrementLog, refetchStats, showToastMessage]);
+
+  const handleTimerStart = useCallback((habitId: string) => {
+    startTimer(habitId);
+  }, [startTimer]);
+
+  const handleTimerStop = useCallback(async () => {
+    const timerHabitId = activeTimer?.habitId;
+    if (!timerHabitId) {
+      cancelTimer();
+      return;
+    }
+
+    const elapsedMinutes = stopTimer();
+    if (elapsedMinutes <= 0) return;
+
+    const result = await incrementLog(timerHabitId, elapsedMinutes);
+    if (result?.milestone) {
+      showToastMessage(result.milestone.message);
+    }
+    refetchStats();
+  }, [activeTimer, stopTimer, cancelTimer, incrementLog, refetchStats, showToastMessage]);
 
   const calendarCompletions = useMemo(() => {
     const map: Record<string, number> = {};
@@ -107,8 +130,12 @@ export default function HabitsPage(): React.ReactElement | null {
               toggling={toggling}
               stats={stats}
               today={today}
+              activeTimerHabitId={activeTimer?.habitId ?? null}
+              elapsedSeconds={elapsedSeconds}
               onToggle={handleToggle}
               onIncrement={handleIncrement}
+              onTimerStart={handleTimerStart}
+              onTimerStop={handleTimerStop}
               onEdit={(habitId) => router.push(`/habits/edit/${habitId}`)}
               onAdd={() => router.push('/habits/new')}
             />

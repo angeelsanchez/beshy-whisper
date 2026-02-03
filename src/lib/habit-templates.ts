@@ -1,5 +1,5 @@
 export type HabitCategory = 'health' | 'mind' | 'productivity' | 'wellness' | 'social' | 'creativity';
-export type TrackingType = 'binary' | 'quantity';
+export type TrackingType = 'binary' | 'quantity' | 'timer';
 
 export interface HabitTemplate {
   readonly name: string;
@@ -112,7 +112,9 @@ export const HABIT_TEMPLATES: readonly HabitTemplate[] = [
     icon: '📚',
     category: 'productivity',
     color: '#1565C0',
-    trackingType: 'binary',
+    trackingType: 'timer',
+    targetValue: 45,
+    unit: 'min',
     suggestedDays: WEEKDAYS,
     description: 'Sesión de estudio enfocada',
   },
@@ -135,6 +137,17 @@ export const HABIT_TEMPLATES: readonly HabitTemplate[] = [
     description: 'Practicar un nuevo idioma',
   },
   {
+    name: 'Entrenamiento',
+    icon: '⏱️',
+    category: 'health',
+    color: '#C62828',
+    trackingType: 'timer',
+    targetValue: 30,
+    unit: 'min',
+    suggestedDays: ALL_DAYS,
+    description: 'Sesión de entrenamiento cronometrada',
+  },
+  {
     name: 'Paseo al aire libre',
     icon: '🌳',
     category: 'wellness',
@@ -151,6 +164,17 @@ export const HABIT_TEMPLATES: readonly HabitTemplate[] = [
     trackingType: 'binary',
     suggestedDays: ALL_DAYS,
     description: 'Rutina de estiramientos',
+  },
+  {
+    name: 'Limpieza',
+    icon: '🧹',
+    category: 'wellness',
+    color: '#4E342E',
+    trackingType: 'timer',
+    targetValue: 15,
+    unit: 'min',
+    suggestedDays: [1, 3, 5],
+    description: 'Sesión de limpieza y orden',
   },
   {
     name: 'Sin redes sociales',
@@ -211,7 +235,7 @@ export const HABIT_TEMPLATES: readonly HabitTemplate[] = [
 export const ICON_OPTIONS: readonly string[] = [
   '💪', '💧', '🏋️', '🧘', '📖', '📝', '📚', '💻',
   '🌳', '🤸', '📞', '❤️', '🎨', '✍️', '🎵', '🚶',
-  '😴', '🙏', '📵', '🗣️', '🎯', '⭐', '🔥', '✅',
+  '😴', '🙏', '📵', '🗣️', '🎯', '⭐', '🔥', '✅', '⏱️', '🧹',
 ];
 
 export function getTemplatesByCategory(category: HabitCategory): readonly HabitTemplate[] {

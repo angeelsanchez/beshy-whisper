@@ -6,7 +6,7 @@ import { useAuthSession } from '@/hooks/useAuthSession';
 export interface HabitStatData {
   habitId: string;
   habitName: string;
-  trackingType: 'binary' | 'quantity';
+  trackingType: 'binary' | 'quantity' | 'timer';
   targetValue: number | null;
   unit: string | null;
   totalRepetitions: number;

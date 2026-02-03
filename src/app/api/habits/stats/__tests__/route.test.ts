@@ -351,6 +351,71 @@ describe('GET /api/habits/stats', () => {
     expect(json.stats[0].completionsByDate[todayStr]).toBe(true);
   });
 
+  it('returns timer stats with totalValue and avgDailyValue', async () => {
+    mockGetServerSession.mockResolvedValue(mockSession);
+
+    const habits = [
+      {
+        id: HABIT_UUID,
+        name: 'Estudiar',
+        target_days_per_week: 5,
+        target_days: [1, 2, 3, 4, 5],
+        tracking_type: 'timer',
+        target_value: 45,
+        unit: 'min',
+      },
+    ];
+    habitsBuilder.eq
+      .mockReturnValueOnce(habitsBuilder)
+      .mockResolvedValueOnce({ data: habits, error: null });
+
+    const today = new Date();
+    const logs = Array.from({ length: 3 }, (_, i) => {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      return { habit_id: HABIT_UUID, completed_at: toDateStr(d), value: 30 + i * 10 };
+    });
+    logsBuilder.order.mockResolvedValueOnce({ data: logs, error: null });
+
+    const res = await GET(makeRequest());
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    const stat = json.stats[0];
+    expect(stat.trackingType).toBe('timer');
+    expect(stat.targetValue).toBe(45);
+    expect(stat.unit).toBe('min');
+    expect(stat.totalValue).toBe(30 + 40 + 50);
+    expect(stat.avgDailyValue).toBeGreaterThan(0);
+  });
+
+  it('returns completionsByDate as numbers for timer habits', async () => {
+    mockGetServerSession.mockResolvedValue(mockSession);
+
+    const habits = [
+      {
+        id: HABIT_UUID,
+        name: 'Estudiar',
+        target_days_per_week: 7,
+        target_days: [0, 1, 2, 3, 4, 5, 6],
+        tracking_type: 'timer',
+        target_value: 45,
+        unit: 'min',
+      },
+    ];
+    habitsBuilder.eq
+      .mockReturnValueOnce(habitsBuilder)
+      .mockResolvedValueOnce({ data: habits, error: null });
+
+    const todayStr = toDateStr(new Date());
+    const logs = [{ habit_id: HABIT_UUID, completed_at: todayStr, value: 25 }];
+    logsBuilder.order.mockResolvedValueOnce({ data: logs, error: null });
+
+    const res = await GET(makeRequest());
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.stats[0].completionsByDate[todayStr]).toBe(25);
+  });
+
   it('returns null totalValue for binary habits', async () => {
     mockGetServerSession.mockResolvedValue(mockSession);
 

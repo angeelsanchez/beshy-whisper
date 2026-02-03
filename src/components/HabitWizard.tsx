@@ -169,9 +169,9 @@ function TemplateCard({
         {template.name}
       </div>
       <div className={`text-[10px] mt-0.5 ${isDay ? 'text-[#4A2E1B]/50' : 'text-[#F5F0E1]/50'}`}>
-        {template.trackingType === 'quantity'
-          ? `${template.targetValue} ${template.unit}/día`
-          : 'Sí/No'}
+        {template.trackingType === 'binary'
+          ? 'Sí/No'
+          : `${template.targetValue} ${template.unit}/día`}
       </div>
     </button>
   );
@@ -371,6 +371,16 @@ function ConfigureStep({
         />
       )}
 
+      {form.trackingType === 'timer' && (
+        <TimerFields
+          targetValueStr={form.targetValueStr}
+          isDay={isDay}
+          inputCls={inputCls}
+          labelCls={labelCls}
+          onTargetChange={val => onChange('targetValueStr', val)}
+        />
+      )}
+
       <CategorySelector
         value={form.category}
         isDay={isDay}
@@ -422,6 +432,7 @@ function TrackingTypeToggle({
   const options: { key: TrackingType; label: string }[] = [
     { key: 'binary', label: 'Sí/No' },
     { key: 'quantity', label: 'Cantidad' },
+    { key: 'timer', label: 'Tiempo' },
   ];
 
   return (
@@ -509,6 +520,56 @@ function QuantityFields({
             }`}
           >
             {u}
+          </button>
+        ))}
+      </div>
+    </>
+  );
+}
+
+const TIMER_PRESETS = [15, 20, 30, 45, 60];
+
+function TimerFields({
+  targetValueStr,
+  isDay,
+  inputCls,
+  labelCls,
+  onTargetChange,
+}: {
+  readonly targetValueStr: string;
+  readonly isDay: boolean;
+  readonly inputCls: string;
+  readonly labelCls: string;
+  readonly onTargetChange: (val: string) => void;
+}): React.ReactElement {
+  return (
+    <>
+      <div>
+        <label className={labelCls}>Objetivo en minutos *</label>
+        <input
+          type="number"
+          value={targetValueStr}
+          onChange={e => onTargetChange(e.target.value)}
+          min={1}
+          max={999999}
+          placeholder="30"
+          className={inputCls}
+          inputMode="decimal"
+        />
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        {TIMER_PRESETS.map(mins => (
+          <button
+            key={mins}
+            type="button"
+            onClick={() => onTargetChange(String(mins))}
+            className={`px-2.5 py-1 rounded-md text-xs transition-colors ${
+              targetValueStr === String(mins)
+                ? isDay ? 'bg-[#4A2E1B]/20 text-[#4A2E1B] font-medium' : 'bg-[#F5F0E1]/20 text-[#F5F0E1] font-medium'
+                : isDay ? 'bg-[#4A2E1B]/5 text-[#4A2E1B]/60' : 'bg-[#F5F0E1]/5 text-[#F5F0E1]/60'
+            }`}
+          >
+            {mins} min
           </button>
         ))}
       </div>
@@ -653,7 +714,11 @@ function PreviewCard({
         <div className="flex justify-between">
           <span>Tipo</span>
           <span className="font-medium">
-            {form.trackingType === 'quantity' ? `${form.targetValueStr} ${form.unit}/día` : 'Sí/No'}
+            {form.trackingType === 'binary'
+              ? 'Sí/No'
+              : form.trackingType === 'timer'
+                ? `${form.targetValueStr} min/día`
+                : `${form.targetValueStr} ${form.unit}/día`}
           </span>
         </div>
         <div className="flex justify-between">
@@ -940,6 +1005,13 @@ export default function HabitWizard({ mode, initialData, onSubmit, onDelete }: H
         return false;
       }
     }
+    if (form.trackingType === 'timer') {
+      const val = Number(form.targetValueStr);
+      if (!form.targetValueStr || isNaN(val) || val <= 0) {
+        setError('Introduce un objetivo en minutos válido');
+        return false;
+      }
+    }
     return true;
   }, [form.name, form.trackingType, form.targetValueStr, form.unit]);
 
@@ -973,6 +1045,10 @@ export default function HabitWizard({ mode, initialData, onSubmit, onDelete }: H
     if (form.trackingType === 'quantity') {
       data.targetValue = Number(form.targetValueStr);
       data.unit = form.unit.trim();
+    }
+    if (form.trackingType === 'timer') {
+      data.targetValue = Number(form.targetValueStr);
+      data.unit = 'min';
     }
     if (form.icon) data.icon = form.icon;
     if (form.category) data.category = form.category;

@@ -8,7 +8,7 @@ interface HabitCardProps {
     readonly name: string;
     readonly color: string;
     readonly target_days: number[];
-    readonly tracking_type: 'binary' | 'quantity';
+    readonly tracking_type: 'binary' | 'quantity' | 'timer';
     readonly target_value: number | null;
     readonly unit: string | null;
     readonly icon: string | null;
@@ -19,8 +19,12 @@ interface HabitCardProps {
   readonly stat?: HabitStatData;
   readonly isDay: boolean;
   readonly isDueToday?: boolean;
+  readonly isTimerRunning?: boolean;
+  readonly elapsedSeconds?: number;
   readonly onToggle: () => void;
   readonly onIncrement: (amount: number) => void;
+  readonly onTimerStart?: () => void;
+  readonly onTimerStop?: () => void;
   readonly onEdit: () => void;
 }
 
@@ -156,6 +160,81 @@ function QuantityControls({
   );
 }
 
+function formatTimerDisplay(totalSeconds: number): string {
+  const mins = Math.floor(totalSeconds / 60);
+  const secs = totalSeconds % 60;
+  return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+}
+
+function TimerControls({
+  currentValue,
+  targetValue,
+  unit,
+  color,
+  isDay,
+  isRunning,
+  elapsedSeconds,
+  onStart,
+  onStop,
+}: {
+  readonly currentValue: number;
+  readonly targetValue: number;
+  readonly unit: string;
+  readonly color: string;
+  readonly isDay: boolean;
+  readonly isRunning: boolean;
+  readonly elapsedSeconds: number;
+  readonly onStart: () => void;
+  readonly onStop: () => void;
+}): React.ReactElement {
+  const elapsedMinutes = Math.floor(elapsedSeconds / 60);
+  const displayValue = currentValue + elapsedMinutes;
+  const progressPct = Math.min((displayValue / Math.max(targetValue, 1)) * 100, 100);
+
+  return (
+    <div className="flex items-center gap-2 mt-1.5">
+      <div className="flex-1 flex items-center gap-2 min-w-0">
+        <div className={`flex-1 h-1.5 rounded-full overflow-hidden ${
+          isDay ? 'bg-[#4A2E1B]/10' : 'bg-[#F5F0E1]/10'
+        }`}>
+          <div
+            className="h-full rounded-full transition-all duration-300"
+            style={{ width: `${progressPct}%`, backgroundColor: color }}
+          />
+        </div>
+        <span className={`text-[10px] tabular-nums flex-shrink-0 ${
+          isDay ? 'text-[#4A2E1B]/50' : 'text-[#F5F0E1]/50'
+        }`}>
+          {displayValue}/{targetValue} {unit}
+        </span>
+      </div>
+
+      <div className="flex items-center gap-1.5 flex-shrink-0">
+        {isRunning && (
+          <span className={`text-xs font-mono tabular-nums ${
+            isDay ? 'text-[#4A2E1B]/70' : 'text-[#F5F0E1]/70'
+          }`}>
+            {formatTimerDisplay(elapsedSeconds)}
+          </span>
+        )}
+        <button
+          onClick={isRunning ? onStop : onStart}
+          className={`w-7 h-7 rounded-lg flex items-center justify-center text-sm transition-all active:scale-90 ${
+            isRunning
+              ? 'bg-red-500/20 text-red-500'
+              : isDay
+                ? 'bg-[#4A2E1B]/10 text-[#4A2E1B]'
+                : 'bg-[#F5F0E1]/10 text-[#F5F0E1]'
+          }`}
+          aria-label={isRunning ? 'Detener temporizador' : 'Iniciar temporizador'}
+        >
+          {isRunning ? '■' : '▶'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function StatsDisplay({
   completionRate,
   currentStreak,
@@ -180,6 +259,10 @@ function StatsDisplay({
   );
 }
 
+function HabitIcon({ icon, fallback }: { readonly icon: string | null; readonly fallback: string }): React.ReactElement {
+  return <span className="text-lg flex-shrink-0 w-7 text-center">{icon ?? fallback}</span>;
+}
+
 export default function HabitCard({
   habit,
   isCompleted,
@@ -188,8 +271,12 @@ export default function HabitCard({
   stat,
   isDay,
   isDueToday = true,
+  isTimerRunning = false,
+  elapsedSeconds = 0,
   onToggle,
   onIncrement,
+  onTimerStart,
+  onTimerStop,
   onEdit,
 }: HabitCardProps): React.ReactElement {
   const completionRate = stat?.completionRateWeekly ?? 0;
@@ -198,7 +285,16 @@ export default function HabitCard({
   const milestone = stat?.milestone ?? null;
   const milestoneIcon = getMilestoneIcon(milestone);
   const { borderClass, opacityClass } = getConsistencyStyle(completionRate, totalReps, isDay);
-  const isQuantity = habit.tracking_type === 'quantity';
+  const isBinary = habit.tracking_type === 'binary';
+  const isTimer = habit.tracking_type === 'timer';
+  const targetValue = habit.target_value;
+  const unit = habit.unit;
+  const showValueControls = !isBinary && targetValue !== null && unit !== null;
+
+  const iconFallback = isTimer ? '⏱️' : '📊';
+  const milestoneRing = milestone === '66_reps'
+    ? (isDay ? 'ring-1 ring-amber-500/40' : 'ring-1 ring-amber-400/30')
+    : '';
 
   return (
     <div
@@ -206,12 +302,10 @@ export default function HabitCard({
         isDay ? 'bg-[#4A2E1B]/5' : 'bg-[#F5F0E1]/5'
       } ${borderClass} ${opacityClass} ${
         !isDueToday ? 'opacity-50' : ''
-      } ${milestone === '66_reps' ? (isDay ? 'ring-1 ring-amber-500/40' : 'ring-1 ring-amber-400/30') : ''}`}
+      } ${milestoneRing}`}
     >
       <div className="flex items-center gap-3">
-        {isQuantity ? (
-          <span className="text-lg flex-shrink-0 w-7 text-center">{habit.icon ?? '📊'}</span>
-        ) : (
+        {isBinary ? (
           <BinaryToggle
             isCompleted={isCompleted}
             toggling={toggling}
@@ -219,6 +313,8 @@ export default function HabitCard({
             isDay={isDay}
             onToggle={onToggle}
           />
+        ) : (
+          <HabitIcon icon={habit.icon} fallback={iconFallback} />
         )}
 
         <button
@@ -226,7 +322,7 @@ export default function HabitCard({
           className={`flex-1 min-w-0 text-left ${isDay ? 'text-[#4A2E1B]' : 'text-[#F5F0E1]'}`}
         >
           <div className="flex items-center gap-1.5">
-            {!isQuantity && habit.icon && (
+            {isBinary && habit.icon && (
               <span className="text-sm flex-shrink-0">{habit.icon}</span>
             )}
             <span
@@ -249,17 +345,31 @@ export default function HabitCard({
         />
       </div>
 
-      {isQuantity && habit.target_value !== null && habit.unit !== null && (
+      {showValueControls && (
         <div className="ml-10">
-          <QuantityControls
-            currentValue={currentValue}
-            targetValue={habit.target_value}
-            unit={habit.unit}
-            color={habit.color}
-            toggling={toggling}
-            isDay={isDay}
-            onIncrement={onIncrement}
-          />
+          {isTimer ? (
+            <TimerControls
+              currentValue={currentValue}
+              targetValue={targetValue}
+              unit={unit}
+              color={habit.color}
+              isDay={isDay}
+              isRunning={isTimerRunning}
+              elapsedSeconds={elapsedSeconds}
+              onStart={onTimerStart ?? (() => {})}
+              onStop={onTimerStop ?? (() => {})}
+            />
+          ) : (
+            <QuantityControls
+              currentValue={currentValue}
+              targetValue={targetValue}
+              unit={unit}
+              color={habit.color}
+              toggling={toggling}
+              isDay={isDay}
+              onIncrement={onIncrement}
+            />
+          )}
         </div>
       )}
     </div>

@@ -5,13 +5,14 @@ import { usePostingFrequency, useMoodDistribution, useObjectivesRate } from '@/h
 import PostingFrequencyChart from '@/components/charts/PostingFrequencyChart';
 import MoodDistributionChart from '@/components/charts/MoodDistributionChart';
 import ObjectivesRateChart from '@/components/charts/ObjectivesRateChart';
+import ActivityCalendar from '@/components/ActivityCalendar';
 
 interface StatsSectionProps {
   readonly userId: string | null;
   readonly isDay: boolean;
 }
 
-type ChartTab = 'frequency' | 'mood' | 'objectives';
+type ChartTab = 'frequency' | 'calendar' | 'mood' | 'objectives';
 
 interface TabConfig {
   readonly key: ChartTab;
@@ -20,6 +21,7 @@ interface TabConfig {
 
 const TABS: readonly TabConfig[] = [
   { key: 'frequency', label: 'Actividad' },
+  { key: 'calendar', label: 'Calendario' },
   { key: 'mood', label: 'Emociones' },
   { key: 'objectives', label: 'Objetivos' },
 ] as const;
@@ -34,7 +36,6 @@ export default function StatsSection({ userId, isDay }: StatsSectionProps) {
   const hasFrequencyData = frequencyData.some(w => w.count > 0);
   const hasMoodData = moodData.length > 0;
   const hasObjectivesData = objectivesData.some(w => w.rate > 0);
-  const hasAnyData = hasFrequencyData || hasMoodData || hasObjectivesData;
   const isLoading = freqLoading || moodLoading || objLoading;
 
   if (isLoading) {
@@ -48,12 +49,9 @@ export default function StatsSection({ userId, isDay }: StatsSectionProps) {
     );
   }
 
-  if (!hasAnyData) {
-    return null;
-  }
-
   const availableTabs = TABS.filter(tab => {
     if (tab.key === 'frequency') return hasFrequencyData;
+    if (tab.key === 'calendar') return true;
     if (tab.key === 'mood') return hasMoodData;
     if (tab.key === 'objectives') return hasObjectivesData;
     return false;
@@ -67,7 +65,7 @@ export default function StatsSection({ userId, isDay }: StatsSectionProps) {
 
   return (
     <div className={`mb-8 p-4 rounded-lg shadow-md ${isDay ? 'bg-[#F5F0E1]' : 'bg-[#2D1E1A]'}`}>
-      <h3 className="font-bold text-sm mb-3">Estadisticas</h3>
+      <h3 className="font-bold text-sm mb-3">Estadísticas</h3>
 
       {availableTabs.length > 1 && (
         <div className="flex gap-1 mb-4 overflow-x-auto pb-1 -mx-1 px-1">
@@ -99,9 +97,13 @@ export default function StatsSection({ userId, isDay }: StatsSectionProps) {
           </div>
         )}
 
+        {resolvedTab === 'calendar' && (
+          <ActivityCalendar userId={userId} isDay={isDay} />
+        )}
+
         {resolvedTab === 'mood' && hasMoodData && (
           <div>
-            <p className="text-xs opacity-70 mb-2">Distribucion de emociones</p>
+            <p className="text-xs opacity-70 mb-2">Distribución de emociones</p>
             <MoodDistributionChart data={moodData} isDay={isDay} />
           </div>
         )}

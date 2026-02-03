@@ -2,9 +2,9 @@ import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 
 export const metadata: Metadata = {
-  title: 'Iniciar Sesion',
+  title: 'Iniciar Sesión',
   description:
-    'Inicia sesion en BESHY Whisper para escribir tu diario anonimo. Accede con Google o credenciales.',
+    'Inicia sesión en BESHY Whisper para escribir tu diario anónimo. Accede con Google o credenciales.',
   alternates: {
     canonical: 'https://whisper.beshy.es/login',
   },

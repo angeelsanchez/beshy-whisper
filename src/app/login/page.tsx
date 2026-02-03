@@ -9,10 +9,10 @@ import PasswordStrengthIndicator from '@/components/PasswordStrengthIndicator';
 
 const AUTH_ERROR_MESSAGES: Record<string, string> = {
   CredentialsSignin: 'Credenciales incorrectas',
-  SessionRequired: 'Sesion requerida',
-  OAuthSignin: 'Error al iniciar sesion con Google',
-  OAuthCallback: 'Error al iniciar sesion con Google',
-  OAuthAccountNotLinked: 'Esta cuenta ya existe con otro metodo de inicio de sesion',
+  SessionRequired: 'Sesión requerida',
+  OAuthSignin: 'Error al iniciar sesión con Google',
+  OAuthCallback: 'Error al iniciar sesión con Google',
+  OAuthAccountNotLinked: 'Esta cuenta ya existe con otro método de inicio de sesión',
 };
 
 function LoginForm() {
@@ -98,7 +98,7 @@ function LoginForm() {
           return;
         }
 
-        setMessage(`Registro exitoso. Tu identificador es ${data.bsy_id}. Por favor, inicia sesion.`);
+        setMessage(`Registro exitoso. Tu identificador es ${data.bsy_id}. Por favor, inicia sesión.`);
         setEmail('');
         setPassword('');
         setConfirmPassword('');
@@ -126,7 +126,7 @@ function LoginForm() {
         });
 
         if (result?.error) {
-          const friendlyMessage = AUTH_ERROR_MESSAGES[result.error] ?? 'Ha ocurrido un error al iniciar sesion';
+          const friendlyMessage = AUTH_ERROR_MESSAGES[result.error] ?? 'Ha ocurrido un error al iniciar sesión';
           throw new Error(friendlyMessage);
         }
 
@@ -291,7 +291,7 @@ function LoginForm() {
                   borderRadius: '6px',
                   color: colors.text
                 }}
-                placeholder={isRegistering ? 'Min. 8 caracteres' : 'Tu contrasena'}
+                placeholder={isRegistering ? 'Min. 8 caracteres' : 'Tu contraseña'}
                 required
                 aria-required="true"
                 aria-describedby={error ? 'form-error' : undefined}
@@ -300,7 +300,7 @@ function LoginForm() {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                aria-label={showPassword ? 'Ocultar contrasena' : 'Mostrar contrasena'}
+                aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                 className="absolute right-3 top-1/2 -translate-y-1/2 p-1 opacity-60 hover:opacity-100 transition-opacity"
                 style={{ color: colors.text }}
               >
@@ -325,7 +325,7 @@ function LoginForm() {
             <>
               <div className="mb-4">
                 <label htmlFor="confirmPassword" className="block text-sm font-medium mb-1" style={{ color: colors.text }}>
-                  Confirmar contrasena
+                  Confirmar contraseña
                 </label>
                 <div className="relative">
                   <input
@@ -340,7 +340,7 @@ function LoginForm() {
                       borderRadius: '6px',
                       color: colors.text
                     }}
-                    placeholder="Repite tu contrasena"
+                    placeholder="Repite tu contraseña"
                     required
                     aria-required="true"
                     autoComplete="new-password"
@@ -348,7 +348,7 @@ function LoginForm() {
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    aria-label={showConfirmPassword ? 'Ocultar contrasena' : 'Mostrar contrasena'}
+                    aria-label={showConfirmPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                     className="absolute right-3 top-1/2 -translate-y-1/2 p-1 opacity-60 hover:opacity-100 transition-opacity"
                     style={{ color: colors.text }}
                   >
@@ -384,7 +384,7 @@ function LoginForm() {
                     borderRadius: '6px',
                     color: colors.text
                   }}
-                  placeholder="Como quieres que te llamemos"
+                  placeholder="¿Cómo quieres que te llamemos?"
                   maxLength={50}
                   autoComplete="name"
                 />
@@ -512,7 +512,7 @@ export default function LoginPage() {
 
       <div className="mt-8 text-xs max-w-md text-center transition-colors duration-300"
            style={{ color: `${colors.text}BF` }}>
-        Usamos datos anonimos para habitos, no compartimos con terceros.
+        Usamos datos anónimos para hábitos, no compartimos con terceros.
       </div>
     </main>
   );

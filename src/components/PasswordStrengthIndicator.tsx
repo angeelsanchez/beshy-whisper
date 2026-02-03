@@ -7,7 +7,7 @@ interface PasswordStrengthIndicatorProps {
 }
 
 const STRENGTH_CONFIG: Record<Exclude<PasswordStrength, 'empty'>, { label: string; color: string; width: string }> = {
-  weak: { label: 'Debil', color: 'bg-red-500', width: 'w-1/3' },
+  weak: { label: 'Débil', color: 'bg-red-500', width: 'w-1/3' },
   medium: { label: 'Media', color: 'bg-amber-500', width: 'w-2/3' },
   strong: { label: 'Fuerte', color: 'bg-green-500', width: 'w-full' },
 };
@@ -29,7 +29,7 @@ export default function PasswordStrengthIndicator({ password }: PasswordStrength
             aria-valuenow={strength === 'weak' ? 33 : strength === 'medium' ? 66 : 100}
             aria-valuemin={0}
             aria-valuemax={100}
-            aria-label={`Fortaleza de contrasena: ${config.label}`}
+            aria-label={`Fortaleza de contraseña: ${config.label}`}
           />
         </div>
         <span className="text-xs font-medium min-w-[3rem]">{config.label}</span>

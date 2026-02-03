@@ -298,7 +298,67 @@ async function processUserReminders(userId: string): Promise<{ notifications: nu
   return { notifications, streakWarnings };
 }
 
-async function processReminders(): Promise<{ notificationsSent: number; streakWarningsSent: number }> {
+function getTodayStr(): string {
+  const today = new Date();
+  return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+}
+
+function isWithinReminderWindow(currentMinutes: number, reminderTime: string): boolean {
+  const parts = reminderTime.split(':').map(Number);
+  if (parts.length < 2 || Number.isNaN(parts[0]) || Number.isNaN(parts[1])) return false;
+  const reminderMinutes = parts[0] * 60 + parts[1];
+  return Math.abs(currentMinutes - reminderMinutes) <= 15;
+}
+
+async function processHabitReminders(): Promise<number> {
+  const currentMinutes = getCurrentTimeInMinutes();
+  const todayStr = getTodayStr();
+  const currentDayOfWeek = new Date().getDay();
+
+  const { data: habits, error } = await supabaseAdmin
+    .from('habits')
+    .select('id, user_id, name, icon, reminder_time, target_days')
+    .eq('is_active', true)
+    .not('reminder_time', 'is', null);
+
+  if (error || !habits || habits.length === 0) return 0;
+
+  const candidateHabits = habits.filter(h => {
+    if (!isWithinReminderWindow(currentMinutes, h.reminder_time)) return false;
+    const days = Array.isArray(h.target_days) ? h.target_days : [];
+    return days.length === 0 || days.includes(currentDayOfWeek);
+  });
+
+  if (candidateHabits.length === 0) return 0;
+
+  const habitIds = candidateHabits.map(h => h.id);
+  const { data: todayLogs } = await supabaseAdmin
+    .from('habit_logs')
+    .select('habit_id')
+    .in('habit_id', habitIds)
+    .eq('completed_at', todayStr);
+
+  const completedHabitIds = new Set((todayLogs ?? []).map(l => l.habit_id));
+
+  let sent = 0;
+  for (const habit of candidateHabits) {
+    if (completedHabitIds.has(habit.id)) continue;
+
+    const reminderType = `habit_${habit.id}`;
+    const icon = habit.icon ?? '🎯';
+    const success = await sendAndLogReminder(
+      habit.user_id,
+      `${icon} ¡Hora de: ${habit.name}!`,
+      `No olvides completar tu hábito "${habit.name}" hoy`,
+      { reminder_type: reminderType, habit_id: habit.id, url: '/habits' }
+    );
+    if (success) sent++;
+  }
+
+  return sent;
+}
+
+async function processReminders(): Promise<{ notificationsSent: number; streakWarningsSent: number; habitRemindersSent: number }> {
   try {
     logger.info('Starting reminder processing');
 
@@ -308,7 +368,7 @@ async function processReminders(): Promise<{ notificationsSent: number; streakWa
 
     if (usersError || !users) {
       logger.error('Error fetching users with push tokens', { detail: usersError?.message || String(usersError) });
-      return { notificationsSent: 0, streakWarningsSent: 0 };
+      return { notificationsSent: 0, streakWarningsSent: 0, habitRemindersSent: 0 };
     }
 
     logger.info('Processing reminders for users', { count: users.length });
@@ -329,11 +389,13 @@ async function processReminders(): Promise<{ notificationsSent: number; streakWa
       }
     }
 
-    logger.info('Reminder processing complete', { notificationsSent, streakWarningsSent });
-    return { notificationsSent, streakWarningsSent };
+    const habitRemindersSent = await processHabitReminders();
+
+    logger.info('Reminder processing complete', { notificationsSent, streakWarningsSent, habitRemindersSent });
+    return { notificationsSent, streakWarningsSent, habitRemindersSent };
   } catch (error) {
     logger.error('Error in reminder processing', { detail: error instanceof Error ? error.message : String(error) });
-    return { notificationsSent: 0, streakWarningsSent: 0 };
+    return { notificationsSent: 0, streakWarningsSent: 0, habitRemindersSent: 0 };
   }
 }
 

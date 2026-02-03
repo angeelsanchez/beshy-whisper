@@ -10,21 +10,25 @@ interface Habit {
   readonly description: string | null;
   readonly color: string;
   readonly target_days: number[];
+  readonly tracking_type: 'binary' | 'quantity';
+  readonly target_value: number | null;
+  readonly unit: string | null;
+  readonly icon: string | null;
 }
 
 interface HabitListProps {
   readonly habits: Habit[];
   readonly isDay: boolean;
   readonly isCompleted: (habitId: string, date: string) => boolean;
+  readonly getValue: (habitId: string, date: string) => number;
   readonly toggling: boolean;
   readonly stats: HabitStatData[];
   readonly today: string;
   readonly onToggle: (habitId: string) => void;
+  readonly onIncrement: (habitId: string, amount: number) => void;
   readonly onEdit: (habitId: string) => void;
   readonly onAdd: () => void;
 }
-
-const EXAMPLE_HABITS = ['Leer', 'Meditar', 'Ejercicio', 'Beber agua', 'Estudiar', 'Journaling'];
 
 function EmptyState({ isDay, onAdd }: { readonly isDay: boolean; readonly onAdd: () => void }): React.ReactElement {
   return (
@@ -39,17 +43,6 @@ function EmptyState({ isDay, onAdd }: { readonly isDay: boolean; readonly onAdd:
       <p className={`text-xs mb-4 ${isDay ? 'text-[#4A2E1B]/50' : 'text-[#F5F0E1]/50'}`}>
         Elige los días, marca tu progreso y construye rachas
       </p>
-      <div className={`flex flex-wrap justify-center gap-1.5 mb-4 ${
-        isDay ? 'text-[#4A2E1B]/35' : 'text-[#F5F0E1]/35'
-      }`}>
-        {EXAMPLE_HABITS.map(example => (
-          <span key={example} className={`text-[10px] px-2 py-0.5 rounded-full ${
-            isDay ? 'bg-[#4A2E1B]/5' : 'bg-[#F5F0E1]/5'
-          }`}>
-            {example}
-          </span>
-        ))}
-      </div>
       <button
         onClick={onAdd}
         className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
@@ -70,22 +63,26 @@ function EmptyState({ isDay, onAdd }: { readonly isDay: boolean; readonly onAdd:
 function HabitCardList({
   habits,
   isCompleted,
+  getValue,
   toggling,
   stats,
   isDay,
   isDueToday,
   today,
   onToggle,
+  onIncrement,
   onEdit,
 }: {
   readonly habits: Habit[];
   readonly isCompleted: (habitId: string, date: string) => boolean;
+  readonly getValue: (habitId: string, date: string) => number;
   readonly toggling: boolean;
   readonly stats: HabitStatData[];
   readonly isDay: boolean;
   readonly isDueToday: boolean;
   readonly today: string;
   readonly onToggle: (habitId: string) => void;
+  readonly onIncrement: (habitId: string, amount: number) => void;
   readonly onEdit: (habitId: string) => void;
 }): React.ReactElement {
   return (
@@ -95,11 +92,13 @@ function HabitCardList({
           key={habit.id}
           habit={habit}
           isCompleted={isCompleted(habit.id, today)}
+          currentValue={getValue(habit.id, today)}
           toggling={toggling}
           stat={stats.find(s => s.habitId === habit.id)}
           isDay={isDay}
           isDueToday={isDueToday}
           onToggle={() => onToggle(habit.id)}
+          onIncrement={(amount) => onIncrement(habit.id, amount)}
           onEdit={() => onEdit(habit.id)}
         />
       ))}
@@ -110,20 +109,24 @@ function HabitCardList({
 function OtherDaysSection({
   habits,
   isCompleted,
+  getValue,
   toggling,
   stats,
   isDay,
   today,
   onToggle,
+  onIncrement,
   onEdit,
 }: {
   readonly habits: Habit[];
   readonly isCompleted: (habitId: string, date: string) => boolean;
+  readonly getValue: (habitId: string, date: string) => number;
   readonly toggling: boolean;
   readonly stats: HabitStatData[];
   readonly isDay: boolean;
   readonly today: string;
   readonly onToggle: (habitId: string) => void;
+  readonly onIncrement: (habitId: string, amount: number) => void;
   readonly onEdit: (habitId: string) => void;
 }): React.ReactElement | null {
   const [showOtherDays, setShowOtherDays] = useState(false);
@@ -156,12 +159,14 @@ function OtherDaysSection({
           <HabitCardList
             habits={habits}
             isCompleted={isCompleted}
+            getValue={getValue}
             toggling={toggling}
             stats={stats}
             isDay={isDay}
             isDueToday={false}
             today={today}
             onToggle={onToggle}
+            onIncrement={onIncrement}
             onEdit={onEdit}
           />
         </div>
@@ -186,13 +191,15 @@ export default function HabitList({
   habits,
   isDay,
   isCompleted,
+  getValue,
   toggling,
   stats,
   today,
   onToggle,
+  onIncrement,
   onEdit,
   onAdd,
-}: HabitListProps) {
+}: HabitListProps): React.ReactElement {
   const currentDayOfWeek = new Date().getDay();
 
   const todayHabits = habits.filter(h =>
@@ -246,12 +253,14 @@ export default function HabitList({
             <HabitCardList
               habits={todayHabits}
               isCompleted={isCompleted}
+              getValue={getValue}
               toggling={toggling}
               stats={stats}
               isDay={isDay}
               isDueToday
               today={today}
               onToggle={onToggle}
+              onIncrement={onIncrement}
               onEdit={onEdit}
             />
           )}
@@ -259,11 +268,13 @@ export default function HabitList({
           <OtherDaysSection
             habits={otherHabits}
             isCompleted={isCompleted}
+            getValue={getValue}
             toggling={toggling}
             stats={stats}
             isDay={isDay}
             today={today}
             onToggle={onToggle}
+            onIncrement={onIncrement}
             onEdit={onEdit}
           />
         </>

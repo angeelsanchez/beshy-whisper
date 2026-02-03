@@ -7,7 +7,83 @@ interface HabitStatsProps {
   readonly isDay: boolean;
 }
 
-export default function HabitStats({ stats, isDay }: Readonly<HabitStatsProps>) {
+function formatValue(value: number, unit: string | null): string {
+  const rounded = value % 1 === 0 ? String(value) : value.toFixed(1);
+  return unit ? `${rounded} ${unit}` : rounded;
+}
+
+function HabitDetailBinary({ stat, subtle }: {
+  readonly stat: HabitStatData;
+  readonly subtle: string;
+}): React.ReactElement {
+  return (
+    <div className={`flex items-center gap-3 ${subtle}`}>
+      <span>{stat.completionRateWeekly}% esta semana</span>
+      <span>·</span>
+      <span>{stat.totalRepetitions} veces</span>
+    </div>
+  );
+}
+
+function HabitDetailQuantity({ stat, subtle }: {
+  readonly stat: HabitStatData;
+  readonly subtle: string;
+}): React.ReactElement {
+  return (
+    <div className={`flex items-center gap-3 flex-wrap ${subtle}`}>
+      <span>{stat.completionRateWeekly}% esta semana</span>
+      {stat.totalValue !== null && stat.totalValue > 0 && (
+        <>
+          <span>·</span>
+          <span>{formatValue(stat.totalValue, stat.unit)} total</span>
+        </>
+      )}
+      {stat.avgDailyValue !== null && stat.avgDailyValue > 0 && (
+        <>
+          <span>·</span>
+          <span>~{formatValue(stat.avgDailyValue, stat.unit)}/día</span>
+        </>
+      )}
+    </div>
+  );
+}
+
+function QuantitySummarySection({ quantityStats, border, text, isDay }: {
+  readonly quantityStats: HabitStatData[];
+  readonly border: string;
+  readonly text: string;
+  readonly isDay: boolean;
+}): React.ReactElement | null {
+  if (quantityStats.length === 0) return null;
+
+  return (
+    <div className={`border-t pt-3 mt-1 ${border}`}>
+      <h3 className={`text-sm font-semibold mb-2 ${text}`}>
+        Totales acumulados
+      </h3>
+      <div className="grid grid-cols-2 gap-2">
+        {quantityStats.map(s => {
+          const total = s.totalValue ?? 0;
+          if (total <= 0) return null;
+          return (
+            <StatBox
+              key={s.habitId}
+              value={formatValue(total, s.unit)}
+              label={s.habitName}
+              hint={s.avgDailyValue !== null && s.avgDailyValue > 0
+                ? `~${formatValue(s.avgDailyValue, s.unit)}/día`
+                : undefined}
+              isDay={isDay}
+              small
+            />
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+export default function HabitStats({ stats, isDay }: Readonly<HabitStatsProps>): React.ReactElement | null {
   if (stats.length === 0) return null;
 
   const totalReps = stats.reduce((sum, s) => sum + s.totalRepetitions, 0);
@@ -17,6 +93,7 @@ export default function HabitStats({ stats, isDay }: Readonly<HabitStatsProps>) 
   const bestStreak = Math.max(...stats.map(s => s.longestStreak), 0);
   const totalRetomas = stats.reduce((sum, s) => sum + s.retomaCount, 0);
   const milestones = stats.filter(s => s.milestone !== null);
+  const quantityStats = stats.filter(s => s.trackingType === 'quantity');
 
   const subtle = isDay ? 'text-[#4A2E1B]/50' : 'text-[#F5F0E1]/50';
   const text = isDay ? 'text-[#4A2E1B]' : 'text-[#F5F0E1]';
@@ -54,8 +131,15 @@ export default function HabitStats({ stats, isDay }: Readonly<HabitStatsProps>) 
         />
       </div>
 
+      <QuantitySummarySection
+        quantityStats={quantityStats}
+        border={border}
+        text={text}
+        isDay={isDay}
+      />
+
       {milestones.length > 0 && (
-        <div className={`border-t pt-3 ${border}`}>
+        <div className={`border-t pt-3 mt-3 ${border}`}>
           <h3 className={`text-sm font-semibold mb-2 ${text}`}>
             Hitos alcanzados
           </h3>
@@ -96,11 +180,10 @@ export default function HabitStats({ stats, isDay }: Readonly<HabitStatsProps>) 
                     </span>
                   )}
                 </div>
-                <div className={`flex items-center gap-3 ${subtle}`}>
-                  <span>{s.completionRateWeekly}% esta semana</span>
-                  <span>·</span>
-                  <span>{s.totalRepetitions} veces en total</span>
-                </div>
+                {s.trackingType === 'quantity'
+                  ? <HabitDetailQuantity stat={s} subtle={subtle} />
+                  : <HabitDetailBinary stat={s} subtle={subtle} />
+                }
               </div>
             ))}
           </div>
@@ -110,18 +193,20 @@ export default function HabitStats({ stats, isDay }: Readonly<HabitStatsProps>) 
   );
 }
 
-function StatBox({ value, label, hint, isDay }: {
+function StatBox({ value, label, hint, isDay, small }: {
   readonly value: string;
   readonly label: string;
   readonly hint?: string;
   readonly isDay: boolean;
+  readonly small?: boolean;
 }): React.ReactElement {
+  const valueSize = small ? 'text-base' : 'text-lg';
   return (
     <div className={`p-3 rounded-lg ${isDay ? 'bg-[#4A2E1B]/8' : 'bg-[#F5F0E1]/8'}`}>
-      <p className={`text-lg font-bold tabular-nums ${isDay ? 'text-[#4A2E1B]' : 'text-[#F5F0E1]'}`}>
+      <p className={`${valueSize} font-bold tabular-nums ${isDay ? 'text-[#4A2E1B]' : 'text-[#F5F0E1]'}`}>
         {value}
       </p>
-      <p className={`text-xs ${isDay ? 'text-[#4A2E1B]/60' : 'text-[#F5F0E1]/60'}`}>
+      <p className={`text-xs ${isDay ? 'text-[#4A2E1B]/60' : 'text-[#F5F0E1]/60'} ${small ? 'truncate' : ''}`}>
         {label}
       </p>
       {hint && (

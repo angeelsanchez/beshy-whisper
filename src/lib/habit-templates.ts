@@ -1,5 +1,5 @@
 export type HabitCategory = 'health' | 'mind' | 'productivity' | 'wellness' | 'social' | 'creativity';
-export type TrackingType = 'binary' | 'quantity' | 'timer';
+export type TrackingType = 'binary' | 'quantity';
 
 export interface HabitTemplate {
   readonly name: string;
@@ -19,12 +19,12 @@ export interface CategoryInfo {
 }
 
 export const CATEGORIES: Record<HabitCategory, CategoryInfo> = {
-  health: { label: 'Salud', icon: 'dumbbell' },
-  mind: { label: 'Mente', icon: 'brain' },
-  productivity: { label: 'Productividad', icon: 'book-open' },
-  wellness: { label: 'Bienestar', icon: 'leaf' },
-  social: { label: 'Social', icon: 'users' },
-  creativity: { label: 'Creatividad', icon: 'palette' },
+  health: { label: 'Salud', icon: '💪' },
+  mind: { label: 'Mente', icon: '🧠' },
+  productivity: { label: 'Productividad', icon: '📚' },
+  wellness: { label: 'Bienestar', icon: '🌿' },
+  social: { label: 'Social', icon: '👥' },
+  creativity: { label: 'Creatividad', icon: '🎨' },
 };
 
 const ALL_DAYS = [0, 1, 2, 3, 4, 5, 6];
@@ -33,7 +33,7 @@ const WEEKDAYS = [1, 2, 3, 4, 5];
 export const HABIT_TEMPLATES: readonly HabitTemplate[] = [
   {
     name: 'Ejercicio',
-    icon: 'dumbbell',
+    icon: '🏋️',
     category: 'health',
     color: '#2E7D32',
     trackingType: 'binary',
@@ -42,7 +42,7 @@ export const HABIT_TEMPLATES: readonly HabitTemplate[] = [
   },
   {
     name: 'Beber agua',
-    icon: 'droplet',
+    icon: '💧',
     category: 'health',
     color: '#1565C0',
     trackingType: 'quantity',
@@ -53,7 +53,7 @@ export const HABIT_TEMPLATES: readonly HabitTemplate[] = [
   },
   {
     name: 'Dormir temprano',
-    icon: 'bed-double',
+    icon: '😴',
     category: 'health',
     color: '#6A1B9A',
     trackingType: 'binary',
@@ -62,16 +62,18 @@ export const HABIT_TEMPLATES: readonly HabitTemplate[] = [
   },
   {
     name: 'Caminar',
-    icon: 'footprints',
+    icon: '🚶',
     category: 'health',
     color: '#00838F',
-    trackingType: 'binary',
+    trackingType: 'quantity',
+    targetValue: 10000,
+    unit: 'pasos',
     suggestedDays: ALL_DAYS,
-    description: 'Salir a caminar cada día',
+    description: 'Pasos diarios',
   },
   {
     name: 'Meditación',
-    icon: 'brain',
+    icon: '🧘',
     category: 'mind',
     color: '#6A1B9A',
     trackingType: 'binary',
@@ -80,18 +82,18 @@ export const HABIT_TEMPLATES: readonly HabitTemplate[] = [
   },
   {
     name: 'Lectura',
-    icon: 'book-open',
+    icon: '📖',
     category: 'mind',
     color: '#EF6C00',
     trackingType: 'quantity',
-    targetValue: 2,
-    unit: 'capítulos',
+    targetValue: 30,
+    unit: 'páginas',
     suggestedDays: ALL_DAYS,
     description: 'Leer cada día',
   },
   {
     name: 'Journaling',
-    icon: 'pen-line',
+    icon: '📝',
     category: 'mind',
     color: '#4A2E1B',
     trackingType: 'binary',
@@ -100,7 +102,7 @@ export const HABIT_TEMPLATES: readonly HabitTemplate[] = [
   },
   {
     name: 'Gratitud',
-    icon: 'heart',
+    icon: '🙏',
     category: 'mind',
     color: '#CD853F',
     trackingType: 'binary',
@@ -109,18 +111,16 @@ export const HABIT_TEMPLATES: readonly HabitTemplate[] = [
   },
   {
     name: 'Estudiar',
-    icon: 'graduation-cap',
+    icon: '📚',
     category: 'productivity',
     color: '#1565C0',
-    trackingType: 'timer',
-    targetValue: 45,
-    unit: 'min',
+    trackingType: 'binary',
     suggestedDays: WEEKDAYS,
     description: 'Sesión de estudio enfocada',
   },
   {
     name: 'Programar',
-    icon: 'code',
+    icon: '💻',
     category: 'productivity',
     color: '#37474F',
     trackingType: 'binary',
@@ -129,7 +129,7 @@ export const HABIT_TEMPLATES: readonly HabitTemplate[] = [
   },
   {
     name: 'Aprender idioma',
-    icon: 'languages',
+    icon: '🗣️',
     category: 'productivity',
     color: '#C62828',
     trackingType: 'binary',
@@ -137,19 +137,8 @@ export const HABIT_TEMPLATES: readonly HabitTemplate[] = [
     description: 'Practicar un nuevo idioma',
   },
   {
-    name: 'Entrenamiento',
-    icon: 'timer',
-    category: 'health',
-    color: '#C62828',
-    trackingType: 'timer',
-    targetValue: 30,
-    unit: 'min',
-    suggestedDays: ALL_DAYS,
-    description: 'Sesión de entrenamiento cronometrada',
-  },
-  {
     name: 'Paseo al aire libre',
-    icon: 'tree-pine',
+    icon: '🌳',
     category: 'wellness',
     color: '#2E7D32',
     trackingType: 'binary',
@@ -158,7 +147,7 @@ export const HABIT_TEMPLATES: readonly HabitTemplate[] = [
   },
   {
     name: 'Estiramientos',
-    icon: 'activity',
+    icon: '🤸',
     category: 'wellness',
     color: '#00838F',
     trackingType: 'binary',
@@ -166,19 +155,8 @@ export const HABIT_TEMPLATES: readonly HabitTemplate[] = [
     description: 'Rutina de estiramientos',
   },
   {
-    name: 'Limpieza',
-    icon: 'sparkles',
-    category: 'wellness',
-    color: '#4E342E',
-    trackingType: 'timer',
-    targetValue: 15,
-    unit: 'min',
-    suggestedDays: [1, 3, 5],
-    description: 'Sesión de limpieza y orden',
-  },
-  {
     name: 'Sin redes sociales',
-    icon: 'monitor-off',
+    icon: '📵',
     category: 'wellness',
     color: '#C62828',
     trackingType: 'binary',
@@ -187,7 +165,7 @@ export const HABIT_TEMPLATES: readonly HabitTemplate[] = [
   },
   {
     name: 'Llamar a alguien',
-    icon: 'phone',
+    icon: '📞',
     category: 'social',
     color: '#8B5E3C',
     trackingType: 'binary',
@@ -196,7 +174,7 @@ export const HABIT_TEMPLATES: readonly HabitTemplate[] = [
   },
   {
     name: 'Acto de bondad',
-    icon: 'heart-handshake',
+    icon: '❤️',
     category: 'social',
     color: '#C62828',
     trackingType: 'binary',
@@ -205,7 +183,7 @@ export const HABIT_TEMPLATES: readonly HabitTemplate[] = [
   },
   {
     name: 'Dibujar',
-    icon: 'palette',
+    icon: '🎨',
     category: 'creativity',
     color: '#EF6C00',
     trackingType: 'binary',
@@ -214,7 +192,7 @@ export const HABIT_TEMPLATES: readonly HabitTemplate[] = [
   },
   {
     name: 'Escribir',
-    icon: 'pen',
+    icon: '✍️',
     category: 'creativity',
     color: '#4E342E',
     trackingType: 'binary',
@@ -223,7 +201,7 @@ export const HABIT_TEMPLATES: readonly HabitTemplate[] = [
   },
   {
     name: 'Tocar instrumento',
-    icon: 'music',
+    icon: '🎵',
     category: 'creativity',
     color: '#A0522D',
     trackingType: 'binary',
@@ -233,11 +211,9 @@ export const HABIT_TEMPLATES: readonly HabitTemplate[] = [
 ];
 
 export const ICON_OPTIONS: readonly string[] = [
-  'dumbbell', 'droplet', 'bed-double', 'footprints', 'brain', 'book-open',
-  'pen-line', 'heart', 'graduation-cap', 'code', 'languages', 'timer',
-  'tree-pine', 'activity', 'sparkles', 'monitor-off', 'phone',
-  'heart-handshake', 'palette', 'pen', 'music', 'target', 'star',
-  'flame', 'check-circle', 'moon',
+  '💪', '💧', '🏋️', '🧘', '📖', '📝', '📚', '💻',
+  '🌳', '🤸', '📞', '❤️', '🎨', '✍️', '🎵', '🚶',
+  '😴', '🙏', '📵', '🗣️', '🎯', '⭐', '🔥', '✅',
 ];
 
 export function getTemplatesByCategory(category: HabitCategory): readonly HabitTemplate[] {

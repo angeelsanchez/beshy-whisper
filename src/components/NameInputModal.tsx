@@ -162,7 +162,7 @@ export default function NameInputModal({ onClose }: Readonly<NameInputModalProps
         <form onSubmit={handleSubmit}>
           <div className="mb-6">
             <label htmlFor="modal-name" className="block text-sm font-medium mb-2">
-              Como quieres que te llamemos?
+              ¿Cómo quieres que te llamemos?
             </label>
             <input
               type="text"

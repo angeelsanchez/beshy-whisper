@@ -25,13 +25,13 @@ export const metadata: Metadata = {
     template: "%s | BESHY Whisper",
   },
   description:
-    "Transforma tu vida con journaling diario anonimo. Escribe susurros, conecta con una comunidad, trackea habitos y construye una rutina de bienestar. Gratis y en espanol.",
+    "Transforma tu vida con journaling diario anónimo. Escribe susurros, conecta con una comunidad, trackea hábitos y construye una rutina de bienestar. Gratis y en español.",
   keywords: [
     "journaling diario",
-    "diario anonimo",
+    "diario anónimo",
     "bienestar",
-    "reflexion personal",
-    "habitos diarios",
+    "reflexión personal",
+    "hábitos diarios",
     "escritura terapeutica",
     "mindfulness",
     "diario personal",
@@ -56,13 +56,13 @@ export const metadata: Metadata = {
     siteName: "BESHY Whisper",
     title: "BESHY Whisper - Journaling Diario Anonimo",
     description:
-      "Transforma tu vida con journaling diario. Escribe susurros anonimos, conecta con otros y construye habitos de bienestar.",
+      "Transforma tu vida con journaling diario. Escribe susurros anónimos, conecta con otros y construye hábitos de bienestar.",
   },
   twitter: {
     card: "summary_large_image",
     title: "BESHY Whisper - Journaling Diario Anonimo",
     description:
-      "Transforma tu vida con journaling diario. Escribe susurros anonimos, conecta con otros y construye habitos de bienestar.",
+      "Transforma tu vida con journaling diario. Escribe susurros anónimos, conecta con otros y construye hábitos de bienestar.",
   },
   robots: {
     index: true,

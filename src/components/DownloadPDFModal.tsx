@@ -1,20 +1,8 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { jsPDF } from 'jspdf';
 import { useFocusTrap } from '@/hooks/useFocusTrap';
-
-// Función para comprobar si el navegador soporta la descarga de archivos
-const canDownloadFile = () => {
-  return !!(
-    typeof window !== 'undefined' &&
-    window.navigator &&
-    // @ts-expect-error - Ignorar error de TypeScript para navegadores antiguos
-    (window.navigator.msSaveOrOpenBlob || 
-    window.URL && window.URL.createObjectURL || 
-    window.document && window.document.createElement)
-  );
-};
 
 interface DownloadPDFModalProps {
   isOpen: boolean;
@@ -46,14 +34,8 @@ export default function DownloadPDFModal({
 }: Readonly<DownloadPDFModalProps>) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [canDownload, setCanDownload] = useState(true);
   const modalRef = useRef<HTMLDivElement>(null);
   useFocusTrap(modalRef, { isActive: isOpen, onClose });
-  
-  // Comprobar si el navegador puede descargar archivos
-  useEffect(() => {
-    setCanDownload(canDownloadFile());
-  }, []);
   
   if (!isOpen) return null;
   
@@ -69,15 +51,8 @@ export default function DownloadPDFModal({
 
   // Función para generar el PDF
   const generatePDF = async () => {
-    // Resetear cualquier error anterior
     setError(null);
-    
-    // Verificar si el navegador puede descargar archivos
-    if (!canDownload) {
-      setError('Tu navegador no soporta la descarga de archivos. Por favor, intenta con otro navegador.');
-      return;
-    }
-    
+
     try {
       setIsGenerating(true);
       
@@ -148,9 +123,7 @@ export default function DownloadPDFModal({
         doc.setFontSize(8);
         doc.text(`Generado el ${today.toLocaleDateString('es-ES')}`, 105, 53, { align: 'center' });
         
-      } catch (error) {
-        console.warn('Error al dibujar el logo, usando texto alternativo:', error);
-        // Fallback a texto simple si hay error
+      } catch {
         doc.setFontSize(18);
         doc.text("Mis Whisper's", 105, 25, { align: 'center' });
         doc.setFontSize(12);
@@ -249,54 +222,31 @@ export default function DownloadPDFModal({
         doc.line(20, y - 5, 190, y - 5);
       }
       
-      // Marca de agua removida como solicitado
-      
-      // Guardar el PDF
-      const currentDate = new Date();
-      const formattedDate = currentDate.toISOString().split('T')[0]; // YYYY-MM-DD
+      const formattedDate = new Date().toISOString().split('T')[0];
       const fileName = `beshy-pensamientos-${formattedDate}.pdf`;
-      
-      // Usar setTimeout para asegurarnos de que la UI se actualice antes de guardar
+
+      try {
+        doc.save(fileName);
+      } catch {
+        const pdfBlob = doc.output('blob');
+        const blobUrl = URL.createObjectURL(pdfBlob);
+        const downloadLink = document.createElement('a');
+        downloadLink.href = blobUrl;
+        downloadLink.download = fileName;
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+
+        setTimeout(() => {
+          downloadLink.remove();
+          URL.revokeObjectURL(blobUrl);
+        }, 100);
+      }
+
       setTimeout(() => {
-        try {
-          // Intentar guardar usando el método estándar
-          try {
-            doc.save(fileName);
-          } catch (saveError) {
-            console.warn('Error usando doc.save(), intentando método alternativo:', saveError);
-            
-            // Método alternativo: crear un blob y un enlace para descargar
-            const pdfBlob = doc.output('blob');
-            const blobUrl = URL.createObjectURL(pdfBlob);
-            
-            const downloadLink = document.createElement('a');
-            downloadLink.href = blobUrl;
-            downloadLink.download = fileName;
-            
-            // Añadir el enlace al DOM y hacer clic en él
-            document.body.appendChild(downloadLink);
-            downloadLink.click();
-            
-            // Limpiar
-            setTimeout(() => {
-              document.body.removeChild(downloadLink);
-              URL.revokeObjectURL(blobUrl);
-            }, 100);
-          }
-          
-          // Cerrar el modal después de generar el PDF
-          setTimeout(() => {
-            onClose();
-            setIsGenerating(false);
-          }, 500);
-        } catch (error) {
-          console.error('Error al guardar el PDF:', error);
-          setError('Error al guardar el PDF. Por favor, intenta de nuevo.');
-          setIsGenerating(false);
-        }
-      }, 100);
-    } catch (error) {
-      console.error('Error al generar el PDF:', error);
+        onClose();
+        setIsGenerating(false);
+      }, 500);
+    } catch {
       setError('Error al generar el PDF. Por favor, intenta de nuevo.');
       setIsGenerating(false);
     }

@@ -59,7 +59,7 @@ export const toggleHabitLogSchema = z.object({
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be YYYY-MM-DD')
     .optional(),
-  value: z.number().min(0).max(999999).optional(),
+  value: z.number().min(-999999).max(999999).optional(),
 });
 
 export const habitStatsQuerySchema = z.object({

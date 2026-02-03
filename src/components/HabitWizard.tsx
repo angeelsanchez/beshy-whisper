@@ -691,11 +691,11 @@ function ReminderToggle({
   }`;
 
   return (
-    <>
+    <div className="space-y-3 overflow-hidden">
       <div className={`flex items-center justify-between p-3 rounded-xl ${
         isDay ? 'bg-[#4A2E1B]/5' : 'bg-[#F5F0E1]/5'
       }`}>
-        <div>
+        <div className="min-w-0 flex-1 mr-3">
           <div className={`text-sm font-medium ${isDay ? 'text-[#4A2E1B]' : 'text-[#F5F0E1]'}`}>
             Recordatorio
           </div>
@@ -706,7 +706,7 @@ function ReminderToggle({
         <button
           type="button"
           onClick={onToggle}
-          className={`relative w-11 h-6 rounded-full transition-colors ${
+          className={`relative flex-shrink-0 w-11 h-6 rounded-full transition-colors ${
             enabled
               ? isDay ? 'bg-[#4A2E1B]' : 'bg-[#F5F0E1]'
               : isDay ? 'bg-[#4A2E1B]/20' : 'bg-[#F5F0E1]/20'
@@ -724,7 +724,7 @@ function ReminderToggle({
         </button>
       </div>
       {enabled && (
-        <div>
+        <div className="overflow-hidden">
           <span className={`block text-sm font-medium mb-1 ${isDay ? 'text-[#4A2E1B]' : 'text-[#F5F0E1]'}`}>
             Hora del recordatorio
           </span>
@@ -736,7 +736,7 @@ function ReminderToggle({
           />
         </div>
       )}
-    </>
+    </div>
   );
 }
 

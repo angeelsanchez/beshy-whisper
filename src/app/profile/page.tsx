@@ -641,7 +641,7 @@ export default function Profile() {
       <PullToRefresh onRefresh={handleRefresh} isDay={isDay}>
         <div className={`w-full max-w-[600px] mx-auto px-4 py-8 font-montserrat ${isDay ? 'text-[#4A2E1B]' : 'text-[#F5F0E1]'}`}>
       {/* Header */}
-      <header className="flex flex-col items-center mb-8">
+      <header className="flex flex-col items-center mb-4">
         <div className="mb-2 flex flex-col items-center justify-center gap-3">
           <div className="relative">
             <div className={`rounded-full border-4 border-white transition-all duration-300 ${
@@ -673,13 +673,12 @@ export default function Profile() {
             </h1>
           </div>
         </div>
-        <p className="text-lg mb-4">
+        <p className="text-lg mb-2">
           {isOwnProfile ? 'Gestiona tu perfil y susurros' : 'Explora los susurros de este usuario'}
         </p>
-        
-        {/* User name and ID */}
+
         {userProfile && (
-          <div className="text-center mb-4">
+          <div className="text-center mb-2">
             <div className="flex items-center justify-center gap-2 mb-1">
               <span className="text-xl font-bold">
                 {userProfile?.name || (isOwnProfile ? session?.user?.name : 'Usuario')}
@@ -696,7 +695,7 @@ export default function Profile() {
         
         {/* Follow counts and button */}
         {userProfile && userId && (
-          <div className="flex flex-col items-center gap-3 mb-4">
+          <div className="flex flex-col items-center gap-3 mb-2">
             <FollowCounts
               userId={userId}
               isDay={isDay}
@@ -709,97 +708,87 @@ export default function Profile() {
           </div>
         )}
 
+        {isOwnProfile && userProfile && (
+          <div className="flex flex-col items-center gap-2 mt-2 w-full max-w-sm">
+            <button
+              onClick={toggleEditForm}
+              className={`w-full px-4 py-2.5 rounded-lg flex items-center justify-center gap-2 text-sm font-medium transition-all duration-200 ${
+                isEditFormExpanded
+                  ? isDay ? 'bg-[#4A2E1B] text-[#F5F0E1]' : 'bg-[#F5F0E1] text-[#2D1E1A]'
+                  : isDay
+                    ? 'bg-[#4A2E1B] text-[#F5F0E1] hover:bg-[#3A1E0B]'
+                    : 'bg-[#F5F0E1] text-[#2D1E1A] hover:bg-[#E5E0D1]'
+              }`}
+              aria-label="Editar perfil"
+            >
+              <EditIcon isDay={isEditFormExpanded ? !isDay : isDay} />
+              <span>{isEditFormExpanded ? 'Cerrar editor' : 'Editar Perfil'}</span>
+            </button>
+
+            <div className="flex gap-2 w-full">
+              <div className="relative flex-1">
+                {showLogoutConfirmation ? (
+                  <>
+                    <button type="button" aria-label="Cerrar" className="fixed inset-0 bg-black/50 z-40 cursor-default" onClick={() => setShowLogoutConfirmation(false)} />
+                    <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 p-4 rounded-lg shadow-lg z-50 w-[85vw] max-w-sm bg-white">
+                      <p className="text-sm text-gray-800 mb-3 font-medium">
+                        ¿Estás seguro de que quieres cerrar sesión?
+                      </p>
+                      <div className="flex justify-end gap-3">
+                        <button
+                          onClick={() => setShowLogoutConfirmation(false)}
+                          className="px-3 py-2 bg-gray-200 text-gray-800 text-sm rounded-md hover:bg-gray-300 transition-colors"
+                        >
+                          Cancelar
+                        </button>
+                        <button
+                          onClick={() => signOut({ callbackUrl: '/login' })}
+                          className="px-3 py-2 bg-red-600 text-white text-sm rounded-md hover:bg-red-700 transition-colors"
+                        >
+                          Cerrar sesión
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <button
+                    onClick={() => setShowLogoutConfirmation(true)}
+                    className={`w-full px-3 py-2 rounded-lg flex items-center justify-center gap-2 text-sm transition-colors ${
+                      isDay
+                        ? 'bg-[#4A2E1B]/10 hover:bg-[#4A2E1B]/20 text-[#4A2E1B]'
+                        : 'bg-[#F5F0E1]/10 hover:bg-[#F5F0E1]/20 text-[#F5F0E1]'
+                    }`}
+                    aria-label="Cerrar sesión"
+                  >
+                    <LogoutIcon isDay={isDay} />
+                    <span>Cerrar sesión</span>
+                  </button>
+                )}
+              </div>
+
+              {entries.length > 0 && (
+                <button
+                  onClick={() => setIsPDFModalOpen(true)}
+                  className={`flex-1 px-3 py-2 rounded-lg flex items-center justify-center gap-2 text-sm transition-colors ${
+                    isDay
+                      ? 'bg-[#4A2E1B]/10 hover:bg-[#4A2E1B]/20 text-[#4A2E1B]'
+                      : 'bg-[#F5F0E1]/10 hover:bg-[#F5F0E1]/20 text-[#F5F0E1]'
+                  }`}
+                  aria-label="Descargar mis pensamientos en PDF"
+                >
+                  <DownloadIcon isDay={isDay} />
+                  <span>Descargar PDF</span>
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
       </header>
-      
-      {/* Show success message after deletion */}
+
       {deleteSuccess && (
         <div className="mb-4 p-3 bg-green-100 text-green-700 rounded-lg">
           <p>{deleteSuccess}</p>
-        </div>
-      )}
-      
-      {/* Profile actions section */}
-      {userProfile && (
-        <div className="text-center mb-6">
-          <div className="flex flex-col items-center justify-center">
-            
-            {/* Edit profile button and Download button - only visible on own profile */}
-            {isOwnProfile && (
-              <div className="flex flex-col items-center gap-2 mt-3 w-full max-w-sm">
-                <button
-                  onClick={toggleEditForm}
-                  className={`w-full px-4 py-2.5 rounded-lg flex items-center justify-center gap-2 text-sm font-medium transition-all duration-200 ${
-                    isEditFormExpanded
-                      ? isDay ? 'bg-[#4A2E1B] text-[#F5F0E1]' : 'bg-[#F5F0E1] text-[#2D1E1A]'
-                      : isDay
-                        ? 'bg-[#4A2E1B] text-[#F5F0E1] hover:bg-[#3A1E0B]'
-                        : 'bg-[#F5F0E1] text-[#2D1E1A] hover:bg-[#E5E0D1]'
-                  }`}
-                  aria-label="Editar perfil"
-                >
-                  <EditIcon isDay={isEditFormExpanded ? !isDay : isDay} />
-                  <span>{isEditFormExpanded ? 'Cerrar editor' : 'Editar Perfil'}</span>
-                </button>
-
-                <div className="flex gap-2 w-full">
-                  <div className="relative flex-1">
-                    {showLogoutConfirmation ? (
-                      <>
-                        <button type="button" aria-label="Cerrar" className="fixed inset-0 bg-black/50 z-40 cursor-default" onClick={() => setShowLogoutConfirmation(false)} />
-                        <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 p-4 rounded-lg shadow-lg z-50 w-[85vw] max-w-sm bg-white">
-                          <p className="text-sm text-gray-800 mb-3 font-medium">
-                            ¿Estás seguro de que quieres cerrar sesión?
-                          </p>
-                          <div className="flex justify-end gap-3">
-                            <button
-                              onClick={() => setShowLogoutConfirmation(false)}
-                              className="px-3 py-2 bg-gray-200 text-gray-800 text-sm rounded-md hover:bg-gray-300 transition-colors"
-                            >
-                              Cancelar
-                            </button>
-                            <button
-                              onClick={() => signOut({ callbackUrl: '/login' })}
-                              className="px-3 py-2 bg-red-600 text-white text-sm rounded-md hover:bg-red-700 transition-colors"
-                            >
-                              Cerrar sesión
-                            </button>
-                          </div>
-                        </div>
-                      </>
-                    ) : (
-                      <button
-                        onClick={() => setShowLogoutConfirmation(true)}
-                        className={`w-full px-3 py-2 rounded-lg flex items-center justify-center gap-2 text-sm transition-colors ${
-                          isDay
-                            ? 'bg-[#4A2E1B]/10 hover:bg-[#4A2E1B]/20 text-[#4A2E1B]'
-                            : 'bg-[#F5F0E1]/10 hover:bg-[#F5F0E1]/20 text-[#F5F0E1]'
-                        }`}
-                        aria-label="Cerrar sesión"
-                      >
-                        <LogoutIcon isDay={isDay} />
-                        <span>Cerrar sesión</span>
-                      </button>
-                    )}
-                  </div>
-
-                  {entries.length > 0 && (
-                    <button
-                      onClick={() => setIsPDFModalOpen(true)}
-                      className={`flex-1 px-3 py-2 rounded-lg flex items-center justify-center gap-2 text-sm transition-colors ${
-                        isDay
-                          ? 'bg-[#4A2E1B]/10 hover:bg-[#4A2E1B]/20 text-[#4A2E1B]'
-                          : 'bg-[#F5F0E1]/10 hover:bg-[#F5F0E1]/20 text-[#F5F0E1]'
-                      }`}
-                      aria-label="Descargar mis pensamientos en PDF"
-                    >
-                      <DownloadIcon isDay={isDay} />
-                      <span>Descargar PDF</span>
-                    </button>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
         </div>
       )}
       

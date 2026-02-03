@@ -84,18 +84,27 @@ export default function DownloadPDFModal({
       const blob = await response.blob();
       const formattedDate = new Date().toISOString().split('T')[0];
       const fileName = `beshy-whispers-${userId}-${formattedDate}.pdf`;
+      const file = new File([blob], fileName, { type: 'application/pdf' });
 
-      const blobUrl = URL.createObjectURL(blob);
-      const downloadLink = document.createElement('a');
-      downloadLink.href = blobUrl;
-      downloadLink.download = fileName;
-      document.body.appendChild(downloadLink);
-      downloadLink.click();
+      const canNativeShare = typeof navigator.share === 'function'
+        && typeof navigator.canShare === 'function'
+        && navigator.canShare({ files: [file] });
 
-      setTimeout(() => {
-        downloadLink.remove();
-        URL.revokeObjectURL(blobUrl);
-      }, 100);
+      if (canNativeShare) {
+        await navigator.share({ files: [file], title: 'Mis Whispers' });
+      } else {
+        const blobUrl = URL.createObjectURL(blob);
+        const downloadLink = document.createElement('a');
+        downloadLink.href = blobUrl;
+        downloadLink.download = fileName;
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+
+        setTimeout(() => {
+          downloadLink.remove();
+          URL.revokeObjectURL(blobUrl);
+        }, 100);
+      }
 
       setTimeout(() => {
         onClose();

@@ -253,4 +253,109 @@ describe('POST /api/habits', () => {
     const res = await POST(makePostRequest({ name: 'Read' }));
     expect(res.status).toBe(500);
   });
+
+  it('returns 201 for quantity habit with targetValue and unit', async () => {
+    mockGetServerSession.mockResolvedValue(mockSession);
+    habitsBuilder.eq
+      .mockReturnValueOnce(habitsBuilder)
+      .mockResolvedValueOnce({ count: 0, error: null });
+
+    const createdHabit = {
+      id: '550e8400-e29b-41d4-a716-446655440099',
+      name: 'Beber agua',
+      tracking_type: 'quantity',
+      target_value: 8,
+      unit: 'vasos',
+      target_days: [0, 1, 2, 3, 4, 5, 6],
+      color: '#1565C0',
+      icon: '💧',
+      category: 'health',
+    };
+    habitsBuilder.single.mockResolvedValueOnce({ data: createdHabit, error: null });
+
+    const res = await POST(makePostRequest({
+      name: 'Beber agua',
+      trackingType: 'quantity',
+      targetValue: 8,
+      unit: 'vasos',
+      color: '#1565C0',
+      icon: '💧',
+      category: 'health',
+    }));
+    expect(res.status).toBe(201);
+    const json = await res.json();
+    expect(json.habit.tracking_type).toBe('quantity');
+    expect(json.habit.target_value).toBe(8);
+    expect(json.habit.unit).toBe('vasos');
+  });
+
+  it('returns 400 for quantity habit without targetValue', async () => {
+    mockGetServerSession.mockResolvedValue(mockSession);
+    const res = await POST(makePostRequest({
+      name: 'Beber agua',
+      trackingType: 'quantity',
+      unit: 'vasos',
+    }));
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 400 for quantity habit without unit', async () => {
+    mockGetServerSession.mockResolvedValue(mockSession);
+    const res = await POST(makePostRequest({
+      name: 'Beber agua',
+      trackingType: 'quantity',
+      targetValue: 8,
+    }));
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 201 with icon, category, and reminderTime', async () => {
+    mockGetServerSession.mockResolvedValue(mockSession);
+    habitsBuilder.eq
+      .mockReturnValueOnce(habitsBuilder)
+      .mockResolvedValueOnce({ count: 0, error: null });
+
+    const createdHabit = {
+      id: '550e8400-e29b-41d4-a716-446655440099',
+      name: 'Meditación',
+      tracking_type: 'binary',
+      icon: '🧘',
+      category: 'mind',
+      reminder_time: '08:00',
+      target_days: [0, 1, 2, 3, 4, 5, 6],
+      color: '#6A1B9A',
+    };
+    habitsBuilder.single.mockResolvedValueOnce({ data: createdHabit, error: null });
+
+    const res = await POST(makePostRequest({
+      name: 'Meditación',
+      icon: '🧘',
+      category: 'mind',
+      reminderTime: '08:00',
+      color: '#6A1B9A',
+    }));
+    expect(res.status).toBe(201);
+    const json = await res.json();
+    expect(json.habit.icon).toBe('🧘');
+    expect(json.habit.category).toBe('mind');
+    expect(json.habit.reminder_time).toBe('08:00');
+  });
+
+  it('returns 400 with invalid reminderTime format', async () => {
+    mockGetServerSession.mockResolvedValue(mockSession);
+    const res = await POST(makePostRequest({
+      name: 'Read',
+      reminderTime: '8:30',
+    }));
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 400 with invalid category', async () => {
+    mockGetServerSession.mockResolvedValue(mockSession);
+    const res = await POST(makePostRequest({
+      name: 'Read',
+      category: 'sports',
+    }));
+    expect(res.status).toBe(400);
+  });
 });

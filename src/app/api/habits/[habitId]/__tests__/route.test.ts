@@ -205,6 +205,113 @@ describe('PATCH /api/habits/[habitId]', () => {
     const res = await PATCH(makePatchRequest({ name: 'Updated' }), makeParams(HABIT_UUID));
     expect(res.status).toBe(500);
   });
+
+  it('returns 200 when updating trackingType to quantity', async () => {
+    mockGetServerSession.mockResolvedValue(mockSession);
+    habitsBuilder.maybeSingle.mockResolvedValueOnce({
+      data: { id: HABIT_UUID, user_id: USER_UUID },
+      error: null,
+    });
+    habitsBuilder.single.mockResolvedValueOnce({
+      data: { id: HABIT_UUID, tracking_type: 'quantity', target_value: 8, unit: 'vasos' },
+      error: null,
+    });
+
+    const res = await PATCH(
+      makePatchRequest({ trackingType: 'quantity', targetValue: 8, unit: 'vasos' }),
+      makeParams(HABIT_UUID),
+    );
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.habit.tracking_type).toBe('quantity');
+  });
+
+  it('returns 200 when updating icon', async () => {
+    mockGetServerSession.mockResolvedValue(mockSession);
+    habitsBuilder.maybeSingle.mockResolvedValueOnce({
+      data: { id: HABIT_UUID, user_id: USER_UUID },
+      error: null,
+    });
+    habitsBuilder.single.mockResolvedValueOnce({
+      data: { id: HABIT_UUID, icon: '📖' },
+      error: null,
+    });
+
+    const res = await PATCH(makePatchRequest({ icon: '📖' }), makeParams(HABIT_UUID));
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.habit.icon).toBe('📖');
+  });
+
+  it('returns 200 when updating category', async () => {
+    mockGetServerSession.mockResolvedValue(mockSession);
+    habitsBuilder.maybeSingle.mockResolvedValueOnce({
+      data: { id: HABIT_UUID, user_id: USER_UUID },
+      error: null,
+    });
+    habitsBuilder.single.mockResolvedValueOnce({
+      data: { id: HABIT_UUID, category: 'mind' },
+      error: null,
+    });
+
+    const res = await PATCH(makePatchRequest({ category: 'mind' }), makeParams(HABIT_UUID));
+    expect(res.status).toBe(200);
+  });
+
+  it('returns 200 when updating reminderTime', async () => {
+    mockGetServerSession.mockResolvedValue(mockSession);
+    habitsBuilder.maybeSingle.mockResolvedValueOnce({
+      data: { id: HABIT_UUID, user_id: USER_UUID },
+      error: null,
+    });
+    habitsBuilder.single.mockResolvedValueOnce({
+      data: { id: HABIT_UUID, reminder_time: '09:30' },
+      error: null,
+    });
+
+    const res = await PATCH(makePatchRequest({ reminderTime: '09:30' }), makeParams(HABIT_UUID));
+    expect(res.status).toBe(200);
+  });
+
+  it('returns 400 with invalid reminderTime format', async () => {
+    mockGetServerSession.mockResolvedValue(mockSession);
+    habitsBuilder.maybeSingle.mockResolvedValueOnce({
+      data: { id: HABIT_UUID, user_id: USER_UUID },
+      error: null,
+    });
+
+    const res = await PATCH(makePatchRequest({ reminderTime: '9:30' }), makeParams(HABIT_UUID));
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 400 with invalid category', async () => {
+    mockGetServerSession.mockResolvedValue(mockSession);
+    habitsBuilder.maybeSingle.mockResolvedValueOnce({
+      data: { id: HABIT_UUID, user_id: USER_UUID },
+      error: null,
+    });
+
+    const res = await PATCH(makePatchRequest({ category: 'sports' }), makeParams(HABIT_UUID));
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 200 when clearing nullable fields', async () => {
+    mockGetServerSession.mockResolvedValue(mockSession);
+    habitsBuilder.maybeSingle.mockResolvedValueOnce({
+      data: { id: HABIT_UUID, user_id: USER_UUID },
+      error: null,
+    });
+    habitsBuilder.single.mockResolvedValueOnce({
+      data: { id: HABIT_UUID, icon: null, category: null, reminder_time: null },
+      error: null,
+    });
+
+    const res = await PATCH(
+      makePatchRequest({ icon: null, category: null, reminderTime: null }),
+      makeParams(HABIT_UUID),
+    );
+    expect(res.status).toBe(200);
+  });
 });
 
 describe('DELETE /api/habits/[habitId]', () => {

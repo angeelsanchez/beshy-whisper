@@ -8,6 +8,7 @@ const { mockGetServerSession, habitsBuilder, logsBuilder } = vi.hoisted(() => {
     const b: Record<string, ReturnType<typeof vi.fn>> = {};
     b.select = vi.fn().mockReturnValue(b);
     b.insert = vi.fn().mockReturnValue(b);
+    b.update = vi.fn().mockReturnValue(b);
     b.delete = vi.fn().mockReturnValue(b);
     b.eq = vi.fn().mockReturnValue(b);
     b.order = vi.fn().mockReturnValue(b);
@@ -288,6 +289,170 @@ describe('POST /api/habits/log', () => {
     logsBuilder.insert.mockReturnValueOnce({ error: { code: '23505', message: 'unique violation' } });
 
     const res = await POST(makeRequest({ habitId: HABIT_UUID }));
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.action).toBe('already_logged');
+  });
+});
+
+describe('POST /api/habits/log (quantity)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+
+    for (const key of Object.keys(habitsBuilder)) {
+      habitsBuilder[key].mockReset().mockReturnValue(habitsBuilder);
+    }
+    habitsBuilder.single.mockReset().mockResolvedValue({ data: null, error: null });
+    habitsBuilder.maybeSingle.mockReset().mockResolvedValue({ data: null, error: null });
+
+    for (const key of Object.keys(logsBuilder)) {
+      logsBuilder[key].mockReset().mockReturnValue(logsBuilder);
+    }
+    logsBuilder.single.mockReset().mockResolvedValue({ data: null, error: null });
+    logsBuilder.maybeSingle.mockReset().mockResolvedValue({ data: null, error: null });
+  });
+
+  const quantityHabit = {
+    id: HABIT_UUID,
+    user_id: USER_UUID,
+    name: 'Beber agua',
+    is_active: true,
+    tracking_type: 'quantity',
+    target_value: 8,
+  };
+
+  it('creates initial quantity log with value', async () => {
+    mockGetServerSession.mockResolvedValue(mockSession);
+    habitsBuilder.maybeSingle.mockResolvedValueOnce({ data: quantityHabit, error: null });
+    logsBuilder.maybeSingle.mockResolvedValueOnce({ data: null, error: null });
+    logsBuilder.insert.mockReturnValueOnce({ error: null });
+    logsBuilder.order.mockResolvedValueOnce({
+      data: [{ completed_at: '2026-01-31' }],
+      error: null,
+    });
+
+    const res = await POST(makeRequest({ habitId: HABIT_UUID, value: 3 }));
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.action).toBe('logged');
+    expect(json.value).toBe(3);
+    expect(json.completed).toBe(false);
+  });
+
+  it('defaults to value 1 when no value provided for quantity', async () => {
+    mockGetServerSession.mockResolvedValue(mockSession);
+    habitsBuilder.maybeSingle.mockResolvedValueOnce({ data: quantityHabit, error: null });
+    logsBuilder.maybeSingle.mockResolvedValueOnce({ data: null, error: null });
+    logsBuilder.insert.mockReturnValueOnce({ error: null });
+    logsBuilder.order.mockResolvedValueOnce({
+      data: [{ completed_at: '2026-01-31' }],
+      error: null,
+    });
+
+    const res = await POST(makeRequest({ habitId: HABIT_UUID }));
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.value).toBe(1);
+  });
+
+  it('updates existing quantity log by adding value', async () => {
+    mockGetServerSession.mockResolvedValue(mockSession);
+    habitsBuilder.maybeSingle.mockResolvedValueOnce({ data: quantityHabit, error: null });
+    logsBuilder.maybeSingle.mockResolvedValueOnce({
+      data: { id: 'log-id', value: 5 },
+      error: null,
+    });
+    logsBuilder.eq
+      .mockReturnValueOnce(logsBuilder)
+      .mockReturnValueOnce(logsBuilder)
+      .mockResolvedValueOnce({ error: null });
+
+    const res = await POST(makeRequest({ habitId: HABIT_UUID, value: 2 }));
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.action).toBe('updated');
+    expect(json.value).toBe(7);
+    expect(json.completed).toBe(false);
+  });
+
+  it('marks as completed when value reaches target', async () => {
+    mockGetServerSession.mockResolvedValue(mockSession);
+    habitsBuilder.maybeSingle.mockResolvedValueOnce({ data: quantityHabit, error: null });
+    logsBuilder.maybeSingle.mockResolvedValueOnce({
+      data: { id: 'log-id', value: 6 },
+      error: null,
+    });
+    logsBuilder.eq
+      .mockReturnValueOnce(logsBuilder)
+      .mockReturnValueOnce(logsBuilder)
+      .mockResolvedValueOnce({ error: null });
+
+    const res = await POST(makeRequest({ habitId: HABIT_UUID, value: 2 }));
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.completed).toBe(true);
+    expect(json.value).toBe(8);
+  });
+
+  it('removes log when value decremented to zero', async () => {
+    mockGetServerSession.mockResolvedValue(mockSession);
+    habitsBuilder.maybeSingle.mockResolvedValueOnce({ data: quantityHabit, error: null });
+    logsBuilder.maybeSingle.mockResolvedValueOnce({
+      data: { id: 'log-id', value: 1 },
+      error: null,
+    });
+    logsBuilder.eq
+      .mockReturnValueOnce(logsBuilder)
+      .mockReturnValueOnce(logsBuilder)
+      .mockResolvedValueOnce({ error: null });
+
+    const res = await POST(makeRequest({ habitId: HABIT_UUID, value: -1 }));
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.action).toBe('removed');
+    expect(json.value).toBe(0);
+    expect(json.completed).toBe(false);
+  });
+
+  it('returns 500 when quantity update fails', async () => {
+    mockGetServerSession.mockResolvedValue(mockSession);
+    habitsBuilder.maybeSingle.mockResolvedValueOnce({ data: quantityHabit, error: null });
+    logsBuilder.maybeSingle.mockResolvedValueOnce({
+      data: { id: 'log-id', value: 3 },
+      error: null,
+    });
+    logsBuilder.eq
+      .mockReturnValueOnce(logsBuilder)
+      .mockReturnValueOnce(logsBuilder)
+      .mockResolvedValueOnce({ error: { message: 'Update failed' } });
+
+    const res = await POST(makeRequest({ habitId: HABIT_UUID, value: 1 }));
+    expect(res.status).toBe(500);
+  });
+
+  it('returns 500 when quantity delete fails', async () => {
+    mockGetServerSession.mockResolvedValue(mockSession);
+    habitsBuilder.maybeSingle.mockResolvedValueOnce({ data: quantityHabit, error: null });
+    logsBuilder.maybeSingle.mockResolvedValueOnce({
+      data: { id: 'log-id', value: 1 },
+      error: null,
+    });
+    logsBuilder.eq
+      .mockReturnValueOnce(logsBuilder)
+      .mockReturnValueOnce(logsBuilder)
+      .mockResolvedValueOnce({ error: { message: 'Delete failed' } });
+
+    const res = await POST(makeRequest({ habitId: HABIT_UUID, value: -5 }));
+    expect(res.status).toBe(500);
+  });
+
+  it('returns already_logged on quantity duplicate insert', async () => {
+    mockGetServerSession.mockResolvedValue(mockSession);
+    habitsBuilder.maybeSingle.mockResolvedValueOnce({ data: quantityHabit, error: null });
+    logsBuilder.maybeSingle.mockResolvedValueOnce({ data: null, error: null });
+    logsBuilder.insert.mockReturnValueOnce({ error: { code: '23505', message: 'unique violation' } });
+
+    const res = await POST(makeRequest({ habitId: HABIT_UUID, value: 2 }));
     expect(res.status).toBe(200);
     const json = await res.json();
     expect(json.action).toBe('already_logged');

@@ -63,7 +63,7 @@ export default function InitiativeChat({
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center h-[calc(100vh-220px)]">
+      <div className="flex flex-col items-center justify-center flex-1 min-h-0">
         <div className={`w-6 h-6 border-2 rounded-full animate-spin ${
           isDay ? 'border-[#4A2E1B]/20 border-t-[#4A2E1B]' : 'border-[#F5F0E1]/20 border-t-[#F5F0E1]'
         }`} />
@@ -72,7 +72,7 @@ export default function InitiativeChat({
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-220px)]">
+    <div className="flex flex-col flex-1 min-h-0">
       {error && (
         <div className="px-4 py-2 text-xs text-red-500 text-center">{error}</div>
       )}
@@ -80,7 +80,7 @@ export default function InitiativeChat({
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto px-3 py-2"
+        className="flex-1 overflow-y-auto px-3 py-2 min-h-0"
       >
         {hasMore && (
           <div className="text-center py-2">

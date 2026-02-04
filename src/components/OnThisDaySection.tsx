@@ -2,7 +2,9 @@
 
 import { useState } from 'react';
 import { useOnThisDay, type MemoryGroup } from '@/hooks/useOnThisDay';
-import { isMood, getMoodEmoji } from '@/types/mood';
+import { isMood, getMoodColor } from '@/types/mood';
+import { Sun, Moon, Calendar } from 'lucide-react';
+import AppIcon from '@/components/AppIcon';
 
 interface OnThisDaySectionProps {
   readonly userId: string | null | undefined;
@@ -64,9 +66,13 @@ function MemoryGroupCard({
               }`}
             >
               <div className="flex items-center gap-2 mb-1 opacity-60 text-xs">
-                <span>{memory.franja === 'DIA' ? '☀️' : '🌙'}</span>
+                <span className="flex items-center">
+                  {memory.franja === 'DIA'
+                    ? <Sun className="w-3.5 h-3.5 text-amber-500" strokeWidth={2} />
+                    : <Moon className="w-3.5 h-3.5 text-indigo-400" strokeWidth={2} />}
+                </span>
                 {memory.mood && isMood(memory.mood) && (
-                  <span>{getMoodEmoji(memory.mood)}</span>
+                  <AppIcon identifier={memory.mood} type="mood" className="w-3.5 h-3.5" color={getMoodColor(memory.mood)} />
                 )}
                 <span>{formatMemoryDate(memory.fecha)}</span>
               </div>
@@ -102,7 +108,7 @@ export default function OnThisDaySection({ userId, isDay }: OnThisDaySectionProp
       <h3 className={`text-sm font-semibold mb-3 flex items-center gap-2 ${
         isDay ? 'text-[#4A2E1B]' : 'text-[#F5F0E1]'
       }`}>
-        <span>📅</span>
+        <Calendar className="w-4 h-4" strokeWidth={2} />
         En este día...
       </h3>
       <div className="space-y-2">

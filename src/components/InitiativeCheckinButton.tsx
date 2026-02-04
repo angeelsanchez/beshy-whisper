@@ -1,7 +1,6 @@
 'use client';
 
 import { useCallback } from 'react';
-import { Play, Square } from 'lucide-react';
 import { useTimer } from '@/hooks/useTimer';
 
 interface InitiativeCheckinButtonProps {
@@ -202,7 +201,7 @@ function TimerCheckin({
         }`}
         aria-label={running ? 'Detener temporizador' : 'Iniciar temporizador'}
       >
-        {running ? <><Square className="w-4 h-4 inline mr-1" fill="currentColor" /> Detener</> : <><Play className="w-4 h-4 inline mr-1" fill="currentColor" /> Iniciar</>}
+        {running ? '■ Detener' : '▶ Iniciar'}
       </button>
     </div>
   );

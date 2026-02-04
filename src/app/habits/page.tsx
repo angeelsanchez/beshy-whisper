@@ -11,6 +11,9 @@ import { useTimer } from '@/hooks/useTimer';
 import HabitList from '@/components/HabitList';
 import HabitCalendar from '@/components/HabitCalendar';
 import HabitStats from '@/components/HabitStats';
+import CommunityTab from '@/components/CommunityTab';
+
+type Tab = 'habits' | 'community';
 
 function formatToday(): string {
   const now = new Date();
@@ -32,6 +35,7 @@ export default function HabitsPage(): React.ReactElement | null {
   const { stats, refetch: refetchStats } = useHabitStats();
   const { activeTimer, elapsedSeconds, start: startTimer, stop: stopTimer, cancel: cancelTimer } = useTimer();
 
+  const [activeTab, setActiveTab] = useState<Tab>('habits');
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
 
@@ -107,50 +111,90 @@ export default function HabitsPage(): React.ReactElement | null {
     return null;
   }
 
+  const tabActiveClass = isDay
+    ? 'bg-[#4A2E1B]/10 text-[#4A2E1B]'
+    : 'bg-[#F5F0E1]/10 text-[#F5F0E1]';
+  const tabInactiveClass = isDay
+    ? 'text-[#4A2E1B]/50'
+    : 'text-[#F5F0E1]/50';
+
   return (
     <div className={`min-h-screen pb-24 lg:pb-8 lg:pl-20 ${
       isDay ? 'bg-[#F5F0E1]' : 'bg-[#2D1E1A]'
     }`}>
       <div className="max-w-lg mx-auto px-4 pt-6 space-y-4">
-        <h1 className={`text-xl font-bold ${isDay ? 'text-[#4A2E1B]' : 'text-[#F5F0E1]'}`}>
-          Hábitos
-        </h1>
+        <div className="flex items-center justify-between">
+          <h1 className={`text-xl font-bold ${isDay ? 'text-[#4A2E1B]' : 'text-[#F5F0E1]'}`}>
+            Hábitos
+          </h1>
+        </div>
 
-        {habitsLoading ? (
-          <div className={`text-center py-12 text-sm ${isDay ? 'text-[#4A2E1B]/60' : 'text-[#F5F0E1]/60'}`}>
-            Cargando hábitos...
-          </div>
-        ) : (
+        <div className="flex gap-1 p-1 rounded-xl bg-black/5" role="tablist" aria-label="Secciones de hábitos">
+          <button
+            role="tab"
+            aria-selected={activeTab === 'habits'}
+            onClick={() => setActiveTab('habits')}
+            className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+              activeTab === 'habits' ? tabActiveClass : tabInactiveClass
+            }`}
+          >
+            Mis Hábitos
+          </button>
+          <button
+            role="tab"
+            aria-selected={activeTab === 'community'}
+            onClick={() => setActiveTab('community')}
+            className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+              activeTab === 'community' ? tabActiveClass : tabInactiveClass
+            }`}
+          >
+            Comunidad
+          </button>
+        </div>
+
+        {activeTab === 'habits' && (
           <>
-            <HabitList
-              habits={habits}
-              isDay={isDay}
-              isCompleted={isCompleted}
-              getValue={getValue}
-              toggling={toggling}
-              stats={stats}
-              today={today}
-              activeTimerHabitId={activeTimer?.habitId ?? null}
-              elapsedSeconds={elapsedSeconds}
-              onToggle={handleToggle}
-              onIncrement={handleIncrement}
-              onTimerStart={handleTimerStart}
-              onTimerStop={handleTimerStop}
-              onEdit={(habitId) => router.push(`/habits/edit/${habitId}`)}
-              onAdd={() => router.push('/habits/new')}
-            />
-
-            {habits.length > 0 && (
+            {habitsLoading ? (
+              <div className={`text-center py-12 text-sm ${isDay ? 'text-[#4A2E1B]/60' : 'text-[#F5F0E1]/60'}`}>
+                Cargando hábitos...
+              </div>
+            ) : (
               <>
-                <HabitCalendar
-                  completionsByDate={calendarCompletions}
-                  totalHabits={habits.length}
+                <HabitList
+                  habits={habits}
                   isDay={isDay}
+                  isCompleted={isCompleted}
+                  getValue={getValue}
+                  toggling={toggling}
+                  stats={stats}
+                  today={today}
+                  activeTimerHabitId={activeTimer?.habitId ?? null}
+                  elapsedSeconds={elapsedSeconds}
+                  onToggle={handleToggle}
+                  onIncrement={handleIncrement}
+                  onTimerStart={handleTimerStart}
+                  onTimerStop={handleTimerStop}
+                  onEdit={(habitId) => router.push(`/habits/edit/${habitId}`)}
+                  onAdd={() => router.push('/habits/new')}
                 />
-                <HabitStats stats={stats} isDay={isDay} />
+
+                {habits.length > 0 && (
+                  <>
+                    <HabitCalendar
+                      completionsByDate={calendarCompletions}
+                      totalHabits={habits.length}
+                      isDay={isDay}
+                    />
+                    <HabitStats stats={stats} isDay={isDay} />
+                  </>
+                )}
               </>
             )}
           </>
+        )}
+
+        {activeTab === 'community' && (
+          <CommunityTab isDay={isDay} />
         )}
       </div>
 

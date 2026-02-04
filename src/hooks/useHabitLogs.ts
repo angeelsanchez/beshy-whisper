@@ -83,6 +83,15 @@ export function useHabitLogs(habitIds: string[], month?: string) {
     fetchLogs();
   }, [fetchLogs]);
 
+  useEffect(() => {
+    function handleFocus(): void {
+      fetchLogs();
+    }
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [fetchLogs]);
+
   const isCompleted = useCallback((habitId: string, date: string): boolean => {
     return completedMap.get(habitId)?.has(date) ?? false;
   }, [completedMap]);

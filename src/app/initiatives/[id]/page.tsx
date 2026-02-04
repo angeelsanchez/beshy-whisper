@@ -297,10 +297,17 @@ export default function InitiativeDetailPage(): React.ReactElement | null {
 
   const todayProgress = progress?.today;
   const isExpired = initiative.end_date !== null && initiative.end_date < new Date().toISOString().slice(0, 10);
+  const isChatActive = activeTab === 'chat' && isJoined;
 
   return (
-    <div className={`min-h-screen pb-24 lg:pb-8 lg:pl-20 ${bgColor}`}>
-      <div className="max-w-lg mx-auto px-4 pt-4 space-y-5">
+    <div className={`lg:pl-20 ${bgColor} ${
+      isChatActive
+        ? 'h-[100dvh] flex flex-col overflow-hidden pb-16 lg:pb-0'
+        : 'min-h-screen pb-24 lg:pb-8'
+    }`}>
+      <div className={`max-w-lg mx-auto px-4 pt-4 w-full ${
+        isChatActive ? 'flex flex-col flex-1 min-h-0 gap-5' : 'space-y-5'
+      }`}>
         <div className="flex items-center gap-3">
           <button
             onClick={() => router.push('/habits')}

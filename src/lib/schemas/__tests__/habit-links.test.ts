@@ -92,12 +92,12 @@ describe('respondHabitLinkSchema', () => {
     expect(result.success).toBe(true);
   });
 
-  it('accepts accept without responderHabitId (route auto-creates it)', () => {
+  it('rejects accept without responderHabitId', () => {
     const result = respondHabitLinkSchema.safeParse({
       linkId: VALID_UUID,
       action: 'accept',
     });
-    expect(result.success).toBe(true);
+    expect(result.success).toBe(false);
   });
 
   it('rejects invalid action', () => {
@@ -124,16 +124,13 @@ describe('respondHabitLinkSchema', () => {
     expect(result.success).toBe(false);
   });
 
-  it('ignores extra fields like responderHabitId', () => {
+  it('rejects invalid responderHabitId UUID', () => {
     const result = respondHabitLinkSchema.safeParse({
       linkId: VALID_UUID,
       action: 'accept',
       responderHabitId: 'bad-uuid',
     });
-    expect(result.success).toBe(true);
-    if (result.success) {
-      expect('responderHabitId' in result.data).toBe(false);
-    }
+    expect(result.success).toBe(false);
   });
 
   it('allows decline with responderHabitId provided', () => {

@@ -10,6 +10,7 @@ import { useTheme } from '@/context/ThemeContext';
 import { supabase } from '@/lib/supabase';
 import LikeButton from './LikeButton';
 import ObjectivesList from './ObjectivesList';
+import EntryHabitsDisplay from './EntryHabitsDisplay';
 import FeedFilter from './FeedFilter';
 import Avatar from './Avatar';
 import Image from 'next/image';
@@ -602,14 +603,18 @@ export default function Feed() {
               
               {/* Mostrar objetivos solo si la franja es DIA */}
               {entry.franja === 'DIA' && (
-                <ObjectivesList 
-                  entryId={entry.id} 
+                <ObjectivesList
+                  entryId={entry.id}
                   authorId={entry.user_id}
                   isDay={isDay}
                   isEditing={editingPostId === entry.id}
                 />
               )}
-              
+
+              {entry.franja === 'NOCHE' && (
+                <EntryHabitsDisplay entryId={entry.id} isDay={isDay} />
+              )}
+
               {/* Action buttons (Like, Share, and Delete if own post) */}
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">

@@ -5,8 +5,7 @@ import { authOptions } from '../../auth/[...nextauth]/auth';
 import { toggleHabitLogSchema } from '@/lib/schemas/habits';
 import { sendPushToUserIfEnabled } from '@/lib/push-notify';
 import { logger } from '@/lib/logger';
-
-const RETOMA_THRESHOLD_DAYS = 7;
+import { countRetomas } from '@/utils/habit-helpers';
 
 interface MilestoneResult {
   type: '21_reps' | '66_reps' | 'first_retoma' | '3_retomas';
@@ -77,19 +76,38 @@ function detectMilestone(
   return null;
 }
 
-function countRetomas(dates: string[]): number {
-  if (dates.length < 2) return 0;
 
-  let retomas = 0;
-  for (let i = 1; i < dates.length; i++) {
-    const prev = new Date(dates[i - 1]);
-    const curr = new Date(dates[i]);
-    const diffDays = Math.floor((curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24));
-    if (diffDays > RETOMA_THRESHOLD_DAYS) {
-      retomas++;
+async function notifyLinkedPartners(
+  habitId: string,
+  userId: string,
+  userName: string,
+  habitName: string
+): Promise<void> {
+  try {
+    const { data: links } = await supabaseAdmin
+      .from('habit_links')
+      .select('requester_id, responder_id, requester_habit_id, responder_habit_id')
+      .eq('status', 'accepted')
+      .or(`requester_habit_id.eq.${habitId},responder_habit_id.eq.${habitId}`);
+
+    if (!links || links.length === 0) return;
+
+    for (const link of links) {
+      const isRequester = link.requester_habit_id === habitId && link.requester_id === userId;
+      const isResponder = link.responder_habit_id === habitId && link.responder_id === userId;
+      if (!isRequester && !isResponder) continue;
+
+      const partnerId = isRequester ? link.responder_id : link.requester_id;
+      sendPushToUserIfEnabled(partnerId, {
+        title: `${userName} ha completado su hábito`,
+        body: habitName,
+        tag: 'habit-link-completion',
+        data: { url: '/habits', type: 'habit_link_completion' },
+      }, 'habit_link_completion').catch(() => {});
     }
+  } catch {
+    // non-critical, silently fail
   }
-  return retomas;
 }
 
 async function checkMilestonesAndNotify(
@@ -273,8 +291,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 
+    let response: NextResponse;
+
     if (habit.tracking_type === 'quantity' || habit.tracking_type === 'timer') {
-      return handleQuantityLog({
+      response = await handleQuantityLog({
         existingLog,
         habitId,
         userId: session.user.id,
@@ -283,9 +303,17 @@ export async function POST(request: NextRequest) {
         targetValue: habit.target_value ?? 1,
         habitName: habit.name,
       });
+    } else {
+      response = await handleBinaryLog(existingLog, habitId, session.user.id, date, habit.name);
     }
 
-    return handleBinaryLog(existingLog, habitId, session.user.id, date, habit.name);
+    const responseBody = await response.clone().json().catch(() => null);
+    if (responseBody?.action === 'logged') {
+      const userName = session.user.name || session.user.alias || 'Alguien';
+      notifyLinkedPartners(habitId, session.user.id, userName, habit.name).catch(() => {});
+    }
+
+    return response;
   } catch (error) {
     logger.error('Error in habit log POST', { detail: error instanceof Error ? error.message : String(error) });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

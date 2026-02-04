@@ -1,7 +1,7 @@
 'use client';
 
 import { HabitStatData } from '@/hooks/useHabitStats';
-import { Flame } from 'lucide-react';
+import { Flame, Link2 } from 'lucide-react';
 import AppIcon from '@/components/AppIcon';
 
 interface HabitCardProps {
@@ -9,7 +9,9 @@ interface HabitCardProps {
     readonly id: string;
     readonly name: string;
     readonly color: string;
+    readonly frequency_mode: 'specific_days' | 'weekly_count';
     readonly target_days: number[];
+    readonly weekly_target: number | null;
     readonly tracking_type: 'binary' | 'quantity' | 'timer';
     readonly target_value: number | null;
     readonly unit: string | null;
@@ -23,6 +25,8 @@ interface HabitCardProps {
   readonly isDueToday?: boolean;
   readonly isTimerRunning?: boolean;
   readonly elapsedSeconds?: number;
+  readonly weekCompletionCount?: number;
+  readonly hasActiveLink?: boolean;
   readonly onToggle: () => void;
   readonly onIncrement: (amount: number) => void;
   readonly onTimerStart?: () => void;
@@ -279,6 +283,8 @@ export default function HabitCard({
   isDueToday = true,
   isTimerRunning = false,
   elapsedSeconds = 0,
+  weekCompletionCount,
+  hasActiveLink = false,
   onToggle,
   onIncrement,
   onTimerStart,
@@ -296,6 +302,7 @@ export default function HabitCard({
   const targetValue = habit.target_value;
   const unit = habit.unit;
   const showValueControls = !isBinary && targetValue !== null && unit !== null;
+  const isWeeklyCount = habit.frequency_mode === 'weekly_count';
 
   const iconFallback = isTimer ? 'timer' : 'activity';
   const milestoneRing = milestone === '66_reps'
@@ -341,14 +348,35 @@ export default function HabitCard({
                 {milestoneIcon}
               </span>
             )}
+            {stat?.hasProgression && stat.currentLevel !== null && stat.maxLevel !== null && (
+              <span className={`text-[10px] tabular-nums px-1 py-0.5 rounded flex-shrink-0 ${
+                isDay ? 'bg-blue-500/10 text-blue-700' : 'bg-blue-400/10 text-blue-400'
+              }`}>
+                Lv{stat.currentLevel}/{stat.maxLevel}
+              </span>
+            )}
+            {hasActiveLink && (
+              <Link2 className={`w-3.5 h-3.5 flex-shrink-0 ${
+                isDay ? 'text-[#4A2E1B]/40' : 'text-[#F5F0E1]/40'
+              }`} strokeWidth={2} />
+            )}
           </div>
         </button>
 
-        <StatsDisplay
-          completionRate={completionRate}
-          currentStreak={currentStreak}
-          isDay={isDay}
-        />
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {isWeeklyCount && habit.weekly_target !== null && (
+            <span className={`text-[10px] tabular-nums px-1.5 py-0.5 rounded ${
+              isDay ? 'bg-[#4A2E1B]/10 text-[#4A2E1B]/60' : 'bg-[#F5F0E1]/10 text-[#F5F0E1]/60'
+            }`}>
+              {weekCompletionCount ?? 0}/{habit.weekly_target} sem
+            </span>
+          )}
+          <StatsDisplay
+            completionRate={completionRate}
+            currentStreak={currentStreak}
+            isDay={isDay}
+          />
+        </div>
       </div>
 
       {showValueControls && (

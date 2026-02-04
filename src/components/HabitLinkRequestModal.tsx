@@ -1,13 +1,9 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { X, Link2, Loader2 } from 'lucide-react';
+import { useState } from 'react';
+import { X, Search, Link2, Loader2 } from 'lucide-react';
 import type { Habit } from '@/hooks/useHabits';
 import Avatar from '@/components/Avatar';
-import AppIcon from '@/components/AppIcon';
-
-const DEBOUNCE_MS = 300;
-const MIN_SEARCH_LENGTH = 2;
 
 interface SearchedUser {
   id: string;
@@ -20,7 +16,6 @@ interface HabitLinkRequestModalProps {
   readonly isOpen: boolean;
   readonly isDay: boolean;
   readonly myHabits: Habit[];
-  readonly preSelectedHabitId?: string;
   readonly onClose: () => void;
   readonly onSubmit: (responderId: string, habitId: string, message?: string) => Promise<boolean>;
 }
@@ -29,7 +24,6 @@ export default function HabitLinkRequestModal({
   isOpen,
   isDay,
   myHabits,
-  preSelectedHabitId,
   onClose,
   onSubmit,
 }: HabitLinkRequestModalProps): React.ReactElement | null {
@@ -37,27 +31,26 @@ export default function HabitLinkRequestModal({
   const [searchResults, setSearchResults] = useState<SearchedUser[]>([]);
   const [searching, setSearching] = useState(false);
   const [selectedUser, setSelectedUser] = useState<SearchedUser | null>(null);
-  const [selectedHabitId, setSelectedHabitId] = useState(preSelectedHabitId ?? '');
+  const [selectedHabitId, setSelectedHabitId] = useState('');
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const preSelectedHabit = preSelectedHabitId
-    ? myHabits.find(h => h.id === preSelectedHabitId)
-    : null;
+  if (!isOpen) return null;
 
-  const performSearch = useCallback(async (query: string): Promise<void> => {
-    if (query.trim().length < MIN_SEARCH_LENGTH) {
-      setSearchResults([]);
-      return;
-    }
+  const bg = isDay ? 'bg-[#F5F0E1]' : 'bg-[#2D1E1A]';
+  const text = isDay ? 'text-[#4A2E1B]' : 'text-[#F5F0E1]';
+  const inputBg = isDay ? 'bg-white border-[#4A2E1B]/20' : 'bg-[#3A2723] border-[#F5F0E1]/20';
+
+  const handleSearch = async (): Promise<void> => {
+    if (searchQuery.trim().length < 2) return;
     setSearching(true);
     setError('');
     try {
-      const res = await fetch(`/api/users/search?q=${encodeURIComponent(query.trim())}`);
+      const res = await fetch(`/api/users/search?q=${encodeURIComponent(searchQuery.trim())}`);
       if (!res.ok) {
         setError('Error al buscar usuarios');
+        setSearching(false);
         return;
       }
       const data = await res.json();
@@ -67,39 +60,7 @@ export default function HabitLinkRequestModal({
     } finally {
       setSearching(false);
     }
-  }, []);
-
-  useEffect(() => {
-    if (debounceRef.current) {
-      clearTimeout(debounceRef.current);
-    }
-
-    if (searchQuery.trim().length >= MIN_SEARCH_LENGTH) {
-      debounceRef.current = setTimeout(() => {
-        performSearch(searchQuery);
-      }, DEBOUNCE_MS);
-    } else {
-      setSearchResults([]);
-    }
-
-    return () => {
-      if (debounceRef.current) {
-        clearTimeout(debounceRef.current);
-      }
-    };
-  }, [searchQuery, performSearch]);
-
-  useEffect(() => {
-    if (preSelectedHabitId) {
-      setSelectedHabitId(preSelectedHabitId);
-    }
-  }, [preSelectedHabitId]);
-
-  if (!isOpen) return null;
-
-  const bg = isDay ? 'bg-[#F5F0E1]' : 'bg-[#2D1E1A]';
-  const text = isDay ? 'text-[#4A2E1B]' : 'text-[#F5F0E1]';
-  const inputBg = isDay ? 'bg-white border-[#4A2E1B]/20' : 'bg-[#3A2723] border-[#F5F0E1]/20';
+  };
 
   const handleSubmit = async (): Promise<void> => {
     if (!selectedUser || !selectedHabitId) return;
@@ -112,7 +73,7 @@ export default function HabitLinkRequestModal({
     );
     setSubmitting(false);
     if (success) {
-      handleClose();
+      onClose();
     } else {
       setError('No se pudo enviar la solicitud');
     }
@@ -122,7 +83,7 @@ export default function HabitLinkRequestModal({
     setSearchQuery('');
     setSearchResults([]);
     setSelectedUser(null);
-    setSelectedHabitId(preSelectedHabitId ?? '');
+    setSelectedHabitId('');
     setMessage('');
     setError('');
     onClose();
@@ -142,38 +103,26 @@ export default function HabitLinkRequestModal({
           </button>
         </div>
 
-        {preSelectedHabit && (
-          <div className={`flex items-center gap-2 p-2.5 mb-4 rounded-lg ${
-            isDay ? 'bg-[#4A2E1B]/5' : 'bg-[#F5F0E1]/5'
-          }`}>
-            <div
-              className="w-6 h-6 rounded-md flex items-center justify-center"
-              style={{ backgroundColor: preSelectedHabit.color }}
-            >
-              {preSelectedHabit.icon && (
-                <AppIcon identifier={preSelectedHabit.icon} className="w-3.5 h-3.5 text-white" />
-              )}
-            </div>
-            <span className="text-xs font-medium">{preSelectedHabit.name}</span>
-          </div>
-        )}
-
         {!selectedUser ? (
           <div>
-            <div className="mb-3">
+            <div className="flex gap-2 mb-3">
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Buscar usuario por nombre o alias..."
-                className={`w-full text-xs p-2.5 rounded-lg border ${inputBg} ${text}`}
-                autoFocus
+                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                placeholder="Buscar usuario..."
+                className={`flex-1 text-xs p-2.5 rounded-lg border ${inputBg} ${text}`}
               />
-              {searching && (
-                <div className="flex items-center justify-center py-2">
-                  <Loader2 className="w-4 h-4 animate-spin opacity-50" />
-                </div>
-              )}
+              <button
+                onClick={handleSearch}
+                disabled={searching || searchQuery.trim().length < 2}
+                className={`px-3 rounded-lg text-xs font-medium ${
+                  isDay ? 'bg-[#4A2E1B] text-[#F5F0E1]' : 'bg-[#F5F0E1] text-[#2D1E1A]'
+                } disabled:opacity-40`}
+              >
+                {searching ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Search className="w-3.5 h-3.5" />}
+              </button>
             </div>
 
             <div className="max-h-48 overflow-y-auto space-y-1">
@@ -192,11 +141,8 @@ export default function HabitLinkRequestModal({
                   </div>
                 </button>
               ))}
-              {searchResults.length === 0 && searchQuery.length >= MIN_SEARCH_LENGTH && !searching && (
+              {searchResults.length === 0 && searchQuery.length >= 2 && !searching && (
                 <p className="text-center text-xs opacity-50 py-4">No se encontraron usuarios</p>
-              )}
-              {searchQuery.length > 0 && searchQuery.length < MIN_SEARCH_LENGTH && (
-                <p className="text-center text-xs opacity-50 py-4">Escribe al menos {MIN_SEARCH_LENGTH} caracteres</p>
               )}
             </div>
           </div>
@@ -215,24 +161,22 @@ export default function HabitLinkRequestModal({
               </button>
             </div>
 
-            {!preSelectedHabitId && (
-              <div>
-                <label htmlFor="link-habit-select" className="text-[11px] font-medium mb-1 block opacity-70">
-                  Tu hábito a vincular
-                </label>
-                <select
-                  id="link-habit-select"
-                  value={selectedHabitId}
-                  onChange={(e) => setSelectedHabitId(e.target.value)}
-                  className={`w-full text-xs p-2.5 rounded-lg border ${inputBg} ${text}`}
-                >
-                  <option value="">Selecciona un hábito...</option>
-                  {myHabits.map(h => (
-                    <option key={h.id} value={h.id}>{h.name}</option>
-                  ))}
-                </select>
-              </div>
-            )}
+            <div>
+              <label htmlFor="link-habit-select" className="text-[11px] font-medium mb-1 block opacity-70">
+                Tu hábito a vincular
+              </label>
+              <select
+                id="link-habit-select"
+                value={selectedHabitId}
+                onChange={(e) => setSelectedHabitId(e.target.value)}
+                className={`w-full text-xs p-2.5 rounded-lg border ${inputBg} ${text}`}
+              >
+                <option value="">Selecciona un hábito...</option>
+                {myHabits.map(h => (
+                  <option key={h.id} value={h.id}>{h.name}</option>
+                ))}
+              </select>
+            </div>
 
             <div>
               <label htmlFor="link-message" className="text-[11px] font-medium mb-1 block opacity-70">

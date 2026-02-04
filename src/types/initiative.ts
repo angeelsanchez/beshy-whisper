@@ -51,17 +51,6 @@ export interface InitiativeProgress {
   readonly days_completed: number;
 }
 
-export interface InitiativeChatMessage {
-  readonly id: string;
-  readonly initiative_id: string;
-  readonly user_id: string;
-  readonly content: string;
-  readonly created_at: string;
-  readonly user_name: string | null;
-  readonly user_alias: string | null;
-  readonly user_profile_photo_url: string | null;
-}
-
 export interface InitiativeCheckinResult {
   readonly action: 'checked_in' | 'updated' | 'removed';
   readonly completed: boolean;

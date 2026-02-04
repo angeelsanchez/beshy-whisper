@@ -1,7 +1,6 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { Target, Flame } from 'lucide-react';
 import type { InitiativeListItem } from '@/types/initiative';
 
 interface InitiativeCardProps {
@@ -26,10 +25,8 @@ export default function InitiativeCard({
       className={`w-full p-3 rounded-xl ${bgColor} text-left transition-all active:scale-[0.98]`}
     >
       <div className="flex items-center gap-3">
-        <span className="flex-shrink-0 w-8 flex items-center justify-center" aria-hidden="true">
-          {initiative.icon
-            ? <span className="text-xl">{initiative.icon}</span>
-            : <Target className="w-5 h-5" strokeWidth={2} />}
+        <span className="text-xl flex-shrink-0 w-8 text-center" aria-hidden="true">
+          {initiative.icon ?? '\uD83C\uDFAF'}
         </span>
 
         <div className="flex-1 min-w-0">
@@ -63,7 +60,7 @@ export default function InitiativeCard({
         <div className={`flex flex-col items-end gap-0.5 flex-shrink-0 ${subtextColor}`}>
           {initiative.community_streak > 0 && (
             <span className="flex items-center gap-0.5 text-[11px] tabular-nums">
-              <Flame className="w-3.5 h-3.5 text-orange-400" strokeWidth={2} />
+              <span className="text-orange-400 text-xs">{'\uD83D\uDD25'}</span>
               {initiative.community_streak}
             </span>
           )}

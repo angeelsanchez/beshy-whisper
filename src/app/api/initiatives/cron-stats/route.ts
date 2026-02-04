@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { safeCompare } from '@/utils/crypto-helpers';
-import { sendPushToUserIfEnabled } from '@/lib/push-notify';
+import { sendPushToUser } from '@/lib/push-notify';
 import { logger } from '@/lib/logger';
 
 function getTodayDate(): string {
@@ -127,12 +127,12 @@ async function updateCommunityStreaks(
           .eq('is_active', true);
 
         for (const p of participants ?? []) {
-          sendPushToUserIfEnabled(p.user_id, {
+          sendPushToUser(p.user_id, {
             title: `🔥 Racha de ${newStreak} días`,
             body: `El equipo en "${initiative.name}" lleva ${newStreak} días seguidos`,
             tag: `init-streak-${initiative.id}`,
             data: { url: `/initiatives/${initiative.id}`, type: 'initiative_streak' },
-          }, 'initiative_streak').catch(() => {});
+          }).catch(() => {});
         }
       }
     } else if (initiative.community_streak > 0) {
@@ -182,12 +182,12 @@ async function sendWeeklySummaries(
 
     const icon = initiative.icon ?? '📊';
     for (const p of participants) {
-      sendPushToUserIfEnabled(p.user_id, {
+      sendPushToUser(p.user_id, {
         title: `${icon} Resumen semanal de ${initiative.name}`,
         body: `Esta semana: ${avgRate}% completado en promedio`,
         tag: `init-weekly-${initiative.id}`,
         data: { url: `/initiatives/${initiative.id}`, type: 'initiative_weekly' },
-      }, 'initiative_weekly').catch(() => {});
+      }).catch(() => {});
     }
     sent++;
   }
@@ -237,12 +237,12 @@ async function processInitiativeReminders(
     for (const userId of userIds) {
       if (completedSet.has(userId)) continue;
 
-      sendPushToUserIfEnabled(userId, {
+      sendPushToUser(userId, {
         title: `${icon} ${initiative.name}`,
         body: 'No olvides tu check-in de hoy',
         tag: `init-reminder-${initiative.id}`,
         data: { url: `/initiatives/${initiative.id}`, type: 'initiative_reminder' },
-      }, 'initiative_reminder').catch(() => {});
+      }).catch(() => {});
       sent++;
     }
   }

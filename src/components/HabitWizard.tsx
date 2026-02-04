@@ -749,12 +749,6 @@ function ReminderToggle({
   readonly onToggle: () => void;
   readonly onTimeChange: (val: string) => void;
 }): React.ReactElement {
-  const inputCls = `w-full px-3 py-2 rounded-lg border text-sm ${
-    isDay
-      ? 'bg-white/60 border-[#4A2E1B]/20 text-[#4A2E1B]'
-      : 'bg-white/5 border-[#F5F0E1]/20 text-[#F5F0E1]'
-  }`;
-
   return (
     <div className="space-y-3">
       <div className={`flex items-center justify-between p-3 rounded-xl ${
@@ -793,12 +787,18 @@ function ReminderToggle({
           <span className={`block text-sm font-medium mb-1 ${isDay ? 'text-[#4A2E1B]' : 'text-[#F5F0E1]'}`}>
             Hora del recordatorio
           </span>
-          <input
-            type="time"
-            value={time}
-            onChange={e => onTimeChange(e.target.value)}
-            className={`${inputCls} max-w-full box-border`}
-          />
+          <div className={`rounded-lg border overflow-hidden ${
+            isDay ? 'bg-white/60 border-[#4A2E1B]/20' : 'bg-white/5 border-[#F5F0E1]/20'
+          }`}>
+            <input
+              type="time"
+              value={time}
+              onChange={e => onTimeChange(e.target.value)}
+              className={`w-full px-3 py-2 text-sm border-none bg-transparent ${
+                isDay ? 'text-[#4A2E1B]' : 'text-[#F5F0E1]'
+              }`}
+            />
+          </div>
         </div>
       )}
     </div>

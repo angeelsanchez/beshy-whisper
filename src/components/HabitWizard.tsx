@@ -11,6 +11,7 @@ import {
   type TrackingType,
   type HabitTemplate,
 } from '@/lib/habit-templates';
+import AppIcon from '@/components/AppIcon';
 
 const PRESET_COLORS = [
   '#4A2E1B', '#8B5E3C', '#A0522D', '#CD853F',
@@ -164,7 +165,7 @@ function TemplateCard({
           : 'bg-[#F5F0E1]/5 hover:bg-[#F5F0E1]/10'
       }`}
     >
-      <div className="text-2xl mb-1">{template.icon}</div>
+      <div className="mb-1"><AppIcon identifier={template.icon} type="habit" className="w-6 h-6" /></div>
       <div className={`text-sm font-medium truncate ${isDay ? 'text-[#4A2E1B]' : 'text-[#F5F0E1]'}`}>
         {template.name}
       </div>
@@ -209,7 +210,7 @@ function TemplateStep({
                   : isDay ? 'bg-[#4A2E1B]/10 text-[#4A2E1B]/70' : 'bg-[#F5F0E1]/10 text-[#F5F0E1]/70'
               }`}
             >
-              <span>{cat.icon}</span>
+              <AppIcon identifier={cat.icon} type="category" className="w-3.5 h-3.5" />
               <span>{cat.label}</span>
             </button>
           );
@@ -606,7 +607,7 @@ function CategorySelector({
                   : isDay ? 'bg-[#4A2E1B]/5 text-[#4A2E1B]/60' : 'bg-[#F5F0E1]/5 text-[#F5F0E1]/60'
               }`}
             >
-              <span>{cat.icon}</span>
+              <AppIcon identifier={cat.icon} type="category" className="w-3.5 h-3.5" />
               <span>{cat.label}</span>
             </button>
           );
@@ -665,18 +666,18 @@ function IconPicker({
         Icono
       </span>
       <div className="flex flex-wrap gap-2">
-        {ICON_OPTIONS.map(emoji => (
+        {ICON_OPTIONS.map(iconId => (
           <button
-            key={emoji}
+            key={iconId}
             type="button"
-            onClick={() => onChange(value === emoji ? '' : emoji)}
-            className={`w-9 h-9 rounded-lg flex items-center justify-center text-lg transition-all ${
-              value === emoji
+            onClick={() => onChange(value === iconId ? '' : iconId)}
+            className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all ${
+              value === iconId
                 ? isDay ? 'bg-[#4A2E1B]/15 scale-110' : 'bg-[#F5F0E1]/15 scale-110'
                 : isDay ? 'bg-[#4A2E1B]/5 hover:bg-[#4A2E1B]/10' : 'bg-[#F5F0E1]/5 hover:bg-[#F5F0E1]/10'
             }`}
           >
-            {emoji}
+            <AppIcon identifier={iconId} type="habit" className="w-5 h-5" />
           </button>
         ))}
       </div>
@@ -694,7 +695,7 @@ function PreviewCard({
   return (
     <div className={`rounded-xl p-4 ${isDay ? 'bg-[#4A2E1B]/5' : 'bg-[#F5F0E1]/5'}`}>
       <div className="flex items-center gap-3">
-        {form.icon && <span className="text-2xl flex-shrink-0">{form.icon}</span>}
+        {form.icon && <AppIcon identifier={form.icon} type="habit" className="w-6 h-6 flex-shrink-0" />}
         <div className="flex-1 min-w-0">
           <div className={`font-medium truncate ${isDay ? 'text-[#4A2E1B]' : 'text-[#F5F0E1]'}`}>
             {form.name}
@@ -728,7 +729,7 @@ function PreviewCard({
         {form.category && (
           <div className="flex justify-between">
             <span>Categoría</span>
-            <span className="font-medium">{CATEGORIES[form.category].icon} {CATEGORIES[form.category].label}</span>
+            <span className="font-medium flex items-center gap-1"><AppIcon identifier={CATEGORIES[form.category].icon} type="category" className="w-3.5 h-3.5" /> {CATEGORIES[form.category].label}</span>
           </div>
         )}
       </div>

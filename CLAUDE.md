@@ -74,6 +74,16 @@ PostContext mantiene canales Supabase para `public:entries` (INSERT/DELETE) y `p
 - Ejemplos correctos: `import { supabaseAdmin } from '@/lib/supabase-admin'`, `import { authOptions } from '@/app/api/auth/[...nextauth]/auth'`
 - Ejemplo incorrecto: `import { authOptions } from '../../auth/[...nextauth]/auth'`
 
+### Iconos (SVG > Emoji)
+- PREFERIR Lucide React SVG icons en la UI para una apariencia profesional
+- Emojis son aceptables donde encajen naturalmente (contenido generado por usuarios, notificaciones push, HTML de image generation, contextos donde un emoji aporta calidez)
+- Para iconos funcionales (navegación, indicadores, acciones, estados vacíos, categorías) → usar siempre SVG
+- `src/lib/icon-map.ts` contiene todos los mapeos de iconos (mood, habit, category, emoji→id)
+- `src/components/AppIcon.tsx` es el componente unificado para renderizar iconos
+- Backward compat: `AppIcon` convierte emojis antiguos de la DB a Lucide automáticamente via `EMOJI_TO_ICON_ID`
+- Para añadir un icono nuevo: agregar entrada en `icon-map.ts` y usar `<AppIcon>` en el componente
+- Para Lucide directo (sin AppIcon): `import { IconName } from 'lucide-react'` con `strokeWidth={2}`
+
 ### Validación con Zod
 - TODA ruta API DEBE validar su input con un schema Zod definido al inicio del archivo
 - Schemas compartidos van en `src/lib/schemas/`
@@ -282,6 +292,7 @@ Antes de escribir código en cualquier tarea, verificar:
 8. **Constantes**: sin magic numbers, extraer a constantes con nombre
 9. **Tamaño**: funciones <50 líneas, >3 params → objeto tipado
 10. **ESLint + Build**: verificar que `pnpm run lint` y `pnpm run build` pasen
+11. **Iconos**: preferir Lucide SVG via `<AppIcon>` para iconos funcionales; emojis ok donde aporten calidez
 
 ## Deuda Técnica Conocida
 

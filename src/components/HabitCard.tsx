@@ -1,6 +1,8 @@
 'use client';
 
 import { HabitStatData } from '@/hooks/useHabitStats';
+import { Flame } from 'lucide-react';
+import AppIcon from '@/components/AppIcon';
 
 interface HabitCardProps {
   readonly habit: {
@@ -251,7 +253,7 @@ function StatsDisplay({
       <span>{completionRate}%</span>
       {currentStreak > 0 && (
         <span className="flex items-center gap-0.5">
-          <span className="text-orange-400 text-xs">🔥</span>
+          <Flame className="w-3.5 h-3.5 text-orange-400" strokeWidth={2} />
           {currentStreak}
         </span>
       )}
@@ -260,7 +262,11 @@ function StatsDisplay({
 }
 
 function HabitIcon({ icon, fallback }: { readonly icon: string | null; readonly fallback: string }): React.ReactElement {
-  return <span className="text-lg flex-shrink-0 w-7 text-center">{icon ?? fallback}</span>;
+  return (
+    <span className="flex-shrink-0 w-7 flex items-center justify-center">
+      <AppIcon identifier={icon ?? fallback} type="habit" className="w-5 h-5" />
+    </span>
+  );
 }
 
 export default function HabitCard({
@@ -291,7 +297,7 @@ export default function HabitCard({
   const unit = habit.unit;
   const showValueControls = !isBinary && targetValue !== null && unit !== null;
 
-  const iconFallback = isTimer ? '⏱️' : '📊';
+  const iconFallback = isTimer ? 'timer' : 'activity';
   const milestoneRing = milestone === '66_reps'
     ? (isDay ? 'ring-1 ring-amber-500/40' : 'ring-1 ring-amber-400/30')
     : '';
@@ -323,7 +329,7 @@ export default function HabitCard({
         >
           <div className="flex items-center gap-1.5">
             {isBinary && habit.icon && (
-              <span className="text-sm flex-shrink-0">{habit.icon}</span>
+              <AppIcon identifier={habit.icon} type="habit" className="w-4 h-4 flex-shrink-0" />
             )}
             <span
               className={`text-sm font-medium truncate ${isCompleted ? 'line-through opacity-60' : ''}`}

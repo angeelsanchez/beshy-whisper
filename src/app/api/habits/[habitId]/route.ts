@@ -20,6 +20,9 @@ const FIELD_MAP: Record<string, string> = {
   icon: 'icon',
   category: 'category',
   reminderTime: 'reminder_time',
+  frequencyMode: 'frequency_mode',
+  weeklyTarget: 'weekly_target',
+  isShareable: 'is_shareable',
 };
 
 function buildUpdatePayload(data: UpdateInput): Record<string, unknown> {

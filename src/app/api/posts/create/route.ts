@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid request data', details: parsed.error.flatten() }, { status: 400 });
     }
 
-    const { mensaje, franja, is_private, objectives, mood } = parsed.data;
+    const { mensaje, franja, is_private, objectives, mood, habitSnapshots } = parsed.data;
     const userId = session.user.id;
     const userName = session.user.name || session.user.alias || 'Alguien';
 
@@ -117,6 +117,33 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    let savedSnapshots: unknown[] = [];
+    if (franja === 'NOCHE' && habitSnapshots.length > 0) {
+      const snapshotRows = habitSnapshots.map(s => ({
+        entry_id: entry.id,
+        habit_id: s.habitId,
+        habit_name: s.habitName,
+        habit_icon: s.habitIcon ?? null,
+        habit_color: s.habitColor,
+        tracking_type: s.trackingType,
+        target_value: s.targetValue ?? null,
+        unit: s.unit ?? null,
+        completed_value: s.completedValue ?? null,
+        is_completed: s.isCompleted,
+      }));
+
+      const { data: snapData, error: snapError } = await supabaseAdmin
+        .from('entry_habit_snapshots')
+        .insert(snapshotRows)
+        .select();
+
+      if (snapError) {
+        logger.error('Error saving habit snapshots', { detail: snapError.message });
+      } else {
+        savedSnapshots = snapData || [];
+      }
+    }
+
     if (!is_private) {
       notifyFollowers(userId, userName, entry.id).catch(err => {
         logger.error('Error in follow notification', { detail: err instanceof Error ? err.message : String(err) });
@@ -124,7 +151,11 @@ export async function POST(request: NextRequest) {
     }
 
     logger.info('Post created', { userId, entryId: entry.id, franja });
-    return NextResponse.json({ entry, objectives: savedObjectives }, { status: 201 });
+    return NextResponse.json({
+      entry,
+      objectives: savedObjectives,
+      habitSnapshots: savedSnapshots,
+    }, { status: 201 });
   } catch (error) {
     logger.error('Error in posts/create API', { detail: error instanceof Error ? error.message : String(error) });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

@@ -12,6 +12,9 @@ export const NOTIFICATION_TYPES = [
   'initiative_streak',
   'initiative_checkin',
   'habit_milestone',
+  'habit_link_request',
+  'habit_link_response',
+  'habit_link_completion',
 ] as const;
 
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
@@ -74,6 +77,17 @@ export const NOTIFICATION_CATEGORIES: ReadonlyArray<NotificationCategory> = [
     icon: 'Trophy',
     types: [
       { type: 'habit_milestone', label: 'Hitos de h\u00e1bitos', description: 'Al alcanzar 21, 66 repeticiones o retomas' },
+    ],
+  },
+  {
+    id: 'habit_links',
+    label: 'H\u00e1bitos compartidos',
+    description: 'Vinculaci\u00f3n de h\u00e1bitos con otras personas',
+    icon: 'Link',
+    types: [
+      { type: 'habit_link_request', label: 'Solicitudes de v\u00ednculo', description: 'Cuando alguien quiere vincular un h\u00e1bito contigo' },
+      { type: 'habit_link_response', label: 'Respuestas a solicitudes', description: 'Cuando responden a tu solicitud de v\u00ednculo' },
+      { type: 'habit_link_completion', label: 'Completado del compa\u00f1ero', description: 'Cuando tu compa\u00f1ero completa el h\u00e1bito vinculado' },
     ],
   },
 ];

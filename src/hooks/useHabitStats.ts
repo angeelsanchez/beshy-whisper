@@ -9,6 +9,12 @@ export interface HabitStatData {
   trackingType: 'binary' | 'quantity' | 'timer';
   targetValue: number | null;
   unit: string | null;
+  frequencyMode: 'specific_days' | 'weekly_count';
+  weeklyTarget: number | null;
+  hasProgression: boolean;
+  currentLevel: number | null;
+  maxLevel: number | null;
+  shouldSuggestAdvance: boolean;
   totalRepetitions: number;
   totalValue: number | null;
   avgDailyValue: number | null;

@@ -4,8 +4,12 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { authOptions } from '../../auth/[...nextauth]/auth';
 import { habitStatsQuerySchema } from '@/lib/schemas/habits';
 import { logger } from '@/lib/logger';
+import { countRetomas, calculateCompletionRateForWeeklyCount } from '@/utils/habit-helpers';
+import type { FrequencyMode } from '@/utils/habit-helpers';
 
-const RETOMA_THRESHOLD_DAYS = 7;
+const SUGGEST_ADVANCE_THRESHOLD = 80;
+const SUGGEST_ADVANCE_WEEKS = 2;
+const DAYS_PER_WEEK = 7;
 
 interface HabitStats {
   habitId: string;
@@ -13,6 +17,12 @@ interface HabitStats {
   trackingType: 'binary' | 'quantity' | 'timer';
   targetValue: number | null;
   unit: string | null;
+  frequencyMode: FrequencyMode;
+  weeklyTarget: number | null;
+  hasProgression: boolean;
+  currentLevel: number | null;
+  maxLevel: number | null;
+  shouldSuggestAdvance: boolean;
   totalRepetitions: number;
   totalValue: number | null;
   avgDailyValue: number | null;
@@ -104,19 +114,31 @@ function calculateAvgGapDays(dates: string[]): number | null {
   return Math.round((totalGap / (sorted.length - 1)) * 10) / 10;
 }
 
-function countRetomas(dates: string[]): number {
-  if (dates.length < 2) return 0;
 
-  const sorted = [...dates].sort((a, b) => a.localeCompare(b));
-  let retomas = 0;
+function shouldSuggestAdvanceForHabit(
+  dates: string[],
+  targetDaysCount: number,
+): boolean {
+  if (dates.length === 0) return false;
 
-  for (let i = 1; i < sorted.length; i++) {
-    const gap = daysDiff(sorted[i], sorted[i - 1]);
-    if (gap > RETOMA_THRESHOLD_DAYS) {
-      retomas++;
-    }
+  const today = new Date();
+
+  for (let weekOffset = 0; weekOffset < SUGGEST_ADVANCE_WEEKS; weekOffset++) {
+    const weekEnd = new Date(today);
+    weekEnd.setDate(weekEnd.getDate() - weekOffset * DAYS_PER_WEEK);
+    const weekStart = new Date(weekEnd);
+    weekStart.setDate(weekStart.getDate() - 6);
+
+    const startStr = toLocalDateStr(weekStart);
+    const endStr = toLocalDateStr(weekEnd);
+
+    const count = dates.filter(d => d >= startStr && d <= endStr).length;
+    const rate = Math.round((count / Math.max(targetDaysCount, 1)) * 100);
+
+    if (rate < SUGGEST_ADVANCE_THRESHOLD) return false;
   }
-  return retomas;
+
+  return true;
 }
 
 function getMilestone(totalReps: number): '21_reps' | '66_reps' | null {
@@ -150,7 +172,7 @@ export async function GET(request: NextRequest) {
 
     let habitsQuery = supabaseAdmin
       .from('habits')
-      .select('id, name, target_days_per_week, target_days, tracking_type, target_value, unit')
+      .select('id, name, target_days_per_week, target_days, tracking_type, target_value, unit, frequency_mode, weekly_target, has_progression, current_level')
       .eq('user_id', session.user.id)
       .eq('is_active', true);
 
@@ -170,6 +192,24 @@ export async function GET(request: NextRequest) {
     }
 
     const habitIds = habits.map(h => h.id);
+
+    const progressionHabitIds = habits.filter(h => h.has_progression).map(h => h.id);
+    let levelCountMap = new Map<string, number>();
+    if (progressionHabitIds.length > 0) {
+      const { data: levelRows } = await supabaseAdmin
+        .from('habit_levels')
+        .select('habit_id, level_number')
+        .in('habit_id', progressionHabitIds);
+
+      if (levelRows) {
+        const counts = new Map<string, number>();
+        for (const row of levelRows) {
+          const current = counts.get(row.habit_id) ?? 0;
+          counts.set(row.habit_id, current + 1);
+        }
+        levelCountMap = counts;
+      }
+    }
 
     let logsQuery = supabaseAdmin
       .from('habit_logs')
@@ -229,21 +269,47 @@ export async function GET(request: NextRequest) {
         avgDailyValue = Math.round((totalValue / milestoneEntries.length) * 10) / 10;
       }
 
+      const frequencyMode = (habit.frequency_mode ?? 'specific_days') as FrequencyMode;
+      const weeklyTarget = habit.weekly_target as number | null;
+
+      const completionRateWeekly = frequencyMode === 'weekly_count' && weeklyTarget !== null
+        ? calculateCompletionRateForWeeklyCount(milestoneDates, weeklyTarget)
+        : calculateCompletionRateWeekly(
+            milestoneDates,
+            Array.isArray(habit.target_days) ? habit.target_days.length : (habit.target_days_per_week ?? 7)
+          );
+
+      const hasProgression = habit.has_progression ?? false;
+      const currentLevel = habit.current_level as number | null;
+      const maxLevel = hasProgression ? (levelCountMap.get(habit.id) ?? null) : null;
+      const targetDaysCount = frequencyMode === 'weekly_count' && weeklyTarget !== null
+        ? weeklyTarget
+        : (Array.isArray(habit.target_days) ? habit.target_days.length : (habit.target_days_per_week ?? 7));
+
+      const suggestAdvance = hasProgression
+        && currentLevel !== null
+        && maxLevel !== null
+        && currentLevel < maxLevel
+        && shouldSuggestAdvanceForHabit(milestoneDates, targetDaysCount);
+
       return {
         habitId: habit.id,
         habitName: habit.name,
         trackingType: (habit.tracking_type ?? 'binary') as 'binary' | 'quantity' | 'timer',
         targetValue: habit.target_value ?? null,
         unit: habit.unit ?? null,
+        frequencyMode,
+        weeklyTarget,
+        hasProgression,
+        currentLevel,
+        maxLevel,
+        shouldSuggestAdvance: suggestAdvance,
         totalRepetitions: milestoneDates.length,
         totalValue,
         avgDailyValue,
         currentStreak: calculateCurrentStreak(milestoneDates),
         longestStreak: calculateLongestStreak(milestoneDates),
-        completionRateWeekly: calculateCompletionRateWeekly(
-          milestoneDates,
-          Array.isArray(habit.target_days) ? habit.target_days.length : (habit.target_days_per_week ?? 7)
-        ),
+        completionRateWeekly,
         avgGapDays: calculateAvgGapDays(milestoneDates),
         lastCompletedAt: milestoneDates.length > 0 ? milestoneDates[milestoneDates.length - 1] : null,
         retomaCount: countRetomas(milestoneDates),

@@ -2,16 +2,20 @@
 
 import { useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { Link2 } from 'lucide-react';
 import { useAuthSession } from '@/hooks/useAuthSession';
 import { useTheme } from '@/context/ThemeContext';
-import { useHabits } from '@/hooks/useHabits';
+import { useHabits, type Habit } from '@/hooks/useHabits';
 import { useHabitLogs } from '@/hooks/useHabitLogs';
-import { useHabitStats } from '@/hooks/useHabitStats';
+import { useHabitStats, type HabitStatData } from '@/hooks/useHabitStats';
 import { useTimer } from '@/hooks/useTimer';
+import { useHabitLinks, type HabitLink } from '@/hooks/useHabitLinks';
 import HabitList from '@/components/HabitList';
 import HabitCalendar from '@/components/HabitCalendar';
 import HabitStats from '@/components/HabitStats';
 import CommunityTab from '@/components/CommunityTab';
+import HabitLinkPendingList from '@/components/HabitLinkPendingList';
+import HabitLinkRequestModal from '@/components/HabitLinkRequestModal';
 
 type Tab = 'habits' | 'community';
 
@@ -25,19 +29,148 @@ function getCurrentMonth(): string {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 }
 
+interface HabitsTabContentProps {
+  readonly habits: Habit[];
+  readonly habitsLoading: boolean;
+  readonly isDay: boolean;
+  readonly isCompleted: (habitId: string, date: string) => boolean;
+  readonly getValue: (habitId: string, date: string) => number;
+  readonly toggling: boolean;
+  readonly stats: HabitStatData[];
+  readonly today: string;
+  readonly activeTimerHabitId: string | null;
+  readonly elapsedSeconds: number;
+  readonly completedMap: ReadonlyMap<string, ReadonlySet<string>>;
+  readonly linkedHabitIds: ReadonlySet<string>;
+  readonly calendarCompletions: Record<string, number>;
+  readonly activeLinks: HabitLink[];
+  readonly currentUserId: string;
+  readonly pendingReceived: HabitLink[];
+  readonly pendingSent: HabitLink[];
+  readonly showLinkModal: boolean;
+  readonly onToggle: (habitId: string) => void;
+  readonly onIncrement: (habitId: string, amount: number) => void;
+  readonly onTimerStart: (habitId: string) => void;
+  readonly onTimerStop: () => void;
+  readonly onEdit: (habitId: string) => void;
+  readonly onAdd: () => void;
+  readonly onHabitsChanged: () => void;
+  readonly onRespondToLink: (linkId: string, action: 'accept' | 'decline', habitId?: string) => Promise<boolean>;
+  readonly onDeleteLink: (linkId: string) => Promise<boolean>;
+  readonly onRequestLink: (responderId: string, habitId: string, message?: string) => Promise<boolean>;
+  readonly onShowLinkModal: () => void;
+  readonly onCloseLinkModal: () => void;
+}
+
+function HabitsTabContent({
+  habits, habitsLoading, isDay, isCompleted, getValue, toggling, stats, today,
+  activeTimerHabitId, elapsedSeconds, completedMap, linkedHabitIds, calendarCompletions,
+  activeLinks, currentUserId, pendingReceived, pendingSent, showLinkModal,
+  onToggle, onIncrement, onTimerStart, onTimerStop, onEdit, onAdd,
+  onHabitsChanged, onRespondToLink, onDeleteLink, onRequestLink, onShowLinkModal, onCloseLinkModal,
+}: HabitsTabContentProps): React.ReactElement {
+  if (habitsLoading) {
+    return (
+      <div className={`text-center py-12 text-sm ${isDay ? 'text-[#4A2E1B]/60' : 'text-[#F5F0E1]/60'}`}>
+        Cargando hábitos...
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <HabitList
+        habits={habits}
+        isDay={isDay}
+        isCompleted={isCompleted}
+        getValue={getValue}
+        toggling={toggling}
+        stats={stats}
+        today={today}
+        activeTimerHabitId={activeTimerHabitId}
+        elapsedSeconds={elapsedSeconds}
+        onToggle={onToggle}
+        onIncrement={onIncrement}
+        onTimerStart={onTimerStart}
+        onTimerStop={onTimerStop}
+        onEdit={onEdit}
+        onAdd={onAdd}
+        completedDatesMap={completedMap}
+        linkedHabitIds={linkedHabitIds}
+      />
+
+      {habits.length > 0 && (
+        <>
+          <HabitCalendar
+            completionsByDate={calendarCompletions}
+            totalHabits={habits.length}
+            isDay={isDay}
+          />
+          <HabitStats
+            stats={stats}
+            isDay={isDay}
+            onHabitsChanged={onHabitsChanged}
+            activeLinks={activeLinks}
+            currentUserId={currentUserId}
+          />
+
+          <HabitLinkPendingList
+            pendingReceived={pendingReceived}
+            pendingSent={pendingSent}
+            myHabits={habits}
+            isDay={isDay}
+            onRespond={onRespondToLink}
+            onCancel={onDeleteLink}
+          />
+
+          <button
+            onClick={onShowLinkModal}
+            className={`flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-xs font-medium transition-all ${
+              isDay
+                ? 'bg-[#4A2E1B]/5 text-[#4A2E1B]/70 hover:bg-[#4A2E1B]/10'
+                : 'bg-[#F5F0E1]/5 text-[#F5F0E1]/70 hover:bg-[#F5F0E1]/10'
+            }`}
+          >
+            <Link2 className="w-3.5 h-3.5" strokeWidth={2} />
+            Vincular hábito con alguien
+          </button>
+        </>
+      )}
+
+      <HabitLinkRequestModal
+        isOpen={showLinkModal}
+        isDay={isDay}
+        myHabits={habits}
+        onClose={onCloseLinkModal}
+        onSubmit={onRequestLink}
+      />
+    </>
+  );
+}
+
 export default function HabitsPage(): React.ReactElement | null {
   const router = useRouter();
   const { session, isLoading: authLoading } = useAuthSession();
   const { isDay } = useTheme();
   const { habits, loading: habitsLoading } = useHabits();
   const habitIds = useMemo(() => habits.map(h => h.id), [habits]);
-  const { isCompleted, getValue, toggleLog, incrementLog, toggling } = useHabitLogs(habitIds, getCurrentMonth());
+  const { isCompleted, getValue, toggleLog, incrementLog, toggling, completedMap } = useHabitLogs(habitIds, getCurrentMonth());
   const { stats, refetch: refetchStats } = useHabitStats();
   const { activeTimer, elapsedSeconds, start: startTimer, stop: stopTimer, cancel: cancelTimer } = useTimer();
+
+  const {
+    pendingReceived,
+    pendingSent,
+    activeLinks,
+    requestLink,
+    respondToLink,
+    deleteLink,
+  } = useHabitLinks();
 
   const [activeTab, setActiveTab] = useState<Tab>('habits');
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+  const [showLinkModal, setShowLinkModal] = useState(false);
 
   const today = formatToday();
 
@@ -83,6 +216,15 @@ export default function HabitsPage(): React.ReactElement | null {
     }
     refetchStats();
   }, [activeTimer, stopTimer, cancelTimer, incrementLog, refetchStats, showToastMessage]);
+
+  const linkedHabitIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const link of activeLinks) {
+      ids.add(link.requester_habit_id);
+      if (link.responder_habit_id) ids.add(link.responder_habit_id);
+    }
+    return ids;
+  }, [activeLinks]);
 
   const calendarCompletions = useMemo(() => {
     const map: Record<string, number> = {};
@@ -153,44 +295,38 @@ export default function HabitsPage(): React.ReactElement | null {
         </div>
 
         {activeTab === 'habits' && (
-          <>
-            {habitsLoading ? (
-              <div className={`text-center py-12 text-sm ${isDay ? 'text-[#4A2E1B]/60' : 'text-[#F5F0E1]/60'}`}>
-                Cargando hábitos...
-              </div>
-            ) : (
-              <>
-                <HabitList
-                  habits={habits}
-                  isDay={isDay}
-                  isCompleted={isCompleted}
-                  getValue={getValue}
-                  toggling={toggling}
-                  stats={stats}
-                  today={today}
-                  activeTimerHabitId={activeTimer?.habitId ?? null}
-                  elapsedSeconds={elapsedSeconds}
-                  onToggle={handleToggle}
-                  onIncrement={handleIncrement}
-                  onTimerStart={handleTimerStart}
-                  onTimerStop={handleTimerStop}
-                  onEdit={(habitId) => router.push(`/habits/edit/${habitId}`)}
-                  onAdd={() => router.push('/habits/new')}
-                />
-
-                {habits.length > 0 && (
-                  <>
-                    <HabitCalendar
-                      completionsByDate={calendarCompletions}
-                      totalHabits={habits.length}
-                      isDay={isDay}
-                    />
-                    <HabitStats stats={stats} isDay={isDay} />
-                  </>
-                )}
-              </>
-            )}
-          </>
+          <HabitsTabContent
+            habits={habits}
+            habitsLoading={habitsLoading}
+            isDay={isDay}
+            isCompleted={isCompleted}
+            getValue={getValue}
+            toggling={toggling}
+            stats={stats}
+            today={today}
+            activeTimerHabitId={activeTimer?.habitId ?? null}
+            elapsedSeconds={elapsedSeconds}
+            completedMap={completedMap}
+            linkedHabitIds={linkedHabitIds}
+            calendarCompletions={calendarCompletions}
+            activeLinks={activeLinks}
+            currentUserId={session.user.id}
+            pendingReceived={pendingReceived}
+            pendingSent={pendingSent}
+            showLinkModal={showLinkModal}
+            onToggle={handleToggle}
+            onIncrement={handleIncrement}
+            onTimerStart={handleTimerStart}
+            onTimerStop={handleTimerStop}
+            onEdit={(habitId) => router.push(`/habits/edit/${habitId}`)}
+            onAdd={() => router.push('/habits/new')}
+            onHabitsChanged={refetchStats}
+            onRespondToLink={respondToLink}
+            onDeleteLink={deleteLink}
+            onRequestLink={requestLink}
+            onShowLinkModal={() => setShowLinkModal(true)}
+            onCloseLinkModal={() => setShowLinkModal(false)}
+          />
         )}
 
         {activeTab === 'community' && (

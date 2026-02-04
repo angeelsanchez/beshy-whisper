@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { name, description, targetDays, color, trackingType, targetValue, unit, icon, category, reminderTime } = parsed.data;
+    const { name, description, targetDays, color, trackingType, targetValue, unit, icon, category, reminderTime, frequencyMode, weeklyTarget } = parsed.data;
     const sorted = [...targetDays].sort((a, b) => a - b);
     const { frequency, targetDaysPerWeek } = derivedFromTargetDays(sorted);
 
@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
         name,
         description: description ?? null,
         frequency,
-        target_days_per_week: targetDaysPerWeek,
+        target_days_per_week: frequencyMode === 'weekly_count' ? (weeklyTarget ?? targetDaysPerWeek) : targetDaysPerWeek,
         target_days: sorted,
         color,
         tracking_type: trackingType,
@@ -88,6 +88,8 @@ export async function POST(request: NextRequest) {
         icon: icon ?? null,
         category: category ?? null,
         reminder_time: reminderTime ?? null,
+        frequency_mode: frequencyMode,
+        weekly_target: frequencyMode === 'weekly_count' ? weeklyTarget : null,
       })
       .select()
       .single();

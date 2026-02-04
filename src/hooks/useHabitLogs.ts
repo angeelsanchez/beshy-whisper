@@ -258,6 +258,7 @@ export function useHabitLogs(habitIds: string[], month?: string) {
     incrementLog,
     loading,
     toggling,
+    completedMap,
     refetch: fetchLogs,
   };
 }

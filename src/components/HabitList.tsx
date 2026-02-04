@@ -1,15 +1,19 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import HabitCard from './HabitCard';
 import { HabitStatData } from '@/hooks/useHabitStats';
+import { isDueToday as checkDueToday, getWeekCompletionCount } from '@/utils/habit-helpers';
+import type { FrequencyMode } from '@/utils/habit-helpers';
 
 interface Habit {
   readonly id: string;
   readonly name: string;
   readonly description: string | null;
   readonly color: string;
+  readonly frequency_mode: FrequencyMode;
   readonly target_days: number[];
+  readonly weekly_target: number | null;
   readonly tracking_type: 'binary' | 'quantity' | 'timer';
   readonly target_value: number | null;
   readonly unit: string | null;
@@ -32,6 +36,8 @@ interface HabitListProps {
   readonly onTimerStop: () => void;
   readonly onEdit: (habitId: string) => void;
   readonly onAdd: () => void;
+  readonly completedDatesMap?: ReadonlyMap<string, ReadonlySet<string>>;
+  readonly linkedHabitIds?: ReadonlySet<string>;
 }
 
 function EmptyState({ isDay, onAdd }: { readonly isDay: boolean; readonly onAdd: () => void }): React.ReactElement {
@@ -75,6 +81,8 @@ function HabitCardList({
   today,
   activeTimerHabitId,
   elapsedSeconds,
+  completedDatesMap,
+  linkedHabitIds,
   onToggle,
   onIncrement,
   onTimerStart,
@@ -91,6 +99,8 @@ function HabitCardList({
   readonly today: string;
   readonly activeTimerHabitId: string | null;
   readonly elapsedSeconds: number;
+  readonly completedDatesMap?: ReadonlyMap<string, ReadonlySet<string>>;
+  readonly linkedHabitIds?: ReadonlySet<string>;
   readonly onToggle: (habitId: string) => void;
   readonly onIncrement: (habitId: string, amount: number) => void;
   readonly onTimerStart: (habitId: string) => void;
@@ -99,25 +109,32 @@ function HabitCardList({
 }): React.ReactElement {
   return (
     <div className="space-y-2">
-      {habits.map(habit => (
-        <HabitCard
-          key={habit.id}
-          habit={habit}
-          isCompleted={isCompleted(habit.id, today)}
-          currentValue={getValue(habit.id, today)}
-          toggling={toggling}
-          stat={stats.find(s => s.habitId === habit.id)}
-          isDay={isDay}
-          isDueToday={isDueToday}
-          isTimerRunning={activeTimerHabitId === habit.id}
-          elapsedSeconds={activeTimerHabitId === habit.id ? elapsedSeconds : 0}
-          onToggle={() => onToggle(habit.id)}
-          onIncrement={(amount) => onIncrement(habit.id, amount)}
-          onTimerStart={() => onTimerStart(habit.id)}
-          onTimerStop={onTimerStop}
-          onEdit={() => onEdit(habit.id)}
-        />
-      ))}
+      {habits.map(habit => {
+        const weekCount = habit.frequency_mode === 'weekly_count'
+          ? getWeekCompletionCount(completedDatesMap?.get(habit.id) ?? new Set<string>())
+          : undefined;
+        return (
+          <HabitCard
+            key={habit.id}
+            habit={habit}
+            isCompleted={isCompleted(habit.id, today)}
+            currentValue={getValue(habit.id, today)}
+            toggling={toggling}
+            stat={stats.find(s => s.habitId === habit.id)}
+            isDay={isDay}
+            isDueToday={isDueToday}
+            isTimerRunning={activeTimerHabitId === habit.id}
+            elapsedSeconds={activeTimerHabitId === habit.id ? elapsedSeconds : 0}
+            weekCompletionCount={weekCount}
+            hasActiveLink={linkedHabitIds?.has(habit.id) ?? false}
+            onToggle={() => onToggle(habit.id)}
+            onIncrement={(amount) => onIncrement(habit.id, amount)}
+            onTimerStart={() => onTimerStart(habit.id)}
+            onTimerStop={onTimerStop}
+            onEdit={() => onEdit(habit.id)}
+          />
+        );
+      })}
     </div>
   );
 }
@@ -132,6 +149,8 @@ function OtherDaysSection({
   today,
   activeTimerHabitId,
   elapsedSeconds,
+  completedDatesMap,
+  linkedHabitIds,
   onToggle,
   onIncrement,
   onTimerStart,
@@ -147,6 +166,8 @@ function OtherDaysSection({
   readonly today: string;
   readonly activeTimerHabitId: string | null;
   readonly elapsedSeconds: number;
+  readonly completedDatesMap?: ReadonlyMap<string, ReadonlySet<string>>;
+  readonly linkedHabitIds?: ReadonlySet<string>;
   readonly onToggle: (habitId: string) => void;
   readonly onIncrement: (habitId: string, amount: number) => void;
   readonly onTimerStart: (habitId: string) => void;
@@ -191,6 +212,8 @@ function OtherDaysSection({
             today={today}
             activeTimerHabitId={activeTimerHabitId}
             elapsedSeconds={elapsedSeconds}
+            completedDatesMap={completedDatesMap}
+            linkedHabitIds={linkedHabitIds}
             onToggle={onToggle}
             onIncrement={onIncrement}
             onTimerStart={onTimerStart}
@@ -231,15 +254,20 @@ export default function HabitList({
   onTimerStop,
   onEdit,
   onAdd,
+  completedDatesMap,
+  linkedHabitIds,
 }: HabitListProps): React.ReactElement {
-  const currentDayOfWeek = new Date().getDay();
+  const now = useMemo(() => new Date(), []);
 
-  const todayHabits = habits.filter(h =>
-    Array.isArray(h.target_days) ? h.target_days.includes(currentDayOfWeek) : true
-  );
-  const otherHabits = habits.filter(h =>
-    Array.isArray(h.target_days) ? !h.target_days.includes(currentDayOfWeek) : false
-  );
+  const todayHabits = useMemo(() => habits.filter(h => {
+    const dates = completedDatesMap?.get(h.id) ?? new Set<string>();
+    return checkDueToday(h.frequency_mode, h.target_days, h.weekly_target, dates, now);
+  }), [habits, completedDatesMap, now]);
+
+  const otherHabits = useMemo(() => habits.filter(h => {
+    const dates = completedDatesMap?.get(h.id) ?? new Set<string>();
+    return !checkDueToday(h.frequency_mode, h.target_days, h.weekly_target, dates, now);
+  }), [habits, completedDatesMap, now]);
 
   const completedCount = todayHabits.filter(h => isCompleted(h.id, today)).length;
   const totalTodayCount = todayHabits.length;
@@ -293,6 +321,8 @@ export default function HabitList({
               today={today}
               activeTimerHabitId={activeTimerHabitId}
               elapsedSeconds={elapsedSeconds}
+              completedDatesMap={completedDatesMap}
+              linkedHabitIds={linkedHabitIds}
               onToggle={onToggle}
               onIncrement={onIncrement}
               onTimerStart={onTimerStart}
@@ -311,6 +341,8 @@ export default function HabitList({
             today={today}
             activeTimerHabitId={activeTimerHabitId}
             elapsedSeconds={elapsedSeconds}
+            completedDatesMap={completedDatesMap}
+            linkedHabitIds={linkedHabitIds}
             onToggle={onToggle}
             onIncrement={onIncrement}
             onTimerStart={onTimerStart}

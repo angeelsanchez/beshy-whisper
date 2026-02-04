@@ -10,8 +10,10 @@ export interface Habit {
   name: string;
   description: string | null;
   frequency: 'daily' | 'weekly';
+  frequency_mode: 'specific_days' | 'weekly_count';
   target_days_per_week: number;
   target_days: number[];
+  weekly_target: number | null;
   color: string;
   tracking_type: TrackingType;
   target_value: number | null;
@@ -19,6 +21,10 @@ export interface Habit {
   icon: string | null;
   category: 'health' | 'mind' | 'productivity' | 'wellness' | 'social' | 'creativity' | null;
   reminder_time: string | null;
+  has_progression: boolean;
+  current_level: number | null;
+  level_started_at: string | null;
+  is_shareable: boolean;
   is_active: boolean;
   sort_order: number;
   created_at: string;
@@ -28,7 +34,9 @@ export interface Habit {
 interface CreateHabitData {
   name: string;
   description?: string;
+  frequencyMode?: 'specific_days' | 'weekly_count';
   targetDays?: number[];
+  weeklyTarget?: number;
   color?: string;
   trackingType?: TrackingType;
   targetValue?: number;
@@ -41,7 +49,9 @@ interface CreateHabitData {
 interface UpdateHabitData {
   name?: string;
   description?: string | null;
+  frequencyMode?: 'specific_days' | 'weekly_count';
   targetDays?: number[];
+  weeklyTarget?: number | null;
   color?: string;
   trackingType?: TrackingType;
   targetValue?: number | null;

@@ -118,24 +118,20 @@ export default function HabitEvolution({
         <p className={`text-xs ${muted}`}>Cargando evolución...</p>
       )}
 
-      {!isMaxLevel && (
+      {shouldSuggestAdvance && !isMaxLevel && (
         <button
           onClick={handleAdvance}
           disabled={advancing}
           className={`w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-medium transition-all ${
             advancing ? 'opacity-50 cursor-not-allowed' : 'active:scale-[0.98]'
           } ${
-            shouldSuggestAdvance
-              ? (isDay
-                  ? 'bg-green-600/10 text-green-700 hover:bg-green-600/20'
-                  : 'bg-green-400/10 text-green-400 hover:bg-green-400/20')
-              : (isDay
-                  ? 'bg-[#4A2E1B]/5 text-[#4A2E1B]/60 hover:bg-[#4A2E1B]/10 hover:text-[#4A2E1B]/80'
-                  : 'bg-[#F5F0E1]/5 text-[#F5F0E1]/60 hover:bg-[#F5F0E1]/10 hover:text-[#F5F0E1]/80')
+            isDay
+              ? 'bg-green-600/10 text-green-700 hover:bg-green-600/20'
+              : 'bg-green-400/10 text-green-400 hover:bg-green-400/20'
           }`}
         >
           <ChevronUp className="w-4 h-4" strokeWidth={2} />
-          {advancing ? 'Avanzando...' : 'Subir de nivel'}
+          {advancing ? 'Avanzando...' : 'Avanzar al siguiente nivel'}
         </button>
       )}
 

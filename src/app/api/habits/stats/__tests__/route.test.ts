@@ -416,6 +416,66 @@ describe('GET /api/habits/stats', () => {
     expect(json.stats[0].completionsByDate[todayStr]).toBe(25);
   });
 
+  it('uses weekly_count completion rate when frequency_mode is weekly_count', async () => {
+    mockGetServerSession.mockResolvedValue(mockSession);
+
+    const habits = [
+      {
+        id: HABIT_UUID,
+        name: 'Gym',
+        target_days_per_week: 3,
+        target_days: [],
+        frequency_mode: 'weekly_count',
+        weekly_target: 3,
+      },
+    ];
+    habitsBuilder.eq
+      .mockReturnValueOnce(habitsBuilder)
+      .mockResolvedValueOnce({ data: habits, error: null });
+
+    const today = new Date();
+    const dates = Array.from({ length: 2 }, (_, i) => {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      return { habit_id: HABIT_UUID, completed_at: toDateStr(d) };
+    });
+    logsBuilder.order.mockResolvedValueOnce({ data: dates, error: null });
+
+    const res = await GET(makeRequest());
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    const stat = json.stats[0];
+    expect(stat.frequencyMode).toBe('weekly_count');
+    expect(stat.weeklyTarget).toBe(3);
+    expect(stat.completionRateWeekly).toBe(67);
+  });
+
+  it('returns frequencyMode and weeklyTarget in stats response', async () => {
+    mockGetServerSession.mockResolvedValue(mockSession);
+
+    const habits = [
+      {
+        id: HABIT_UUID,
+        name: 'Read',
+        target_days_per_week: 7,
+        target_days: [0, 1, 2, 3, 4, 5, 6],
+        frequency_mode: 'specific_days',
+        weekly_target: null,
+      },
+    ];
+    habitsBuilder.eq
+      .mockReturnValueOnce(habitsBuilder)
+      .mockResolvedValueOnce({ data: habits, error: null });
+
+    logsBuilder.order.mockResolvedValueOnce({ data: [], error: null });
+
+    const res = await GET(makeRequest());
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.stats[0].frequencyMode).toBe('specific_days');
+    expect(json.stats[0].weeklyTarget).toBeNull();
+  });
+
   it('returns null totalValue for binary habits', async () => {
     mockGetServerSession.mockResolvedValue(mockSession);
 

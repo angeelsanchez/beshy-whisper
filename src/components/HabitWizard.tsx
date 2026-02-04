@@ -31,13 +31,17 @@ const DAY_PRESETS = [
   { label: 'Fines', days: WEEKEND_DAYS },
 ];
 
+export type FrequencyMode = 'specific_days' | 'weekly_count';
+
 export interface HabitWizardData {
   name: string;
   description: string;
   trackingType: TrackingType;
   targetValue?: number;
   unit?: string;
+  frequencyMode: FrequencyMode;
   targetDays: number[];
+  weeklyTarget?: number;
   color: string;
   icon?: string;
   category?: HabitCategory;
@@ -50,7 +54,9 @@ interface InitialHabitData {
   readonly tracking_type: TrackingType;
   readonly target_value: number | null;
   readonly unit: string | null;
+  readonly frequency_mode: FrequencyMode;
   readonly target_days: number[];
+  readonly weekly_target: number | null;
   readonly color: string;
   readonly icon: string | null;
   readonly category: HabitCategory | null;
@@ -70,7 +76,9 @@ interface FormState {
   trackingType: TrackingType;
   targetValueStr: string;
   unit: string;
+  frequencyMode: FrequencyMode;
   targetDays: number[];
+  weeklyTargetStr: string;
   color: string;
   icon: string;
   category: HabitCategory | null;
@@ -88,7 +96,9 @@ function getInitialForm(initialData?: InitialHabitData): FormState {
       trackingType: 'binary',
       targetValueStr: '',
       unit: '',
+      frequencyMode: 'specific_days',
       targetDays: ALL_DAYS,
+      weeklyTargetStr: '3',
       color: '#4A2E1B',
       icon: '',
       category: null,
@@ -103,9 +113,11 @@ function getInitialForm(initialData?: InitialHabitData): FormState {
     trackingType: initialData.tracking_type,
     targetValueStr: initialData.target_value?.toString() ?? '',
     unit: initialData.unit ?? '',
+    frequencyMode: initialData.frequency_mode ?? 'specific_days',
     targetDays: Array.isArray(initialData.target_days) && initialData.target_days.length > 0
       ? [...initialData.target_days].sort((a, b) => a - b)
       : ALL_DAYS,
+    weeklyTargetStr: initialData.weekly_target?.toString() ?? '3',
     color: initialData.color,
     icon: initialData.icon ?? '',
     category: initialData.category,
@@ -238,6 +250,82 @@ function TemplateStep({
       >
         Crear personalizado
       </button>
+    </div>
+  );
+}
+
+const WEEKLY_TARGET_OPTIONS = [1, 2, 3, 4, 5, 6, 7];
+
+function FrequencySection({
+  form,
+  isDay,
+  onChange,
+  onDayToggle,
+  onDayPreset,
+}: {
+  readonly form: FormState;
+  readonly isDay: boolean;
+  readonly onChange: FieldUpdater;
+  readonly onDayToggle: (day: number) => void;
+  readonly onDayPreset: (days: number[]) => void;
+}): React.ReactElement {
+  const modeOptions: { value: FrequencyMode; label: string }[] = [
+    { value: 'specific_days', label: 'Días específicos' },
+    { value: 'weekly_count', label: 'X días/semana' },
+  ];
+
+  return (
+    <div>
+      <span className={`block text-sm font-medium mb-2 ${isDay ? 'text-[#4A2E1B]' : 'text-[#F5F0E1]'}`}>
+        Frecuencia
+      </span>
+      <div className="flex gap-1.5 mb-3">
+        {modeOptions.map(opt => (
+          <button
+            key={opt.value}
+            type="button"
+            onClick={() => onChange('frequencyMode', opt.value)}
+            className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${
+              form.frequencyMode === opt.value
+                ? isDay ? 'bg-[#4A2E1B] text-[#F5F0E1]' : 'bg-[#F5F0E1] text-[#2D1E1A]'
+                : isDay ? 'bg-[#4A2E1B]/10 text-[#4A2E1B]/50' : 'bg-[#F5F0E1]/10 text-[#F5F0E1]/50'
+            }`}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+
+      {form.frequencyMode === 'specific_days' ? (
+        <DaySelector
+          targetDays={form.targetDays}
+          isDay={isDay}
+          onToggle={onDayToggle}
+          onPreset={onDayPreset}
+        />
+      ) : (
+        <div>
+          <span className={`block text-xs mb-2 ${isDay ? 'text-[#4A2E1B]/60' : 'text-[#F5F0E1]/60'}`}>
+            Cumple cualquier día de la semana
+          </span>
+          <div className="flex gap-1.5">
+            {WEEKLY_TARGET_OPTIONS.map(n => (
+              <button
+                key={n}
+                type="button"
+                onClick={() => onChange('weeklyTargetStr', n.toString())}
+                className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${
+                  form.weeklyTargetStr === n.toString()
+                    ? isDay ? 'bg-[#4A2E1B] text-[#F5F0E1]' : 'bg-[#F5F0E1] text-[#2D1E1A]'
+                    : isDay ? 'bg-[#4A2E1B]/10 text-[#4A2E1B]/50' : 'bg-[#F5F0E1]/10 text-[#F5F0E1]/50'
+                }`}
+              >
+                {n}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -388,11 +476,12 @@ function ConfigureStep({
         onChange={val => onChange('category', val)}
       />
 
-      <DaySelector
-        targetDays={form.targetDays}
+      <FrequencySection
+        form={form}
         isDay={isDay}
-        onToggle={onDayToggle}
-        onPreset={onDayPreset}
+        onChange={onChange}
+        onDayToggle={onDayToggle}
+        onDayPreset={onDayPreset}
       />
 
       <ColorPicker
@@ -723,8 +812,12 @@ function PreviewCard({
           </span>
         </div>
         <div className="flex justify-between">
-          <span>Días</span>
-          <span className="font-medium">{formatDaysLabel(form.targetDays)}</span>
+          <span>Frecuencia</span>
+          <span className="font-medium">
+            {form.frequencyMode === 'weekly_count'
+              ? `${form.weeklyTargetStr} días/semana`
+              : formatDaysLabel(form.targetDays)}
+          </span>
         </div>
         {form.category && (
           <div className="flex justify-between">
@@ -878,7 +971,9 @@ export default function HabitWizard({ mode, initialData, onSubmit, onDelete }: H
       trackingType: template.trackingType,
       targetValueStr: template.targetValue?.toString() ?? '',
       unit: template.unit ?? '',
+      frequencyMode: 'specific_days',
       targetDays: [...template.suggestedDays].sort((a, b) => a - b),
+      weeklyTargetStr: '3',
       color: template.color,
       icon: template.icon,
       category: template.category,
@@ -965,9 +1060,13 @@ export default function HabitWizard({ mode, initialData, onSubmit, onDelete }: H
       name: form.name.trim(),
       description: form.description.trim(),
       trackingType: form.trackingType,
+      frequencyMode: form.frequencyMode,
       targetDays: form.targetDays,
       color: form.color,
     };
+    if (form.frequencyMode === 'weekly_count') {
+      data.weeklyTarget = Number(form.weeklyTargetStr) || 3;
+    }
     if (form.trackingType === 'quantity') {
       data.targetValue = Number(form.targetValueStr);
       data.unit = form.unit.trim();

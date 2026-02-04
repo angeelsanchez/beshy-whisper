@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
@@ -8,6 +8,8 @@ import { usePostContext, EntryWithUser } from '@/context/PostContext';
 import PromptSuggestions from './PromptSuggestions';
 import MoodSelector from './MoodSelector';
 import ChallengeToggle from './ChallengeToggle';
+import WhisperHabitSelector from './WhisperHabitSelector';
+import type { HabitSnapshotPayload } from './WhisperHabitSelector';
 import { useActiveChallenge } from '@/hooks/useActiveChallenge';
 import type { Mood } from '@/types/mood';
 
@@ -52,6 +54,7 @@ export default function WhisperForm() {
   
   const [selectedMood, setSelectedMood] = useState<Mood | null>(null);
   const [objectives, setObjectives] = useState<Objective[]>([]);
+  const [habitSnapshots, setHabitSnapshots] = useState<HabitSnapshotPayload[]>([]);
   const [participateInChallenge, setParticipateInChallenge] = useState(false);
   const { challenge: activeChallenge } = useActiveChallenge();
   
@@ -277,6 +280,7 @@ export default function WhisperForm() {
             is_private: isPrivate,
             objectives: objectiveTexts,
             mood: selectedMood,
+            habitSnapshots: franja === 'NOCHE' ? habitSnapshots : [],
           }),
         });
 
@@ -357,6 +361,7 @@ export default function WhisperForm() {
       // Clear form
       setMessage('');
       setObjectives([]);
+      setHabitSnapshots([]);
       setSelectedMood(null);
       setParticipateInChallenge(false);
     } catch (err: unknown) {
@@ -401,6 +406,10 @@ export default function WhisperForm() {
   const handleRemoveObjective = (id: string) => {
     setObjectives(objectives.filter(obj => obj.id !== id));
   };
+
+  const handleHabitSelectionChange = useCallback((snapshots: HabitSnapshotPayload[]) => {
+    setHabitSnapshots(snapshots);
+  }, []);
 
   return (
     <div 
@@ -520,6 +529,14 @@ export default function WhisperForm() {
             onChange={setSelectedMood}
             isDay={isDay}
           />
+
+          {!isDay && session?.user?.id && (
+            <WhisperHabitSelector
+              isDay={isDay}
+              userId={session.user.id}
+              onSelectionChange={handleHabitSelectionChange}
+            />
+          )}
 
           {activeChallenge && session?.user && (
             <div className="mb-4">

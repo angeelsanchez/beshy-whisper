@@ -1,10 +1,16 @@
 'use client';
 
 import { HabitStatData } from '@/hooks/useHabitStats';
+import HabitEvolution from '@/components/HabitEvolution';
+import HabitLinkPartnerIndicator from '@/components/HabitLinkPartnerIndicator';
+import type { HabitLink } from '@/hooks/useHabitLinks';
 
 interface HabitStatsProps {
   readonly stats: HabitStatData[];
   readonly isDay: boolean;
+  readonly onHabitsChanged?: () => void;
+  readonly activeLinks?: HabitLink[];
+  readonly currentUserId?: string;
 }
 
 function formatValue(value: number, unit: string | null): string {
@@ -83,9 +89,10 @@ function QuantitySummarySection({ quantityStats, border, text, isDay }: {
   );
 }
 
-export default function HabitStats({ stats, isDay }: Readonly<HabitStatsProps>): React.ReactElement | null {
+export default function HabitStats({ stats, isDay, onHabitsChanged, activeLinks = [], currentUserId }: Readonly<HabitStatsProps>): React.ReactElement | null {
   if (stats.length === 0) return null;
 
+  const progressiveStats = stats.filter(s => s.hasProgression && s.currentLevel !== null && s.maxLevel !== null);
   const totalReps = stats.reduce((sum, s) => sum + s.totalRepetitions, 0);
   const avgCompletionRate = stats.length > 0
     ? Math.round(stats.reduce((sum, s) => sum + s.completionRateWeekly, 0) / stats.length)
@@ -138,6 +145,24 @@ export default function HabitStats({ stats, isDay }: Readonly<HabitStatsProps>):
         isDay={isDay}
       />
 
+      {progressiveStats.length > 0 && (
+        <div className={`border-t pt-3 mt-3 space-y-4 ${border}`}>
+          {progressiveStats.map(s => (
+            <div key={s.habitId}>
+              <p className={`text-xs font-medium mb-2 ${textMuted}`}>{s.habitName}</p>
+              <HabitEvolution
+                habitId={s.habitId}
+                isDay={isDay}
+                shouldSuggestAdvance={s.shouldSuggestAdvance}
+                currentLevel={s.currentLevel!}
+                maxLevel={s.maxLevel!}
+                onAdvanced={onHabitsChanged}
+              />
+            </div>
+          ))}
+        </div>
+      )}
+
       {milestones.length > 0 && (
         <div className={`border-t pt-3 mt-3 ${border}`}>
           <h3 className={`text-sm font-semibold mb-2 ${text}`}>
@@ -158,6 +183,24 @@ export default function HabitStats({ stats, isDay }: Readonly<HabitStatsProps>):
                   </span>
                 </div>
               </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {activeLinks.length > 0 && currentUserId && (
+        <div className={`border-t pt-3 mt-3 ${border}`}>
+          <h3 className={`text-sm font-semibold mb-2 ${text}`}>
+            Compañeros
+          </h3>
+          <div className="space-y-1.5">
+            {activeLinks.map(link => (
+              <HabitLinkPartnerIndicator
+                key={link.id}
+                link={link}
+                currentUserId={currentUserId}
+                isDay={isDay}
+              />
             ))}
           </div>
         </div>

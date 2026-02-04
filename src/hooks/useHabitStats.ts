@@ -56,6 +56,15 @@ export function useHabitStats(habitId?: string) {
     fetchStats();
   }, [fetchStats]);
 
+  useEffect(() => {
+    function handleFocus(): void {
+      fetchStats();
+    }
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [fetchStats]);
+
   const getStatForHabit = useCallback((id: string): HabitStatData | undefined => {
     return stats.find(s => s.habitId === id);
   }, [stats]);

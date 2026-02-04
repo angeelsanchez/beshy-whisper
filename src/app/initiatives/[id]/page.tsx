@@ -302,7 +302,7 @@ export default function InitiativeDetailPage(): React.ReactElement | null {
   return (
     <div className={`lg:pl-20 ${bgColor} ${
       isChatActive
-        ? 'h-[100dvh] flex flex-col overflow-hidden pb-16 lg:pb-0'
+        ? 'chat-fullscreen flex flex-col overflow-hidden'
         : 'min-h-screen pb-24 lg:pb-8'
     }`}>
       <div className={`max-w-lg mx-auto px-4 pt-4 w-full ${

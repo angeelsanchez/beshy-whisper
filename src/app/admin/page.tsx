@@ -21,7 +21,10 @@ interface Entry {
   };
 }
 
+type AdminTab = 'entries' | 'challenges' | 'initiatives';
+
 export default function AdminPage() {
+  const [activeTab, setActiveTab] = useState<AdminTab>('entries');
   const [entries, setEntries] = useState<Entry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -57,10 +60,9 @@ export default function AdminPage() {
   });
   const [initiativeError, setInitiativeError] = useState('');
 
-  // Check if user is admin
   useEffect(() => {
     if (status === 'loading') return;
-    
+
     if (!session) {
       router.push('/login');
       return;
@@ -79,7 +81,7 @@ export default function AdminPage() {
   const fetchEntries = async () => {
     try {
       setLoading(true);
-      
+
       const { data, error } = await supabase
         .from('entries')
         .select(`
@@ -89,11 +91,11 @@ export default function AdminPage() {
           )
         `)
         .order('fecha', { ascending: false });
-      
+
       if (error) {
         throw error;
       }
-      
+
       if (data) {
         setEntries(data);
       }
@@ -111,12 +113,11 @@ export default function AdminPage() {
         .from('entries')
         .delete()
         .eq('id', id);
-      
+
       if (error) {
         throw error;
       }
-      
-      // Remove the deleted entry from state
+
       setEntries(entries.filter(entry => entry.id !== id));
     } catch (err) {
       console.error('Error deleting entry:', err);
@@ -126,7 +127,7 @@ export default function AdminPage() {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleString();
+    return date.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
   };
 
   const fetchChallenges = async () => {
@@ -281,410 +282,427 @@ export default function AdminPage() {
     }
   };
 
+  const trackingLabel = (type: string, target: number | null, unit: string | null): string => {
+    if (type === 'binary') return 'Check-in';
+    const label = `${target ?? '?'} ${unit ?? ''}`;
+    if (type === 'quantity') return label;
+    return `${label} (timer)`;
+  };
+
   if (status === 'loading') {
     return (
-      <div className="w-full max-w-[800px] mx-auto px-5 py-8 text-center">
+      <div className="w-full max-w-[800px] mx-auto px-4 py-8 text-center">
         <p>Loading...</p>
       </div>
     );
   }
 
-  if (!session || session.user.role !== 'admin') {
+  if (!session?.user?.role || session.user.role !== 'admin') {
     return null;
   }
 
+  const tabs: { key: AdminTab; label: string; count: number }[] = [
+    { key: 'entries', label: 'Whispers', count: entries.length },
+    { key: 'challenges', label: 'Retos', count: challenges.length },
+    { key: 'initiatives', label: 'Iniciativas', count: initiatives.length },
+  ];
+
   return (
-    <div className="w-full max-w-[800px] mx-auto px-5 py-8">
-      <h1 className="text-2xl font-bold font-montserrat mb-6">Admin Panel</h1>
-      
-      {error && (
-        <div className="mb-4 p-3 bg-red-100 text-red-700 rounded">
-          {error}
-        </div>
-      )}
-      
-      {loading ? (
-        <p className="text-center">Loading entries...</p>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="min-w-full bg-white border border-gray-200">
-            <thead>
-              <tr>
-                <th className="py-2 px-4 border-b text-left">ID</th>
-                <th className="py-2 px-4 border-b text-left">User</th>
-                <th className="py-2 px-4 border-b text-left">Message</th>
-                <th className="py-2 px-4 border-b text-left">Date</th>
-                <th className="py-2 px-4 border-b text-left">Time Frame</th>
-                <th className="py-2 px-4 border-b text-left">IP</th>
-                <th className="py-2 px-4 border-b text-left">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
+    <div className="w-full max-w-[800px] mx-auto px-4 py-6">
+      <h1 className="text-xl font-bold font-montserrat mb-4">Admin</h1>
+
+      {/* Tabs */}
+      <div className="flex gap-1 mb-5 bg-gray-100 rounded-lg p-1">
+        {tabs.map(tab => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            className={`flex-1 py-2 px-2 rounded-md text-sm font-medium transition-colors ${
+              activeTab === tab.key
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            {tab.label}
+            <span className={`ml-1 text-xs ${activeTab === tab.key ? 'text-gray-500' : 'text-gray-400'}`}>
+              {tab.count}
+            </span>
+          </button>
+        ))}
+      </div>
+
+      {/* Entries Tab */}
+      {activeTab === 'entries' && (
+        <div>
+          {error && (
+            <div className="mb-4 p-3 bg-red-100 text-red-700 rounded text-sm">{error}</div>
+          )}
+
+          {loading ? (
+            <p className="text-center text-sm text-gray-500">Cargando whispers...</p>
+          ) : entries.length === 0 ? (
+            <p className="text-center text-sm text-gray-500 py-8">No hay whispers</p>
+          ) : (
+            <div className="space-y-2">
               {entries.map((entry) => (
-                <tr key={entry.id} className="hover:bg-gray-50">
-                  <td className="py-2 px-4 border-b">{entry.id.slice(0, 8)}...</td>
-                  <td className="py-2 px-4 border-b">
-                    {entry.guest 
-                      ? `${entry.nombre} (Guest)` 
-                      : entry.users?.alias || 'Unknown'}
-                  </td>
-                  <td className="py-2 px-4 border-b max-w-xs truncate">
-                    {entry.mensaje}
-                  </td>
-                  <td className="py-2 px-4 border-b">
-                    {formatDate(entry.fecha)}
-                  </td>
-                  <td className="py-2 px-4 border-b">
-                    {entry.franja}
-                  </td>
-                  <td className="py-2 px-4 border-b">
-                    {entry.ip}
-                  </td>
-                  <td className="py-2 px-4 border-b">
+                <div key={entry.id} className="bg-white border border-gray-200 rounded-lg p-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-sm font-medium truncate">
+                          {entry.guest
+                            ? `${entry.nombre} (Guest)`
+                            : entry.users?.alias || 'Unknown'}
+                        </span>
+                        <span className={`text-xs px-1.5 py-0.5 rounded ${
+                          entry.franja === 'DIA'
+                            ? 'bg-amber-100 text-amber-700'
+                            : 'bg-indigo-100 text-indigo-700'
+                        }`}>
+                          {entry.franja}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-700 line-clamp-2">{entry.mensaje}</p>
+                      <div className="flex items-center gap-3 mt-1.5 text-xs text-gray-400">
+                        <span>{formatDate(entry.fecha)}</span>
+                        <span>{entry.ip}</span>
+                        <span className="font-mono">{entry.id.slice(0, 8)}</span>
+                      </div>
+                    </div>
                     <button
                       onClick={() => deleteEntry(entry.id)}
-                      className="text-red-600 hover:text-red-800"
+                      className="shrink-0 text-xs text-red-500 hover:text-red-700 px-2 py-1 rounded hover:bg-red-50"
                     >
-                      Delete
+                      Borrar
                     </button>
-                  </td>
-                </tr>
+                  </div>
+                </div>
               ))}
-              
-              {entries.length === 0 && (
-                <tr>
-                  <td colSpan={7} className="py-4 text-center">
-                    No entries found
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+            </div>
+          )}
         </div>
       )}
 
-      {/* Challenges Section */}
-      <h2 className="text-xl font-bold font-montserrat mt-10 mb-4">Retos Semanales</h2>
+      {/* Challenges Tab */}
+      {activeTab === 'challenges' && (
+        <div>
+          {challengeError && (
+            <div className="mb-4 p-3 bg-red-100 text-red-700 rounded text-sm">{challengeError}</div>
+          )}
 
-      {challengeError && (
-        <div className="mb-4 p-3 bg-red-100 text-red-700 rounded">
-          {challengeError}
-        </div>
-      )}
-
-      <form onSubmit={handleCreateChallenge} className="mb-6 p-4 bg-gray-50 rounded-lg space-y-3">
-        <h3 className="font-semibold text-sm">Crear nuevo reto</h3>
-        <input
-          type="text"
-          placeholder="Titulo *"
-          value={newChallenge.title}
-          onChange={(e) => setNewChallenge(prev => ({ ...prev, title: e.target.value }))}
-          className="w-full p-2 border rounded text-sm"
-          maxLength={100}
-        />
-        <textarea
-          placeholder="Descripcion *"
-          value={newChallenge.description}
-          onChange={(e) => setNewChallenge(prev => ({ ...prev, description: e.target.value }))}
-          className="w-full p-2 border rounded text-sm resize-none"
-          rows={2}
-          maxLength={500}
-        />
-        <input
-          type="text"
-          placeholder="Tema (opcional)"
-          value={newChallenge.theme}
-          onChange={(e) => setNewChallenge(prev => ({ ...prev, theme: e.target.value }))}
-          className="w-full p-2 border rounded text-sm"
-          maxLength={50}
-        />
-        <div className="flex gap-3">
-          <div className="flex-1">
-            <label htmlFor="challenge-start-date" className="text-xs text-gray-500">Fecha inicio *</label>
+          <form onSubmit={handleCreateChallenge} className="mb-6 p-4 bg-gray-50 rounded-lg space-y-3">
+            <h3 className="font-semibold text-sm">Crear nuevo reto</h3>
             <input
-              id="challenge-start-date"
-              type="date"
-              value={newChallenge.start_date}
-              onChange={(e) => setNewChallenge(prev => ({ ...prev, start_date: e.target.value }))}
-              className="w-full p-2 border rounded text-sm"
+              type="text"
+              placeholder="Título *"
+              value={newChallenge.title}
+              onChange={(e) => setNewChallenge(prev => ({ ...prev, title: e.target.value }))}
+              className="w-full p-2.5 border rounded-lg text-sm"
+              maxLength={100}
             />
-          </div>
-          <div className="flex-1">
-            <label htmlFor="challenge-end-date" className="text-xs text-gray-500">Fecha fin *</label>
+            <textarea
+              placeholder="Descripción *"
+              value={newChallenge.description}
+              onChange={(e) => setNewChallenge(prev => ({ ...prev, description: e.target.value }))}
+              className="w-full p-2.5 border rounded-lg text-sm resize-none"
+              rows={2}
+              maxLength={500}
+            />
             <input
-              id="challenge-end-date"
-              type="date"
-              value={newChallenge.end_date}
-              onChange={(e) => setNewChallenge(prev => ({ ...prev, end_date: e.target.value }))}
-              className="w-full p-2 border rounded text-sm"
+              type="text"
+              placeholder="Tema (opcional)"
+              value={newChallenge.theme}
+              onChange={(e) => setNewChallenge(prev => ({ ...prev, theme: e.target.value }))}
+              className="w-full p-2.5 border rounded-lg text-sm"
+              maxLength={50}
             />
-          </div>
-        </div>
-        <button
-          type="submit"
-          className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
-        >
-          Crear reto
-        </button>
-      </form>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label htmlFor="challenge-start-date" className="text-xs text-gray-500 mb-1 block">Inicio *</label>
+                <input
+                  id="challenge-start-date"
+                  type="date"
+                  value={newChallenge.start_date}
+                  onChange={(e) => setNewChallenge(prev => ({ ...prev, start_date: e.target.value }))}
+                  className="w-full p-2.5 border rounded-lg text-sm"
+                />
+              </div>
+              <div>
+                <label htmlFor="challenge-end-date" className="text-xs text-gray-500 mb-1 block">Fin *</label>
+                <input
+                  id="challenge-end-date"
+                  type="date"
+                  value={newChallenge.end_date}
+                  onChange={(e) => setNewChallenge(prev => ({ ...prev, end_date: e.target.value }))}
+                  className="w-full p-2.5 border rounded-lg text-sm"
+                />
+              </div>
+            </div>
+            <button
+              type="submit"
+              className="w-full py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+            >
+              Crear reto
+            </button>
+          </form>
 
-      {challengesLoading ? (
-        <p className="text-center text-sm">Cargando retos...</p>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="min-w-full bg-white border border-gray-200">
-            <thead>
-              <tr>
-                <th className="py-2 px-4 border-b text-left text-sm">Titulo</th>
-                <th className="py-2 px-4 border-b text-left text-sm">Tema</th>
-                <th className="py-2 px-4 border-b text-left text-sm">Inicio</th>
-                <th className="py-2 px-4 border-b text-left text-sm">Fin</th>
-                <th className="py-2 px-4 border-b text-left text-sm">Activo</th>
-                <th className="py-2 px-4 border-b text-left text-sm">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
+          {challengesLoading ? (
+            <p className="text-center text-sm text-gray-500">Cargando retos...</p>
+          ) : challenges.length === 0 ? (
+            <p className="text-center text-sm text-gray-500 py-8">No hay retos creados</p>
+          ) : (
+            <div className="space-y-2">
               {challenges.map((challenge) => (
-                <tr key={challenge.id} className="hover:bg-gray-50">
-                  <td className="py-2 px-4 border-b text-sm">{challenge.title}</td>
-                  <td className="py-2 px-4 border-b text-sm">{challenge.theme || '-'}</td>
-                  <td className="py-2 px-4 border-b text-sm">{challenge.start_date}</td>
-                  <td className="py-2 px-4 border-b text-sm">{challenge.end_date}</td>
-                  <td className="py-2 px-4 border-b text-sm">
-                    <span className={`px-2 py-0.5 rounded-full text-xs ${
-                      challenge.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
-                    }`}>
-                      {challenge.is_active ? 'Si' : 'No'}
-                    </span>
-                  </td>
-                  <td className="py-2 px-4 border-b text-sm">
+                <div key={challenge.id} className="bg-white border border-gray-200 rounded-lg p-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className="text-sm font-medium">{challenge.title}</span>
+                        <span className={`text-xs px-1.5 py-0.5 rounded-full ${
+                          challenge.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+                        }`}>
+                          {challenge.is_active ? 'Activo' : 'Inactivo'}
+                        </span>
+                      </div>
+                      {challenge.theme && (
+                        <span className="text-xs text-gray-500">Tema: {challenge.theme}</span>
+                      )}
+                      <div className="text-xs text-gray-400 mt-1">
+                        {challenge.start_date} → {challenge.end_date}
+                      </div>
+                    </div>
                     <button
                       onClick={() => toggleChallengeActive(challenge.id, challenge.is_active)}
-                      className={`text-sm ${
-                        challenge.is_active ? 'text-red-600 hover:text-red-800' : 'text-green-600 hover:text-green-800'
+                      className={`shrink-0 text-xs px-2 py-1 rounded hover:bg-opacity-10 ${
+                        challenge.is_active
+                          ? 'text-red-500 hover:bg-red-50'
+                          : 'text-green-600 hover:bg-green-50'
                       }`}
                     >
                       {challenge.is_active ? 'Desactivar' : 'Activar'}
                     </button>
-                  </td>
-                </tr>
+                  </div>
+                </div>
               ))}
-              {challenges.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="py-4 text-center text-sm">
-                    No hay retos creados
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* Initiatives Section */}
-      <h2 className="text-xl font-bold font-montserrat mt-10 mb-4">Iniciativas Comunitarias</h2>
-
-      {initiativeError && (
-        <div className="mb-4 p-3 bg-red-100 text-red-700 rounded">
-          {initiativeError}
-        </div>
-      )}
-
-      <form onSubmit={handleCreateInitiative} className="mb-6 p-4 bg-gray-50 rounded-lg space-y-3">
-        <h3 className="font-semibold text-sm">Crear nueva iniciativa</h3>
-        <input
-          type="text"
-          placeholder="Nombre *"
-          value={newInitiative.name}
-          onChange={(e) => setNewInitiative(prev => ({ ...prev, name: e.target.value }))}
-          className="w-full p-2 border rounded text-sm"
-          maxLength={100}
-        />
-        <textarea
-          placeholder="Descripción *"
-          value={newInitiative.description}
-          onChange={(e) => setNewInitiative(prev => ({ ...prev, description: e.target.value }))}
-          className="w-full p-2 border rounded text-sm resize-none"
-          rows={2}
-          maxLength={500}
-        />
-        <div className="flex gap-3">
-          <input
-            type="text"
-            placeholder="Icono (emoji)"
-            value={newInitiative.icon}
-            onChange={(e) => setNewInitiative(prev => ({ ...prev, icon: e.target.value }))}
-            className="w-20 p-2 border rounded text-sm text-center"
-            maxLength={10}
-          />
-          <div className="flex items-center gap-2">
-            <label htmlFor="init-color" className="text-xs text-gray-500">Color</label>
-            <input
-              id="init-color"
-              type="color"
-              value={newInitiative.color}
-              onChange={(e) => setNewInitiative(prev => ({ ...prev, color: e.target.value }))}
-              className="w-8 h-8 border rounded cursor-pointer"
-            />
-          </div>
-          <select
-            value={newInitiative.category}
-            onChange={(e) => setNewInitiative(prev => ({ ...prev, category: e.target.value }))}
-            className="flex-1 p-2 border rounded text-sm"
-          >
-            <option value="">Categoría (opcional)</option>
-            <option value="health">Salud</option>
-            <option value="mind">Mente</option>
-            <option value="productivity">Productividad</option>
-            <option value="wellness">Bienestar</option>
-            <option value="social">Social</option>
-            <option value="creativity">Creatividad</option>
-          </select>
-        </div>
-        <div className="flex gap-3">
-          <select
-            value={newInitiative.trackingType}
-            onChange={(e) => setNewInitiative(prev => ({ ...prev, trackingType: e.target.value }))}
-            className="w-40 p-2 border rounded text-sm"
-          >
-            <option value="binary">Check-in</option>
-            <option value="quantity">Cantidad</option>
-            <option value="timer">Temporizador</option>
-          </select>
-          {newInitiative.trackingType !== 'binary' && (
-            <>
-              <input
-                type="number"
-                placeholder="Meta *"
-                value={newInitiative.targetValue}
-                onChange={(e) => setNewInitiative(prev => ({ ...prev, targetValue: e.target.value }))}
-                className="w-24 p-2 border rounded text-sm"
-                min="1"
-              />
-              <input
-                type="text"
-                placeholder="Unidad *"
-                value={newInitiative.unit}
-                onChange={(e) => setNewInitiative(prev => ({ ...prev, unit: e.target.value }))}
-                className="flex-1 p-2 border rounded text-sm"
-                maxLength={20}
-              />
-            </>
+            </div>
           )}
         </div>
-        <div className="flex gap-3">
-          <div className="flex-1">
-            <label htmlFor="init-start-date" className="text-xs text-gray-500">Inicio *</label>
-            <input
-              id="init-start-date"
-              type="date"
-              value={newInitiative.startDate}
-              onChange={(e) => setNewInitiative(prev => ({ ...prev, startDate: e.target.value }))}
-              className="w-full p-2 border rounded text-sm"
-            />
-          </div>
-          <div className="flex-1">
-            <label htmlFor="init-end-date" className="text-xs text-gray-500">Fin (opcional)</label>
-            <input
-              id="init-end-date"
-              type="date"
-              value={newInitiative.endDate}
-              onChange={(e) => setNewInitiative(prev => ({ ...prev, endDate: e.target.value }))}
-              className="w-full p-2 border rounded text-sm"
-            />
-          </div>
-          <div className="w-28">
-            <label htmlFor="init-max-part" className="text-xs text-gray-500">Máx. personas</label>
-            <input
-              id="init-max-part"
-              type="number"
-              placeholder="Sin límite"
-              value={newInitiative.maxParticipants}
-              onChange={(e) => setNewInitiative(prev => ({ ...prev, maxParticipants: e.target.value }))}
-              className="w-full p-2 border rounded text-sm"
-              min="1"
-            />
-          </div>
-        </div>
-        <div className="flex gap-3 items-end">
-          <div className="w-32">
-            <label htmlFor="init-reminder" className="text-xs text-gray-500">Recordatorio</label>
-            <input
-              id="init-reminder"
-              type="time"
-              value={newInitiative.reminderTime}
-              onChange={(e) => setNewInitiative(prev => ({ ...prev, reminderTime: e.target.value }))}
-              className="w-full p-2 border rounded text-sm"
-            />
-          </div>
-          <button
-            type="submit"
-            className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
-          >
-            Crear iniciativa
-          </button>
-        </div>
-      </form>
+      )}
 
-      {initiativesLoading ? (
-        <p className="text-center text-sm">Cargando iniciativas...</p>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="min-w-full bg-white border border-gray-200">
-            <thead>
-              <tr>
-                <th className="py-2 px-3 border-b text-left text-sm">Nombre</th>
-                <th className="py-2 px-3 border-b text-left text-sm">Tipo</th>
-                <th className="py-2 px-3 border-b text-left text-sm">Participantes</th>
-                <th className="py-2 px-3 border-b text-left text-sm">Racha</th>
-                <th className="py-2 px-3 border-b text-left text-sm">Inicio</th>
-                <th className="py-2 px-3 border-b text-left text-sm">Activa</th>
-                <th className="py-2 px-3 border-b text-left text-sm">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
+      {/* Initiatives Tab */}
+      {activeTab === 'initiatives' && (
+        <div>
+          {initiativeError && (
+            <div className="mb-4 p-3 bg-red-100 text-red-700 rounded text-sm">{initiativeError}</div>
+          )}
+
+          <form onSubmit={handleCreateInitiative} className="mb-6 p-4 bg-gray-50 rounded-lg space-y-3">
+            <h3 className="font-semibold text-sm">Crear nueva iniciativa</h3>
+            <input
+              type="text"
+              placeholder="Nombre *"
+              value={newInitiative.name}
+              onChange={(e) => setNewInitiative(prev => ({ ...prev, name: e.target.value }))}
+              className="w-full p-2.5 border rounded-lg text-sm"
+              maxLength={100}
+            />
+            <textarea
+              placeholder="Descripción *"
+              value={newInitiative.description}
+              onChange={(e) => setNewInitiative(prev => ({ ...prev, description: e.target.value }))}
+              className="w-full p-2.5 border rounded-lg text-sm resize-none"
+              rows={2}
+              maxLength={500}
+            />
+            <div className="grid grid-cols-[auto_auto_1fr] gap-2 items-end">
+              <div>
+                <label htmlFor="init-icon" className="text-xs text-gray-500 mb-1 block">Icono</label>
+                <input
+                  id="init-icon"
+                  type="text"
+                  placeholder="🎯"
+                  value={newInitiative.icon}
+                  onChange={(e) => setNewInitiative(prev => ({ ...prev, icon: e.target.value }))}
+                  className="w-14 p-2.5 border rounded-lg text-sm text-center"
+                  maxLength={10}
+                />
+              </div>
+              <div>
+                <label htmlFor="init-color" className="text-xs text-gray-500 mb-1 block">Color</label>
+                <input
+                  id="init-color"
+                  type="color"
+                  value={newInitiative.color}
+                  onChange={(e) => setNewInitiative(prev => ({ ...prev, color: e.target.value }))}
+                  className="w-10 h-[42px] border rounded-lg cursor-pointer"
+                />
+              </div>
+              <div>
+                <label htmlFor="init-category" className="text-xs text-gray-500 mb-1 block">Categoría</label>
+                <select
+                  id="init-category"
+                  value={newInitiative.category}
+                  onChange={(e) => setNewInitiative(prev => ({ ...prev, category: e.target.value }))}
+                  className="w-full p-2.5 border rounded-lg text-sm"
+                >
+                  <option value="">Opcional</option>
+                  <option value="health">Salud</option>
+                  <option value="mind">Mente</option>
+                  <option value="productivity">Productividad</option>
+                  <option value="wellness">Bienestar</option>
+                  <option value="social">Social</option>
+                  <option value="creativity">Creatividad</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="init-tracking" className="text-xs text-gray-500 mb-1 block">Tipo de tracking</label>
+              <select
+                id="init-tracking"
+                value={newInitiative.trackingType}
+                onChange={(e) => setNewInitiative(prev => ({ ...prev, trackingType: e.target.value }))}
+                className="w-full p-2.5 border rounded-lg text-sm"
+              >
+                <option value="binary">Check-in (sí/no diario)</option>
+                <option value="quantity">Cantidad (meta numérica)</option>
+                <option value="timer">Temporizador (minutos)</option>
+              </select>
+            </div>
+
+            {newInitiative.trackingType !== 'binary' && (
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label htmlFor="init-target" className="text-xs text-gray-500 mb-1 block">Meta *</label>
+                  <input
+                    id="init-target"
+                    type="number"
+                    placeholder="Ej: 10"
+                    value={newInitiative.targetValue}
+                    onChange={(e) => setNewInitiative(prev => ({ ...prev, targetValue: e.target.value }))}
+                    className="w-full p-2.5 border rounded-lg text-sm"
+                    min="1"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="init-unit" className="text-xs text-gray-500 mb-1 block">Unidad *</label>
+                  <input
+                    id="init-unit"
+                    type="text"
+                    placeholder="Ej: min, vasos, km"
+                    value={newInitiative.unit}
+                    onChange={(e) => setNewInitiative(prev => ({ ...prev, unit: e.target.value }))}
+                    className="w-full p-2.5 border rounded-lg text-sm"
+                    maxLength={20}
+                  />
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label htmlFor="init-start-date" className="text-xs text-gray-500 mb-1 block">Inicio *</label>
+                <input
+                  id="init-start-date"
+                  type="date"
+                  value={newInitiative.startDate}
+                  onChange={(e) => setNewInitiative(prev => ({ ...prev, startDate: e.target.value }))}
+                  className="w-full p-2.5 border rounded-lg text-sm"
+                />
+              </div>
+              <div>
+                <label htmlFor="init-end-date" className="text-xs text-gray-500 mb-1 block">Fin (opcional)</label>
+                <input
+                  id="init-end-date"
+                  type="date"
+                  value={newInitiative.endDate}
+                  onChange={(e) => setNewInitiative(prev => ({ ...prev, endDate: e.target.value }))}
+                  className="w-full p-2.5 border rounded-lg text-sm"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label htmlFor="init-max-part" className="text-xs text-gray-500 mb-1 block">Máx. personas</label>
+                <input
+                  id="init-max-part"
+                  type="number"
+                  placeholder="Sin límite"
+                  value={newInitiative.maxParticipants}
+                  onChange={(e) => setNewInitiative(prev => ({ ...prev, maxParticipants: e.target.value }))}
+                  className="w-full p-2.5 border rounded-lg text-sm"
+                  min="1"
+                />
+              </div>
+              <div>
+                <label htmlFor="init-reminder" className="text-xs text-gray-500 mb-1 block">Recordatorio</label>
+                <div className="border rounded-lg overflow-hidden">
+                  <input
+                    id="init-reminder"
+                    type="time"
+                    value={newInitiative.reminderTime}
+                    onChange={(e) => setNewInitiative(prev => ({ ...prev, reminderTime: e.target.value }))}
+                    className="w-full p-2.5 text-sm"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              className="w-full py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+            >
+              Crear iniciativa
+            </button>
+          </form>
+
+          {initiativesLoading ? (
+            <p className="text-center text-sm text-gray-500">Cargando iniciativas...</p>
+          ) : initiatives.length === 0 ? (
+            <p className="text-center text-sm text-gray-500 py-8">No hay iniciativas creadas</p>
+          ) : (
+            <div className="space-y-2">
               {initiatives.map((init) => (
-                <tr key={init.id} className="hover:bg-gray-50">
-                  <td className="py-2 px-3 border-b text-sm">
-                    {init.icon && <span className="mr-1">{init.icon}</span>}
-                    {init.name}
-                  </td>
-                  <td className="py-2 px-3 border-b text-sm">
-                    {init.tracking_type === 'binary' ? 'Check-in' :
-                     init.tracking_type === 'quantity' ? `${init.target_value} ${init.unit}` :
-                     `${init.target_value} ${init.unit} (timer)`}
-                  </td>
-                  <td className="py-2 px-3 border-b text-sm">{init.participant_count}</td>
-                  <td className="py-2 px-3 border-b text-sm">{init.community_streak > 0 ? `🔥 ${init.community_streak}` : '-'}</td>
-                  <td className="py-2 px-3 border-b text-sm">{init.start_date}</td>
-                  <td className="py-2 px-3 border-b text-sm">
-                    <span className={`px-2 py-0.5 rounded-full text-xs ${
-                      init.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
-                    }`}>
-                      {init.is_active ? 'Sí' : 'No'}
-                    </span>
-                  </td>
-                  <td className="py-2 px-3 border-b text-sm">
+                <div key={init.id} className="bg-white border border-gray-200 rounded-lg p-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className="text-sm font-medium">
+                          {init.icon && <span className="mr-1">{init.icon}</span>}
+                          {init.name}
+                        </span>
+                        <span className={`text-xs px-1.5 py-0.5 rounded-full ${
+                          init.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+                        }`}>
+                          {init.is_active ? 'Activa' : 'Inactiva'}
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-gray-500 mt-1">
+                        <span>{trackingLabel(init.tracking_type, init.target_value, init.unit)}</span>
+                        <span>{init.participant_count} participantes</span>
+                        {init.community_streak > 0 && <span>🔥 {init.community_streak}</span>}
+                      </div>
+                      <div className="text-xs text-gray-400 mt-0.5">
+                        Desde {init.start_date}
+                        {init.end_date ? ` → ${init.end_date}` : ''}
+                      </div>
+                    </div>
                     <button
                       onClick={() => toggleInitiativeActive(init.id, init.is_active)}
-                      className={`text-sm ${
-                        init.is_active ? 'text-red-600 hover:text-red-800' : 'text-green-600 hover:text-green-800'
+                      className={`shrink-0 text-xs px-2 py-1 rounded ${
+                        init.is_active
+                          ? 'text-red-500 hover:bg-red-50'
+                          : 'text-green-600 hover:bg-green-50'
                       }`}
                     >
                       {init.is_active ? 'Desactivar' : 'Activar'}
                     </button>
-                  </td>
-                </tr>
+                  </div>
+                </div>
               ))}
-              {initiatives.length === 0 && (
-                <tr>
-                  <td colSpan={7} className="py-4 text-center text-sm">
-                    No hay iniciativas creadas
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+            </div>
+          )}
         </div>
       )}
     </div>

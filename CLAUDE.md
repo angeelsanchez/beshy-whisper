@@ -90,6 +90,13 @@ PostContext mantiene canales Supabase para `public:entries` (INSERT/DELETE) y `p
 - SIEMPRE usar `.safeParse()`, NUNCA `.parse()`
 - Devolver 400 con `parsed.error.flatten().fieldErrors` cuando falla la validación
 
+### Notificaciones (regla de diseño)
+- TODA nueva feature que envíe push notifications DEBE registrar su tipo en `NOTIFICATION_TYPES` y `NOTIFICATION_CATEGORIES` (en `src/types/notification-preferences.ts`)
+- TODA notificación nueva DEBE usar `sendPushToUserIfEnabled()` en vez de `sendPushToUser()` directamente
+- Esto garantiza que el usuario pueda desactivar cualquier tipo de notificación desde su perfil
+- Las preferencias se almacenan como JSONB sparse en la columna `notification_preferences` de `users` (solo valores `false`; `null` = todo habilitado)
+- Para envíos batch (cron, followers): usar `getBatchUserPreferences()` + `isNotificationEnabled()` en vez de queries individuales
+
 ### Seguridad (Zero Trust / OWASP Top 10 / Security by Design)
 
 **Principios fundamentales:**
@@ -293,6 +300,7 @@ Antes de escribir código en cualquier tarea, verificar:
 9. **Tamaño**: funciones <50 líneas, >3 params → objeto tipado
 10. **ESLint + Build**: verificar que `pnpm run lint` y `pnpm run build` pasen
 11. **Iconos**: preferir Lucide SVG via `<AppIcon>` para iconos funcionales; emojis ok donde aporten calidez
+12. **Notificaciones**: si la feature envía push, registrar tipo en `NOTIFICATION_TYPES` y usar `sendPushToUserIfEnabled()`
 
 ## Deuda Técnica Conocida
 
@@ -301,7 +309,7 @@ Problemas identificados pendientes de resolver (actualizar conforme se resuelvan
 - [ ] 27 rutas API usan import relativo para `authOptions` en vez de `@/app/api/auth/[...nextauth]/auth`
 - [ ] `getTodayDate()` duplicada en 7 archivos — extraer a `src/utils/date-helpers.ts`
 - [ ] `UUID_REGEX` duplicada en 7 archivos — extraer a `src/lib/constants.ts`
-- [ ] `webpush.setVapidDetails()` duplicada en 8 archivos — centralizar en `src/lib/push-notify.ts`
+- [ ] `webpush.setVapidDetails()` duplicada en 5 archivos — centralizar en `src/lib/push-notify.ts` (ya centralizado, falta migrar: `schedule-reminders`, `like-notification`, `send-like`, `send`, `test-push`)
 - [ ] `countRetomas()` + `RETOMA_THRESHOLD_DAYS` duplicados — extraer a `src/utils/habit-helpers.ts`
 - [ ] Cálculo de streak implementado en 3 lugares diferentes — extraer a `src/lib/streak.ts`
 - [ ] `PostContext.tsx` usa `console.error/warn` en vez del logger

@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth/next';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { authOptions } from '../auth/[...nextauth]/auth';
 import { toggleFollowSchema } from '@/lib/schemas/follows';
-import { sendPushToUser } from '@/lib/push-notify';
+import { sendPushToUserIfEnabled } from '@/lib/push-notify';
 import { logger } from '@/lib/logger';
 
 async function sendFollowNotification(followerId: string, targetUserId: string): Promise<void> {
@@ -20,7 +20,7 @@ async function sendFollowNotification(followerId: string, targetUserId: string):
 
   const followerName = followerData.name || followerData.bsy_id || 'Alguien';
 
-  await sendPushToUser(targetUserId, {
+  await sendPushToUserIfEnabled(targetUserId, {
     title: '👤 Nuevo seguidor',
     body: `${followerName} ha empezado a seguirte`,
     tag: 'follow-notification',
@@ -30,7 +30,7 @@ async function sendFollowNotification(followerId: string, targetUserId: string):
       follower_user_id: followerId,
       follower_name: followerName,
     },
-  });
+  }, 'follow');
 }
 
 export async function POST(request: NextRequest) {

@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth/next';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { authOptions } from '../../auth/[...nextauth]/auth';
 import { toggleHabitLogSchema } from '@/lib/schemas/habits';
-import { sendPushToUser } from '@/lib/push-notify';
+import { sendPushToUserIfEnabled } from '@/lib/push-notify';
 import { logger } from '@/lib/logger';
 
 const RETOMA_THRESHOLD_DAYS = 7;
@@ -48,12 +48,12 @@ function isFutureDate(dateStr: string): boolean {
 }
 
 async function sendMilestoneNotification(userId: string, milestone: MilestoneResult, habitName: string): Promise<void> {
-  await sendPushToUser(userId, {
+  await sendPushToUserIfEnabled(userId, {
     title: milestone.message,
     body: `Hábito: ${habitName}`,
     tag: `habit-milestone-${milestone.type}`,
     data: { url: '/habits', type: 'habit_milestone' },
-  });
+  }, 'habit_milestone');
 }
 
 function detectMilestone(

@@ -25,6 +25,10 @@ const ProfileEditForm = dynamic(() => import('@/components/ProfileEditForm'), {
   ssr: false,
 });
 
+const NotificationPreferencesPanel = dynamic(() => import('@/components/NotificationPreferencesPanel'), {
+  ssr: false,
+});
+
 // Dynamically import NameUpdateForm to avoid hydration issues
 const NameUpdateForm = dynamic(() => import('@/components/NameUpdateForm'), {
   ssr: false,
@@ -168,6 +172,7 @@ export default function Profile() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [isEditFormExpanded, setIsEditFormExpanded] = useState(false);
+  const [isNotificationsExpanded, setIsNotificationsExpanded] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteSuccess, setDeleteSuccess] = useState<string | null>(null);
@@ -725,6 +730,24 @@ export default function Profile() {
               <span>{isEditFormExpanded ? 'Cerrar editor' : 'Editar Perfil'}</span>
             </button>
 
+            <button
+              onClick={() => setIsNotificationsExpanded(prev => !prev)}
+              className={`w-full px-4 py-2.5 rounded-lg flex items-center justify-center gap-2 text-sm font-medium transition-all duration-200 ${
+                isNotificationsExpanded
+                  ? isDay ? 'bg-[#4A2E1B] text-[#F5F0E1]' : 'bg-[#F5F0E1] text-[#2D1E1A]'
+                  : isDay
+                    ? 'bg-[#4A2E1B]/10 hover:bg-[#4A2E1B]/20 text-[#4A2E1B]'
+                    : 'bg-[#F5F0E1]/10 hover:bg-[#F5F0E1]/20 text-[#F5F0E1]'
+              }`}
+              aria-label="Configurar notificaciones"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+                <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+              </svg>
+              <span>{isNotificationsExpanded ? 'Cerrar notificaciones' : 'Notificaciones'}</span>
+            </button>
+
             <div className="flex gap-2 w-full">
               <div className="relative flex-1">
                 {showLogoutConfirmation ? (
@@ -826,7 +849,13 @@ export default function Profile() {
           </div>
         </div>
       )}
-      
+
+      {isOwnProfile && isNotificationsExpanded && (
+        <div className={`mb-6 p-4 rounded-lg ${isDay ? 'bg-white/10' : 'bg-white/5'}`}>
+          <NotificationPreferencesPanel />
+        </div>
+      )}
+
       {/* Total likes count and publications count */}
       {userProfile && (
         <div className={`flex justify-around mb-8 p-4 rounded-lg shadow-md ${isDay ? 'bg-[#F5F0E1]' : 'bg-[#2D1E1A]'}`}>

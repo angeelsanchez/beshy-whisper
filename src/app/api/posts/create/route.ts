@@ -4,18 +4,10 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { authOptions } from '../../auth/[...nextauth]/auth';
 import { createPostSchema } from '@/lib/schemas/posts';
 import { logger } from '@/lib/logger';
-import webpush from 'web-push';
-
-webpush.setVapidDetails(
-  process.env.VAPID_EMAIL || 'mailto:your@email.com',
-  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || '',
-  process.env.VAPID_PRIVATE_KEY || ''
-);
+import { sendPushToUserIfEnabled } from '@/lib/push-notify';
 
 async function notifyFollowers(userId: string, userName: string, entryId: string) {
   try {
-    if (!process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) return;
-
     const { data: followers, error: followError } = await supabaseAdmin
       .from('follows')
       .select('follower_id')
@@ -25,41 +17,17 @@ async function notifyFollowers(userId: string, userName: string, entryId: string
 
     const followerIds = followers.map(f => f.follower_id);
 
-    const { data: tokens, error: tokenError } = await supabaseAdmin
-      .from('push_tokens')
-      .select('user_id, endpoint, p256dh, auth')
-      .in('user_id', followerIds);
-
-    if (tokenError || !tokens?.length) return;
-
-    const payload = JSON.stringify({
-      title: `✨ ${userName} ha publicado un nuevo whisper`,
-      body: 'Echa un vistazo a lo que ha compartido',
-      icon: '/favicon.ico',
-      badge: '/favicon.ico',
-      tag: 'follow-post-notification',
-      requireInteraction: false,
-      data: { url: `/feed?highlight=${entryId}`, type: 'follow_post' },
-    });
-
-    const sendPromises = tokens.map(async (token) => {
-      try {
-        await webpush.sendNotification(
-          { endpoint: token.endpoint, keys: { p256dh: token.p256dh, auth: token.auth } },
-          payload,
-          { TTL: 60 * 60, headers: { Urgency: 'normal' } }
-        );
-      } catch (err) {
-        const statusCode = (err as { statusCode?: number }).statusCode;
-        if (statusCode === 410 || statusCode === 404) {
-          await supabaseAdmin.from('push_tokens').delete().eq('endpoint', token.endpoint);
-          logger.info('Removed invalid push token', { userId: token.user_id });
-        }
-      }
-    });
+    const sendPromises = followerIds.map(followerId =>
+      sendPushToUserIfEnabled(followerId, {
+        title: `✨ ${userName} ha publicado un nuevo whisper`,
+        body: 'Echa un vistazo a lo que ha compartido',
+        tag: 'follow-post-notification',
+        data: { url: `/feed?highlight=${entryId}`, type: 'follow_post' },
+      }, 'follow_post').catch(() => {})
+    );
 
     await Promise.allSettled(sendPromises);
-    logger.info('Follow post notifications sent', { userId, followerCount: tokens.length });
+    logger.info('Follow post notifications sent', { userId, followerCount: followerIds.length });
   } catch (error) {
     logger.error('Error notifying followers', { detail: error instanceof Error ? error.message : String(error) });
   }

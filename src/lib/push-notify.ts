@@ -1,8 +1,10 @@
 import webpush from 'web-push';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { logger } from '@/lib/logger';
+import { isNotificationEnabledForUser } from '@/lib/notification-preferences';
+import type { NotificationType } from '@/types/notification-preferences';
 
-interface PushPayload {
+export interface PushPayload {
   readonly title: string;
   readonly body: string;
   readonly tag: string;
@@ -86,4 +88,17 @@ export async function sendPushToUser(
 
     return false;
   }
+}
+
+export async function sendPushToUserIfEnabled(
+  userId: string,
+  payload: PushPayload,
+  notificationType: NotificationType
+): Promise<boolean> {
+  const enabled = await isNotificationEnabledForUser(userId, notificationType);
+  if (!enabled) {
+    logger.info('Notification skipped (user preference)', { userId, type: notificationType });
+    return false;
+  }
+  return sendPushToUser(userId, payload);
 }

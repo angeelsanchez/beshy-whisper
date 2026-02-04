@@ -1,15 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
-import webpush from 'web-push';
 import { safeCompare } from '@/utils/crypto-helpers';
 import { logger } from '@/lib/logger';
-
-// Configure web-push with VAPID keys
-webpush.setVapidDetails(
-  process.env.VAPID_EMAIL || 'mailto:your@email.com',
-  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || '',
-  process.env.VAPID_PRIVATE_KEY || ''
-);
+import { sendPushToUser } from '@/lib/push-notify';
+import { isNotificationEnabled, getBatchUserPreferences } from '@/lib/notification-preferences';
+import type { NotificationType } from '@/types/notification-preferences';
 
 // Helper function to calculate user's current streak
 async function calculateUserStreak(userId: string): Promise<number> {
@@ -135,64 +130,16 @@ async function logSentReminder(
   }
 }
 
-async function sendPushNotification(userId: string, title: string, body: string, data?: Record<string, unknown>) {
-  try {
-    // Get user's push token
-    const { data: pushTokenData, error: tokenError } = await supabaseAdmin
-      .from('push_tokens')
-      .select('endpoint, p256dh, auth')
-      .eq('user_id', userId)
-      .maybeSingle();
-    
-    if (tokenError || !pushTokenData) {
-      logger.info('User has no push token registered', { userId });
-      return false;
-    }
+type PreferencesRecord = Record<string, boolean> | null;
 
-    // Check if VAPID keys are configured
-    if (!process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
-      logger.error('VAPID keys not configured');
-      return false;
-    }
-    
-    // Prepare the push subscription object
-    const pushSubscription = {
-      endpoint: pushTokenData.endpoint,
-      keys: {
-        p256dh: pushTokenData.p256dh,
-        auth: pushTokenData.auth
-      }
-    };
-    
-    // Prepare the notification payload
-    const payload = JSON.stringify({
-      title,
-      body,
-      icon: '/favicon.ico',
-      badge: '/favicon.ico',
-      tag: 'reminder-notification',
-      requireInteraction: true,
-      data: {
-        url: '/create',
-        type: 'reminder',
-        ...data
-      }
-    });
-    
-    // Send the push notification
-    await webpush.sendNotification(pushSubscription, payload, {
-      TTL: 60 * 60 * 2, // 2 hours
-      headers: {
-        'Urgency': 'high'
-      }
-    });
-    
-    logger.info('Reminder notification sent successfully', { userId, title });
-    return true;
-  } catch (error) {
-    logger.error('Error sending reminder notification', { userId, detail: error instanceof Error ? error.message : String(error) });
-    return false;
-  }
+async function sendReminderPush(userId: string, title: string, body: string, data?: Record<string, unknown>): Promise<boolean> {
+  return sendPushToUser(userId, {
+    title,
+    body,
+    tag: 'reminder-notification',
+    requireInteraction: true,
+    data: { url: '/create', type: 'reminder', ...data },
+  });
 }
 
 interface UserPostStatus {
@@ -218,19 +165,23 @@ async function sendAndLogReminder(
   userId: string,
   title: string,
   body: string,
-  reminderData: Record<string, unknown>
+  reminderData: Record<string, unknown>,
+  notificationType: NotificationType,
+  userPrefs: PreferencesRecord
 ): Promise<boolean> {
+  if (!isNotificationEnabled(userPrefs, notificationType)) return false;
+
   const alreadySent = await hasReminderBeenSentToday(userId, reminderData.reminder_type as string);
   if (alreadySent) return false;
 
-  const sent = await sendPushNotification(userId, title, body, reminderData);
+  const sent = await sendReminderPush(userId, title, body, reminderData);
   if (sent) {
     await logSentReminder(userId, title, body, reminderData);
   }
   return sent;
 }
 
-async function processMorningReminder(userId: string, currentTime: number, posts: UserPostStatus): Promise<ReminderResult> {
+async function processMorningReminder(userId: string, currentTime: number, posts: UserPostStatus, prefs: PreferencesRecord): Promise<ReminderResult> {
   if (!isInTimeWindow(currentTime, 600, 630) || posts.hasDayPost) {
     return { sent: false, type: 'notification' };
   }
@@ -239,15 +190,19 @@ async function processMorningReminder(userId: string, currentTime: number, posts
     userId,
     '🌅 ¡Hora de tu Whisper matutino!',
     'No olvides compartir tu whisper del día para mantener tu racha',
-    { reminder_type: 'morning', time: '10:00' }
+    { reminder_type: 'morning', time: '10:00' },
+    'reminder_morning',
+    prefs
   );
   return { sent, type: 'notification' };
 }
 
-async function processStreakWarning(userId: string, currentTime: number, posts: UserPostStatus): Promise<ReminderResult> {
+async function processStreakWarning(userId: string, currentTime: number, posts: UserPostStatus, prefs: PreferencesRecord): Promise<ReminderResult> {
   if (!isInTimeWindow(currentTime, 900, 1081) || (posts.hasDayPost && posts.hasNightPost)) {
     return { sent: false, type: 'streak_warning' };
   }
+
+  if (!isNotificationEnabled(prefs, 'reminder_streak')) return { sent: false, type: 'streak_warning' };
 
   const alreadySent = await hasReminderBeenSentToday(userId, 'streak_warning');
   if (alreadySent) return { sent: false, type: 'streak_warning' };
@@ -259,12 +214,14 @@ async function processStreakWarning(userId: string, currentTime: number, posts: 
     userId,
     '⚠️ ¡Cuidado con tu racha!',
     `Tienes una racha de ${streak} días. ¡Postea ahora para no perderla!`,
-    { reminder_type: 'streak_warning', current_streak: streak }
+    { reminder_type: 'streak_warning', current_streak: streak },
+    'reminder_streak',
+    prefs
   );
   return { sent, type: 'streak_warning' };
 }
 
-async function processNightReminder(userId: string, currentTime: number, posts: UserPostStatus): Promise<ReminderResult> {
+async function processNightReminder(userId: string, currentTime: number, posts: UserPostStatus, prefs: PreferencesRecord): Promise<ReminderResult> {
   if (!isInTimeWindow(currentTime, 1290, 1320) || posts.hasNightPost) {
     return { sent: false, type: 'notification' };
   }
@@ -273,19 +230,21 @@ async function processNightReminder(userId: string, currentTime: number, posts: 
     userId,
     '🌙 ¡Hora de tu Whisper nocturno!',
     'Completa tu día con tu whisper de la noche',
-    { reminder_type: 'night', time: '21:30' }
+    { reminder_type: 'night', time: '21:30' },
+    'reminder_night',
+    prefs
   );
   return { sent, type: 'notification' };
 }
 
-async function processUserReminders(userId: string): Promise<{ notifications: number; streakWarnings: number }> {
+async function processUserReminders(userId: string, prefs: PreferencesRecord): Promise<{ notifications: number; streakWarnings: number }> {
   const posts = await checkUserTodayPosts(userId);
   const currentTime = getCurrentTimeInMinutes();
 
   const results = await Promise.all([
-    processMorningReminder(userId, currentTime, posts),
-    processStreakWarning(userId, currentTime, posts),
-    processNightReminder(userId, currentTime, posts),
+    processMorningReminder(userId, currentTime, posts, prefs),
+    processStreakWarning(userId, currentTime, posts, prefs),
+    processNightReminder(userId, currentTime, posts, prefs),
   ]);
 
   let notifications = 0;
@@ -340,17 +299,23 @@ async function processHabitReminders(): Promise<number> {
 
   const completedHabitIds = new Set((todayLogs ?? []).map(l => l.habit_id));
 
+  const habitUserIds = [...new Set(candidateHabits.map(h => h.user_id))];
+  const habitPrefsMap = await getBatchUserPreferences(habitUserIds);
+
   let sent = 0;
   for (const habit of candidateHabits) {
     if (completedHabitIds.has(habit.id)) continue;
 
+    const userPrefs = habitPrefsMap.get(habit.user_id) ?? null;
     const reminderType = `habit_${habit.id}`;
     const icon = habit.icon ?? '🎯';
     const success = await sendAndLogReminder(
       habit.user_id,
       `${icon} ¡Hora de: ${habit.name}!`,
       `No olvides completar tu hábito "${habit.name}" hoy`,
-      { reminder_type: reminderType, habit_id: habit.id, url: '/habits' }
+      { reminder_type: reminderType, habit_id: habit.id, url: '/habits' },
+      'reminder_habit',
+      userPrefs
     );
     if (success) sent++;
   }
@@ -373,12 +338,16 @@ async function processReminders(): Promise<{ notificationsSent: number; streakWa
 
     logger.info('Processing reminders for users', { count: users.length });
 
+    const userIds = users.map(u => u.user_id);
+    const prefsMap = await getBatchUserPreferences(userIds);
+
     let notificationsSent = 0;
     let streakWarningsSent = 0;
 
     for (const user of users) {
       try {
-        const { notifications, streakWarnings } = await processUserReminders(user.user_id);
+        const userPrefs = prefsMap.get(user.user_id) ?? null;
+        const { notifications, streakWarnings } = await processUserReminders(user.user_id, userPrefs);
         notificationsSent += notifications;
         streakWarningsSent += streakWarnings;
       } catch (error) {

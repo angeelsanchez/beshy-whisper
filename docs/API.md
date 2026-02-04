@@ -202,6 +202,20 @@ Actualiza la mini bio del usuario.
 - **Schema Zod**: `{ bio: string().max(160).trim() }`
 - **Respuesta**: `200 { bio }` | `400/401/500`
 
+### GET /api/user/notification-preferences
+Obtiene las preferencias de notificación del usuario.
+- **Auth**: Requerida
+- **Respuesta**: `200 { preferences: Record<NotificationType, boolean> }` | `401/500`
+- **Nota**: Retorna `{}` si el usuario no ha personalizado preferencias (todas habilitadas por defecto)
+
+### PUT /api/user/notification-preferences
+Actualiza las preferencias de notificación del usuario.
+- **Auth**: Requerida
+- **Schema Zod**: `{ preferences: Record<NotificationType, boolean> }`
+- **Lógica**: Mergea con preferencias existentes, elimina claves `true` (representación sparse), guarda `null` si todo habilitado
+- **Respuesta**: `200 { preferences }` | `400/401/500`
+- **Tipos disponibles**: `like`, `follow`, `follow_post`, `chat`, `reminder_morning`, `reminder_streak`, `reminder_night`, `reminder_habit`, `initiative_reminder`, `initiative_weekly`, `initiative_streak`, `initiative_checkin`, `habit_milestone`
+
 ## Notifications
 
 ### POST /api/notifications/register

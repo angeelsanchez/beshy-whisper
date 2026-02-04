@@ -2,16 +2,22 @@
 
 import { useParams, useRouter } from 'next/navigation';
 import { useState, useCallback } from 'react';
+import dynamic from 'next/dynamic';
 import { useAuthSession } from '@/hooks/useAuthSession';
 import { useTheme } from '@/context/ThemeContext';
 import { useInitiativeDetail } from '@/hooks/useInitiativeDetail';
 import { useInitiativeCheckin } from '@/hooks/useInitiativeCheckin';
 import { useInitiatives } from '@/hooks/useInitiatives';
+import type { Initiative, InitiativeProgress, InitiativeParticipant, InitiativeDailyProgress } from '@/types/initiative';
 import InitiativeProgressRing from '@/components/InitiativeProgressRing';
 import InitiativeCheckinButton from '@/components/InitiativeCheckinButton';
 import InitiativeWeeklyGrid from '@/components/InitiativeWeeklyGrid';
 import InitiativeCommunityStreak from '@/components/InitiativeCommunityStreak';
 import InitiativeParticipantList from '@/components/InitiativeParticipantList';
+
+const InitiativeChat = dynamic(() => import('@/components/InitiativeChat'), { ssr: false });
+
+type DetailTab = 'details' | 'chat';
 
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr + 'T12:00:00');
@@ -23,6 +29,171 @@ function getTrackingLabel(type: string, targetValue: number | null, unit: string
   if (type === 'timer' && targetValue && unit) return `${targetValue} ${unit}/día (temporizador)`;
   if (type === 'quantity' && targetValue && unit) return `${targetValue} ${unit}/día`;
   return type;
+}
+
+function getTabClass(isActive: boolean, isDay: boolean, subtextColor: string): string {
+  if (!isActive) return subtextColor;
+  return isDay ? 'bg-[#4A2E1B] text-[#F5F0E1]' : 'bg-[#F5F0E1] text-[#2D1E1A]';
+}
+
+interface InitiativeDetailsProps {
+  readonly initiative: Initiative;
+  readonly todayProgress: InitiativeDailyProgress | undefined;
+  readonly progress: InitiativeProgress | null;
+  readonly participants: ReadonlyArray<InitiativeParticipant>;
+  readonly isJoined: boolean;
+  readonly isExpired: boolean;
+  readonly userCheckedInToday: boolean;
+  readonly userTodayValue: number | null;
+  readonly checking: boolean;
+  readonly joiningFromDetail: boolean;
+  readonly leaving: boolean;
+  readonly isDay: boolean;
+  readonly textColor: string;
+  readonly subtextColor: string;
+  readonly dividerColor: string;
+  readonly sectionBg: string;
+  readonly onCheckin: (value?: number) => void;
+  readonly onJoin: () => void;
+  readonly onLeave: () => void;
+}
+
+function InitiativeDetails({
+  initiative,
+  todayProgress,
+  progress,
+  participants,
+  isJoined,
+  isExpired,
+  userCheckedInToday,
+  userTodayValue,
+  checking,
+  joiningFromDetail,
+  leaving,
+  isDay,
+  textColor,
+  subtextColor,
+  dividerColor,
+  sectionBg,
+  onCheckin,
+  onJoin,
+  onLeave,
+}: InitiativeDetailsProps): React.ReactElement {
+  return (
+    <>
+      <div className="flex justify-center">
+        <InitiativeProgressRing
+          completedCount={todayProgress?.completed_count ?? 0}
+          totalParticipants={todayProgress?.total_participants ?? Math.max(initiative.participant_count, 1)}
+          color={initiative.color}
+          icon={initiative.icon}
+          size={160}
+          isDay={isDay}
+        />
+      </div>
+
+      {isJoined && !isExpired && (
+        <InitiativeCheckinButton
+          initiativeId={initiative.id}
+          trackingType={initiative.tracking_type}
+          targetValue={initiative.target_value}
+          unit={initiative.unit}
+          currentValue={userTodayValue}
+          isCheckedIn={userCheckedInToday}
+          checking={checking}
+          color={initiative.color}
+          isDay={isDay}
+          onCheckin={onCheckin}
+        />
+      )}
+
+      {!isJoined && !isExpired && (
+        <button
+          onClick={onJoin}
+          disabled={joiningFromDetail}
+          className={`w-full py-3 rounded-xl font-semibold text-sm text-white transition-all ${
+            joiningFromDetail ? 'opacity-50 cursor-not-allowed' : 'active:scale-[0.98]'
+          }`}
+          style={{ backgroundColor: initiative.color }}
+        >
+          {joiningFromDetail ? 'Uniéndose...' : 'Unirse a esta iniciativa'}
+        </button>
+      )}
+
+      {isExpired && (
+        <div className={`text-center py-3 rounded-xl text-sm font-medium ${sectionBg} ${subtextColor}`}>
+          Esta iniciativa ha finalizado
+        </div>
+      )}
+
+      {progress && progress.weekly.length > 0 && (
+        <section>
+          <h2 className={`text-xs font-semibold uppercase mb-2 ${subtextColor}`}>
+            Última semana
+          </h2>
+          <InitiativeWeeklyGrid weekly={progress.weekly} isDay={isDay} />
+        </section>
+      )}
+
+      {progress && progress.community_streak > 0 && (
+        <InitiativeCommunityStreak streak={progress.community_streak} isDay={isDay} />
+      )}
+
+      {participants.length > 0 && (
+        <section>
+          <h2 className={`text-xs font-semibold uppercase mb-2 ${subtextColor}`}>
+            Participantes ({participants.length})
+          </h2>
+          <InitiativeParticipantList
+            participants={participants}
+            isDay={isDay}
+          />
+        </section>
+      )}
+
+      <div className={`border-t pt-4 space-y-2 ${dividerColor}`}>
+        <h2 className={`text-xs font-semibold uppercase ${subtextColor}`}>
+          Información
+        </h2>
+        <p className={`text-sm ${textColor}`}>{initiative.description}</p>
+        <div className={`grid grid-cols-2 gap-2 text-xs ${subtextColor}`}>
+          <div>
+            <span className="font-medium">Inicio:</span> {formatDate(initiative.start_date)}
+          </div>
+          {initiative.end_date && (
+            <div>
+              <span className="font-medium">Fin:</span> {formatDate(initiative.end_date)}
+            </div>
+          )}
+          <div>
+            <span className="font-medium">Tipo:</span> {getTrackingLabel(initiative.tracking_type, initiative.target_value, initiative.unit)}
+          </div>
+          {initiative.max_participants && (
+            <div>
+              <span className="font-medium">Máximo:</span> {initiative.max_participants} personas
+            </div>
+          )}
+          {progress && (
+            <div>
+              <span className="font-medium">Días activos:</span> {progress.days_completed}/{progress.total_days}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {isJoined && (
+        <button
+          onClick={onLeave}
+          disabled={leaving}
+          className={`w-full py-2.5 rounded-xl text-xs font-medium text-red-500/70 transition-all ${
+            leaving ? 'opacity-50 cursor-not-allowed' : 'active:scale-[0.98]'
+          } ${sectionBg}`}
+        >
+          {leaving ? 'Saliendo...' : 'Salir de esta iniciativa'}
+        </button>
+      )}
+    </>
+  );
 }
 
 export default function InitiativeDetailPage(): React.ReactElement | null {
@@ -45,6 +216,7 @@ export default function InitiativeDetailPage(): React.ReactElement | null {
   const { checkin, checking } = useInitiativeCheckin();
   const { join, leave } = useInitiatives();
 
+  const [activeTab, setActiveTab] = useState<DetailTab>('details');
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [leaving, setLeaving] = useState(false);
@@ -149,116 +321,53 @@ export default function InitiativeDetailPage(): React.ReactElement | null {
           </div>
         </div>
 
-        <div className="flex justify-center">
-          <InitiativeProgressRing
-            completedCount={todayProgress?.completed_count ?? 0}
-            totalParticipants={todayProgress?.total_participants ?? Math.max(initiative.participant_count, 1)}
-            color={initiative.color}
-            icon={initiative.icon}
-            size={160}
-            isDay={isDay}
-          />
-        </div>
-
-        {isJoined && !isExpired && (
-          <InitiativeCheckinButton
-            initiativeId={initiative.id}
-            trackingType={initiative.tracking_type}
-            targetValue={initiative.target_value}
-            unit={initiative.unit}
-            currentValue={userTodayValue}
-            isCheckedIn={userCheckedInToday}
-            checking={checking}
-            color={initiative.color}
-            isDay={isDay}
-            onCheckin={handleCheckin}
-          />
-        )}
-
-        {!isJoined && !isExpired && (
-          <button
-            onClick={handleJoinFromDetail}
-            disabled={joiningFromDetail}
-            className={`w-full py-3 rounded-xl font-semibold text-sm text-white transition-all ${
-              joiningFromDetail ? 'opacity-50 cursor-not-allowed' : 'active:scale-[0.98]'
-            }`}
-            style={{ backgroundColor: initiative.color }}
-          >
-            {joiningFromDetail ? 'Uniéndose...' : 'Unirse a esta iniciativa'}
-          </button>
-        )}
-
-        {isExpired && (
-          <div className={`text-center py-3 rounded-xl text-sm font-medium ${sectionBg} ${subtextColor}`}>
-            Esta iniciativa ha finalizado
-          </div>
-        )}
-
-        {progress && progress.weekly.length > 0 && (
-          <section>
-            <h2 className={`text-xs font-semibold uppercase mb-2 ${subtextColor}`}>
-              Última semana
-            </h2>
-            <InitiativeWeeklyGrid weekly={progress.weekly} isDay={isDay} />
-          </section>
-        )}
-
-        {progress && progress.community_streak > 0 && (
-          <InitiativeCommunityStreak streak={progress.community_streak} isDay={isDay} />
-        )}
-
-        {participants.length > 0 && (
-          <section>
-            <h2 className={`text-xs font-semibold uppercase mb-2 ${subtextColor}`}>
-              Participantes ({participants.length})
-            </h2>
-            <InitiativeParticipantList
-              participants={participants}
-              isDay={isDay}
-            />
-          </section>
-        )}
-
-        <div className={`border-t pt-4 space-y-2 ${dividerColor}`}>
-          <h2 className={`text-xs font-semibold uppercase ${subtextColor}`}>
-            Información
-          </h2>
-          <p className={`text-sm ${textColor}`}>{initiative.description}</p>
-          <div className={`grid grid-cols-2 gap-2 text-xs ${subtextColor}`}>
-            <div>
-              <span className="font-medium">Inicio:</span> {formatDate(initiative.start_date)}
-            </div>
-            {initiative.end_date && (
-              <div>
-                <span className="font-medium">Fin:</span> {formatDate(initiative.end_date)}
-              </div>
-            )}
-            <div>
-              <span className="font-medium">Tipo:</span> {getTrackingLabel(initiative.tracking_type, initiative.target_value, initiative.unit)}
-            </div>
-            {initiative.max_participants && (
-              <div>
-                <span className="font-medium">Máximo:</span> {initiative.max_participants} personas
-              </div>
-            )}
-            {progress && (
-              <div>
-                <span className="font-medium">Días activos:</span> {progress.days_completed}/{progress.total_days}
-              </div>
-            )}
-          </div>
-        </div>
-
         {isJoined && (
-          <button
-            onClick={handleLeave}
-            disabled={leaving}
-            className={`w-full py-2.5 rounded-xl text-xs font-medium text-red-500/70 transition-all ${
-              leaving ? 'opacity-50 cursor-not-allowed' : 'active:scale-[0.98]'
-            } ${sectionBg}`}
-          >
-            {leaving ? 'Saliendo...' : 'Salir de esta iniciativa'}
-          </button>
+          <div className={`flex gap-1 rounded-xl p-1 ${sectionBg}`}>
+            <button
+              onClick={() => setActiveTab('details')}
+              className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${getTabClass(activeTab === 'details', isDay, subtextColor)}`}
+            >
+              Detalles
+            </button>
+            <button
+              onClick={() => setActiveTab('chat')}
+              className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${getTabClass(activeTab === 'chat', isDay, subtextColor)}`}
+            >
+              Chat
+            </button>
+          </div>
+        )}
+
+        {activeTab === 'details' && (
+          <InitiativeDetails
+            initiative={initiative}
+            todayProgress={todayProgress}
+            progress={progress}
+            participants={participants}
+            isJoined={isJoined}
+            isExpired={isExpired}
+            userCheckedInToday={userCheckedInToday}
+            userTodayValue={userTodayValue}
+            checking={checking}
+            joiningFromDetail={joiningFromDetail}
+            leaving={leaving}
+            isDay={isDay}
+            textColor={textColor}
+            subtextColor={subtextColor}
+            dividerColor={dividerColor}
+            sectionBg={sectionBg}
+            onCheckin={handleCheckin}
+            onJoin={handleJoinFromDetail}
+            onLeave={handleLeave}
+          />
+        )}
+
+        {activeTab === 'chat' && isJoined && initiativeId && (
+          <InitiativeChat
+            initiativeId={initiativeId}
+            userId={session.user.id}
+            isDay={isDay}
+          />
         )}
       </div>
 

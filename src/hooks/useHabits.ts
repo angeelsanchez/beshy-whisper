@@ -87,6 +87,15 @@ export function useHabits() {
     fetchHabits();
   }, [fetchHabits]);
 
+  useEffect(() => {
+    function handleFocus(): void {
+      fetchHabits();
+    }
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [fetchHabits]);
+
   const createHabit = useCallback(async (data: CreateHabitData): Promise<Habit | null> => {
     if (!session?.user?.id) return null;
 

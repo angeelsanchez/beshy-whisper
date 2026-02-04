@@ -180,101 +180,11 @@ export default function CreatePage() {
           </div>
         </header>
         
-        {/* Inspirational Message Section */}
-        <div className={`mb-8 p-6 rounded-xl shadow-lg transition-all duration-300 ${
-          isDay 
-            ? 'bg-white/80 border border-[#4A2E1B]/10' 
-            : 'bg-[#2D1E1A]/80 border border-[#F5F0E1]/10'
-        }`}>
-          <div className="text-center mb-4">
-            <div className="flex items-center justify-center gap-2 mb-3">
-              <Image
-                src="/Whisper.svg"
-                alt="Whisper"
-                width={32}
-                height={32}
-                className="h-6 w-auto"
-                style={{
-                  filter: isDay 
-                    ? 'brightness(0) saturate(100%) invert(29%) sepia(17%) saturate(1290%) hue-rotate(359deg) brightness(96%) contrast(86%)'
-                    : 'brightness(0) saturate(100%) invert(96%) sepia(8%) saturate(349%) hue-rotate(17deg) brightness(101%) contrast(94%)'
-                }}
-              />
-              <span className="text-lg font-semibold">2 Whispers al día</span>
-              <Image
-                src="/Whisper.svg"
-                alt="Whisper"
-                width={32}
-                height={32}
-                className="h-6 w-auto"
-                style={{
-                  filter: isDay 
-                    ? 'brightness(0) saturate(100%) invert(29%) sepia(17%) saturate(1290%) hue-rotate(359deg) brightness(96%) contrast(86%)'
-                    : 'brightness(0) saturate(100%) invert(96%) sepia(8%) saturate(349%) hue-rotate(17deg) brightness(101%) contrast(94%)'
-                }}
-              />
-            </div>
-            <p className="text-base mb-4 leading-relaxed">
-              <span className="font-medium">Para mantener tu vida, tus ideas y tus sueños en armonía.</span>
-              <br />
-              Dos momentos perfectos para reflexionar y crecer.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-4">
-            {/* Day Posts */}
-            <div className={`p-4 rounded-lg transition-all duration-300 ${
-              isDay 
-                ? 'bg-[#F5F0E1] border-l-4 border-[#FFD700]' 
-                : 'bg-[#3A2B26] border-l-4 border-[#FFD700]'
-            }`}>
-              <div className="flex items-center gap-2 mb-2">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#FFD700" viewBox="0 0 16 16">
-                  <path d="M8 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM8 0a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 0zm0 13a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 13zm8-5a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2a.5.5 0 0 1 .5.5zM3 8a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2A.5.5 0 0 1 3 8zm10.657-5.657a.5.5 0 0 1 0 .707l-1.414 1.415a.5.5 0 1 1-.707-.708l1.414-1.414a.5.5 0 0 1 .707 0zm-9.193 9.193a.5.5 0 0 1 0 .707L3.05 13.657a.5.5 0 0 1-.707-.707l1.414-1.414a.5.5 0 0 1 .707 0zm9.193 2.121a.5.5 0 0 1-.707 0l-1.414-1.414a.5.5 0 0 1 .707-.707l1.414 1.414a.5.5 0 0 1 0 .707zM4.464 4.465a.5.5 0 0 1-.707 0L2.343 3.05a.5.5 0 1 1 .707-.707l1.414 1.414a.5.5 0 0 1 0 .708z"/>
-                </svg>
-                <h3 className="font-semibold text-sm">Whispers de Día</h3>
-              </div>
-              <ul className="text-xs space-y-1 opacity-80">
-                <li>• <strong>Objetivos y metas</strong></li>
-                <li>• <strong>Planes y proyectos</strong></li>
-                <li>• <strong>Logros del día</strong></li>
-                <li>• <strong>Momentos de gratitud</strong></li>
-              </ul>
-            </div>
-
-            {/* Night Posts */}
-            <div className={`p-4 rounded-lg transition-all duration-300 ${
-              isDay 
-                ? 'bg-[#F5F0E1] border-l-4 border-[#6B73FF]' 
-                : 'bg-[#3A2B26] border-l-4 border-[#6B73FF]'
-            }`}>
-              <div className="flex items-center gap-2 mb-2">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#6B73FF" viewBox="0 0 16 16">
-                  <path d="M6 .278a.768.768 0 0 1 .08.858 7.208 7.208 0 0 0-.878 3.46c0 4.021 3.278 7.277 7.318 7.277.527 0 1.04-.055 1.533-.16a.787.787 0 0 1 .81.316.733.733 0 0 1-.031.893A8.349 8.349 0 0 1 8.344 16C3.734 16 0 12.286 0 7.71 0 4.266 2.114 1.312 5.124.06A.752.752 0 0 1 6 .278z"/>
-                </svg>
-                <h3 className="font-semibold text-sm">Whispers de Noche</h3>
-              </div>
-              <ul className="text-xs space-y-1 opacity-80">
-                <li>• <strong>Reflexiones profundas</strong></li>
-                <li>• <strong>Pensamientos íntimos</strong></li>
-                <li>• <strong>Aprendizajes del día</strong></li>
-                <li>• <strong>Sueños y aspiraciones</strong></li>
-              </ul>
-            </div>
-          </div>
-
-          <div className="text-center mt-4">
-            <p className="text-xs opacity-70">
-              <span className="font-medium">¿Sabías que...</span> Los posts de día pueden incluir objetivos que puedes marcar como completados.
-            </p>
-          </div>
-        </div>
-        
         {/* Subtle Reminder for Missing Posts - Context Aware */}
         {session && !isGuest && !statusLoading && contextualMissingCount > 0 && (
           <div className={`mb-4 p-3 rounded-lg border-l-4 transition-all duration-300 ${
-            isDay 
-              ? 'bg-amber-50 border-amber-400 text-amber-800' 
+            isDay
+              ? 'bg-amber-50 border-amber-400 text-amber-800'
               : 'bg-amber-900/20 border-amber-500 text-amber-200'
           }`}>
             <div className="flex items-center gap-2">
@@ -303,12 +213,102 @@ export default function CreatePage() {
             </div>
           </div>
         )}
-        
-        {/* Daily Quote */}
-        <DailyQuote isDay={isDay} />
 
         {/* Whisper Creation Form */}
         <WhisperForm />
+
+        {/* Inspirational Message Section */}
+        <div className={`mb-8 mt-8 p-6 rounded-xl shadow-lg transition-all duration-300 ${
+          isDay
+            ? 'bg-white/80 border border-[#4A2E1B]/10'
+            : 'bg-[#2D1E1A]/80 border border-[#F5F0E1]/10'
+        }`}>
+          <div className="text-center mb-4">
+            <div className="flex items-center justify-center gap-2 mb-3">
+              <Image
+                src="/Whisper.svg"
+                alt="Whisper"
+                width={32}
+                height={32}
+                className="h-6 w-auto"
+                style={{
+                  filter: isDay
+                    ? 'brightness(0) saturate(100%) invert(29%) sepia(17%) saturate(1290%) hue-rotate(359deg) brightness(96%) contrast(86%)'
+                    : 'brightness(0) saturate(100%) invert(96%) sepia(8%) saturate(349%) hue-rotate(17deg) brightness(101%) contrast(94%)'
+                }}
+              />
+              <span className="text-lg font-semibold">2 Whispers al día</span>
+              <Image
+                src="/Whisper.svg"
+                alt="Whisper"
+                width={32}
+                height={32}
+                className="h-6 w-auto"
+                style={{
+                  filter: isDay
+                    ? 'brightness(0) saturate(100%) invert(29%) sepia(17%) saturate(1290%) hue-rotate(359deg) brightness(96%) contrast(86%)'
+                    : 'brightness(0) saturate(100%) invert(96%) sepia(8%) saturate(349%) hue-rotate(17deg) brightness(101%) contrast(94%)'
+                }}
+              />
+            </div>
+            <p className="text-base mb-4 leading-relaxed">
+              <span className="font-medium">Para mantener tu vida, tus ideas y tus sueños en armonía.</span>
+              <br />
+              Dos momentos perfectos para reflexionar y crecer.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-4">
+            {/* Day Posts */}
+            <div className={`p-4 rounded-lg transition-all duration-300 ${
+              isDay
+                ? 'bg-[#F5F0E1] border-l-4 border-[#FFD700]'
+                : 'bg-[#3A2B26] border-l-4 border-[#FFD700]'
+            }`}>
+              <div className="flex items-center gap-2 mb-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#FFD700" viewBox="0 0 16 16">
+                  <path d="M8 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM8 0a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 0zm0 13a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 13zm8-5a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2a.5.5 0 0 1 .5.5zM3 8a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2A.5.5 0 0 1 3 8zm10.657-5.657a.5.5 0 0 1 0 .707l-1.414 1.415a.5.5 0 1 1-.707-.708l1.414-1.414a.5.5 0 0 1 .707 0zm-9.193 9.193a.5.5 0 0 1 0 .707L3.05 13.657a.5.5 0 0 1-.707-.707l1.414-1.414a.5.5 0 0 1 .707 0zm9.193 2.121a.5.5 0 0 1-.707 0l-1.414-1.414a.5.5 0 0 1 .707-.707l1.414 1.414a.5.5 0 0 1 0 .707zM4.464 4.465a.5.5 0 0 1-.707 0L2.343 3.05a.5.5 0 1 1 .707-.707l1.414 1.414a.5.5 0 0 1 0 .708z"/>
+                </svg>
+                <h3 className="font-semibold text-sm">Whispers de Día</h3>
+              </div>
+              <ul className="text-xs space-y-1 opacity-80">
+                <li>• <strong>Objetivos y metas</strong></li>
+                <li>• <strong>Planes y proyectos</strong></li>
+                <li>• <strong>Logros del día</strong></li>
+                <li>• <strong>Momentos de gratitud</strong></li>
+              </ul>
+            </div>
+
+            {/* Night Posts */}
+            <div className={`p-4 rounded-lg transition-all duration-300 ${
+              isDay
+                ? 'bg-[#F5F0E1] border-l-4 border-[#6B73FF]'
+                : 'bg-[#3A2B26] border-l-4 border-[#6B73FF]'
+            }`}>
+              <div className="flex items-center gap-2 mb-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#6B73FF" viewBox="0 0 16 16">
+                  <path d="M6 .278a.768.768 0 0 1 .08.858 7.208 7.208 0 0 0-.878 3.46c0 4.021 3.278 7.277 7.318 7.277.527 0 1.04-.055 1.533-.16a.787.787 0 0 1 .81.316.733.733 0 0 1-.031.893A8.349 8.349 0 0 1 8.344 16C3.734 16 0 12.286 0 7.71 0 4.266 2.114 1.312 5.124.06A.752.752 0 0 1 6 .278z"/>
+                </svg>
+                <h3 className="font-semibold text-sm">Whispers de Noche</h3>
+              </div>
+              <ul className="text-xs space-y-1 opacity-80">
+                <li>• <strong>Reflexiones profundas</strong></li>
+                <li>• <strong>Pensamientos íntimos</strong></li>
+                <li>• <strong>Aprendizajes del día</strong></li>
+                <li>• <strong>Sueños y aspiraciones</strong></li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="text-center mt-4">
+            <p className="text-xs opacity-70">
+              <span className="font-medium">¿Sabías que...</span> Los posts de día pueden incluir objetivos que puedes marcar como completados.
+            </p>
+          </div>
+        </div>
+
+        {/* Daily Quote */}
+        <DailyQuote isDay={isDay} />
         
         {/* Footer */}
         <footer className="text-center mt-10 text-xs opacity-70">

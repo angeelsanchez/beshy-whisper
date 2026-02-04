@@ -32,13 +32,17 @@ src/
 │   └── providers.tsx        # ThemeProvider > SessionProvider > PostProvider > AuthWrapper
 ├── components/              # React client components (Avatar, ProfileEditForm, HabitCard, etc.)
 ├── context/                 # PostContext (entries + realtime), ThemeContext (día/noche)
+├── data/                    # Datos estáticos (quotes, writing-prompts, habit-templates)
 ├── hooks/                   # Custom hooks (auth, notifications, activity, streak, stats, habits)
-├── lib/                     # Clientes externos
+├── lib/                     # Clientes externos y lógica compartida
 │   ├── supabase.ts          # Cliente anon (client-side reads + writes con RLS)
 │   ├── supabase-admin.ts    # Cliente service_role (server-side, bypasses RLS)
+│   ├── logger.ts            # Logger estructurado con integración Sentry
+│   ├── push-notify.ts       # Configuración VAPID centralizada + helpers de push
+│   ├── constants.ts         # Constantes compartidas (regex, thresholds, time windows)
 │   └── schemas/             # Zod schemas compartidos
 ├── types/                   # Declaraciones TypeScript (.d.ts)
-├── utils/                   # Funciones puras (format, UUID, html-escape, crypto, image-compress)
+├── utils/                   # Funciones puras (format, UUID, html-escape, crypto, date-helpers)
 └── middleware.ts             # Rate limiting por IP en /api/*
 ```
 
@@ -63,6 +67,12 @@ PostContext mantiene canales Supabase para `public:entries` (INSERT/DELETE) y `p
 - NUNCA usar `@ts-ignore` o `@ts-expect-error`
 - Parámetros de función y return types deben estar tipados explícitamente
 - Usar `readonly` para props y datos inmutables
+
+### Imports y Path Aliases
+- SIEMPRE usar el alias `@/` para imports. NUNCA usar rutas relativas con `../` excepto en tests colocados (`__tests__/`) que importan su módulo adyacente
+- `@/*` está configurado en `tsconfig.json` apuntando a `./src/*`
+- Ejemplos correctos: `import { supabaseAdmin } from '@/lib/supabase-admin'`, `import { authOptions } from '@/app/api/auth/[...nextauth]/auth'`
+- Ejemplo incorrecto: `import { authOptions } from '../../auth/[...nextauth]/auth'`
 
 ### Validación con Zod
 - TODA ruta API DEBE validar su input con un schema Zod definido al inicio del archivo
@@ -109,13 +119,35 @@ PostContext mantiene canales Supabase para `public:entries` (INSERT/DELETE) y `p
 - Usar clases responsive de Tailwind (`sm:`, `md:`, `lg:`) en lugar de media queries custom
 - Testear visualmente en viewports: 375px (mobile), 768px (tablet), 1024px+ (desktop)
 
-### Calidad de Código
+### Clean Code y Arquitectura
+
+**Principios fundamentales:**
 - Código autoexplicativo ANTES que comentarios. Los comentarios solo explican el POR QUÉ cuando no es obvio
 - NO poner comentarios tipo `// Get the session`, `// Return response`, `// Import dependencies`
-- NO `console.log` en producción. Usar el logger de `src/lib/logger.ts`
-- `console.error` SOLO en catch blocks de errores reales, sin datos sensibles
-- DRY: utilidades compartidas en `src/utils/`, tipos en `src/types/`, schemas Zod en `src/lib/schemas/`
 - No archivos temporales (no `.tmp.tsx`, no `-fixed.ts`, no `-old.ts`)
+
+**DRY (Don't Repeat Yourself):**
+- Utilidades compartidas en `src/utils/`, tipos en `src/types/`, schemas Zod en `src/lib/schemas/`
+- Si una función aparece en más de un archivo, DEBE extraerse a `src/utils/` o `src/lib/`
+- Funciones de fecha reutilizables (`getTodayDate`, `isFutureDate`, `formatDate`) van en `src/utils/date-helpers.ts`
+- Constantes compartidas (regex, thresholds, time windows) van en `src/lib/constants.ts`
+- Configuración de web-push (VAPID) se centraliza en `src/lib/push-notify.ts` — NUNCA duplicar `webpush.setVapidDetails()` en cada ruta
+
+**Separación de responsabilidades:**
+- Los route handlers se limitan a: validar sesión → validar input (Zod) → llamar lógica de negocio → devolver respuesta
+- La lógica de negocio compleja (>30 líneas) DEBE extraerse a funciones en `src/lib/` o `src/utils/`
+- Funciones de más de 50 líneas deben dividirse en funciones más pequeñas con nombres descriptivos
+- Funciones con más de 3 parámetros deben usar un objeto tipado como parámetro (interface/type)
+
+**No magic numbers:**
+- Toda constante numérica con significado semántico debe ser una constante con nombre descriptivo
+- Ejemplos: `const MORNING_START_MINUTES = 600` (no `if (minutes > 600)`), `const MAX_PARTICIPANTS_NOTIFY = 50`
+
+**Logger (OBLIGATORIO en todo el proyecto):**
+- NO `console.log` en producción. Usar el logger de `src/lib/logger.ts`
+- NO `console.error` ni `console.warn` en componentes React ni contexts — usar `logger.error()` y `logger.warn()`
+- `logger.error()` envía automáticamente a Sentry
+- `logger.warn()` crea breadcrumb en Sentry
 
 ### Git
 - Conventional commits oneline: `feat:`, `fix:`, `sec:`, `refactor:`, `test:`, `docs:`, `chore:`
@@ -125,14 +157,31 @@ PostContext mantiene canales Supabase para `public:entries` (INSERT/DELETE) y `p
 - .mcp.json NUNCA se commitea (está en .gitignore)
 
 ### Testing
-- Framework: Vitest + React Testing Library
-- Tests colocados: `__tests__/` junto al módulo o sufijo `.test.ts`
-- Todas las rutas API: tests de happy path, errores de validación, errores de auth, edge cases
-- Todas las utilidades: tests unitarios
-- Coverage target: 80% utils, 70% API routes
+
+**Framework:** Vitest + React Testing Library
+
+**Ubicación:** `__tests__/` junto al módulo o sufijo `.test.ts` / `.test.tsx`
+
+**Coverage targets (Testing Pyramid):**
+
+| Capa | Target | Qué testear |
+|------|--------|-------------|
+| `src/utils/`, `src/lib/`, `src/lib/schemas/` | **100%** | Funciones puras, helpers, validaciones Zod, lógica de negocio extraída |
+| `src/app/api/` (API routes) | **80%** | Happy path, errores de validación (Zod), errores de auth (401/403), ownership (IDOR), edge cases |
+| `src/components/` | **80%** | Renderizado condicional, interacciones de usuario, estados de loading/error, props edge cases |
+| `src/hooks/` | **80%** | Lógica de estado, side effects, valores de retorno, cleanup |
+| `src/types/`, `*.d.ts` | **0%** | No hay lógica que testear — son solo declaraciones |
+
+**Regla de oro:** toda nueva feature o bugfix DEBE incluir tests de las funciones y rutas que toca. No se acepta código nuevo sin tests de lo clave.
+
+**Patrones de testing:**
 - Mock de Supabase a nivel de módulo (no por test)
 - Mock de NextAuth `getServerSession` para tests de API routes
-- Scripts: `pnpm test`, `pnpm run test:run`, `pnpm run test:coverage`
+- Para componentes: `render()` + `screen.getByRole/Text` + `userEvent` para interacciones
+- Para hooks: `renderHook()` de `@testing-library/react`
+- Tests deben ser independientes entre sí (no compartir estado mutable)
+
+**Scripts:** `pnpm test`, `pnpm run test:run`, `pnpm run test:coverage`
 
 ### Estructura de API Routes
 Patrón estándar para toda ruta:
@@ -216,8 +265,40 @@ Estas integraciones están planificadas. Al implementarlas, consultar `docs/INTE
 | **Snyk** | Escaneo de vulnerabilidades en dependencias (CI) | Planificado |
 | **Sentry** | Error tracking + performance monitoring (client + server) | Integrado |
 | **Microsoft Clarity** | Session recordings + heatmaps (solo client) | Planificado |
-| **SonarQube** | Análisis estático de código (quality gates) | Planificado |
+| **SonarQube** | Análisis estático de código (quality gates) | Configurado (`sonar-project.properties`) |
 | **Offline-first PWA** | Funcionalidad offline completa en mobile (SW cache, sync queue, optimistic UI) | Planificado |
+
+## Checklist Pre-Implementación (OBLIGATORIO antes de cada tarea)
+
+Antes de escribir código en cualquier tarea, verificar:
+
+1. **Imports**: usar `@/` en todo import (nunca `../../`)
+2. **Validación Zod**: toda ruta API valida con `.safeParse()` y schema en `src/lib/schemas/`
+3. **Session + ownership**: toda mutación verifica sesión (401) y ownership (403)
+4. **Logger**: usar `logger` de `@/lib/logger` en vez de `console.*` (en API routes Y componentes)
+5. **DRY**: antes de crear una función, buscar si ya existe en `src/utils/` o `src/lib/`
+6. **Tests**: escribir tests de toda función/ruta nueva o modificada. Seguir la Testing Pyramid
+7. **TypeScript**: sin `any`, sin `@ts-ignore`, tipos explícitos
+8. **Constantes**: sin magic numbers, extraer a constantes con nombre
+9. **Tamaño**: funciones <50 líneas, >3 params → objeto tipado
+10. **ESLint + Build**: verificar que `pnpm run lint` y `pnpm run build` pasen
+
+## Deuda Técnica Conocida
+
+Problemas identificados pendientes de resolver (actualizar conforme se resuelvan):
+
+- [ ] 27 rutas API usan import relativo para `authOptions` en vez de `@/app/api/auth/[...nextauth]/auth`
+- [ ] `getTodayDate()` duplicada en 7 archivos — extraer a `src/utils/date-helpers.ts`
+- [ ] `UUID_REGEX` duplicada en 7 archivos — extraer a `src/lib/constants.ts`
+- [ ] `webpush.setVapidDetails()` duplicada en 8 archivos — centralizar en `src/lib/push-notify.ts`
+- [ ] `countRetomas()` + `RETOMA_THRESHOLD_DAYS` duplicados — extraer a `src/utils/habit-helpers.ts`
+- [ ] Cálculo de streak implementado en 3 lugares diferentes — extraer a `src/lib/streak.ts`
+- [ ] `PostContext.tsx` usa `console.error/warn` en vez del logger
+- [ ] `HabitWizard.tsx` (1125 líneas) — dividir en subcomponentes
+- [ ] `generate-image/route.ts` tiene 3 templates HTML con estructura duplicada
+- [ ] Magic numbers para time windows en cron-reminders sin constantes con nombre
+- [ ] Faltan Error Boundaries en el client-side
+- [ ] 6+ rutas API sin validación Zod: `generate-image`, `send-like`, `send`, `like-notification`, `cron-reminders`, `test-push`
 
 ## Documentación Adicional
 

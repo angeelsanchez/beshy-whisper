@@ -756,7 +756,7 @@ function ReminderToggle({
   }`;
 
   return (
-    <div className="space-y-3 overflow-hidden">
+    <div className="space-y-3">
       <div className={`flex items-center justify-between p-3 rounded-xl ${
         isDay ? 'bg-[#4A2E1B]/5' : 'bg-[#F5F0E1]/5'
       }`}>
@@ -789,7 +789,7 @@ function ReminderToggle({
         </button>
       </div>
       {enabled && (
-        <div className="overflow-hidden">
+        <div>
           <span className={`block text-sm font-medium mb-1 ${isDay ? 'text-[#4A2E1B]' : 'text-[#F5F0E1]'}`}>
             Hora del recordatorio
           </span>
@@ -797,7 +797,7 @@ function ReminderToggle({
             type="time"
             value={time}
             onChange={e => onTimeChange(e.target.value)}
-            className={inputCls}
+            className={`${inputCls} max-w-full box-border`}
           />
         </div>
       )}

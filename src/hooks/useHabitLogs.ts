@@ -84,12 +84,16 @@ export function useHabitLogs(habitIds: string[], month?: string) {
   }, [fetchLogs]);
 
   useEffect(() => {
-    function handleFocus(): void {
+    function handleRefresh(): void {
       fetchLogs();
     }
 
-    window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
+    window.addEventListener('focus', handleRefresh);
+    window.addEventListener('habits-changed', handleRefresh);
+    return () => {
+      window.removeEventListener('focus', handleRefresh);
+      window.removeEventListener('habits-changed', handleRefresh);
+    };
   }, [fetchLogs]);
 
   const isCompleted = useCallback((habitId: string, date: string): boolean => {

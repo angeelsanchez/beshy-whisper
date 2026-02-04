@@ -373,6 +373,10 @@ export default function InitiativeDetailPage(): React.ReactElement | null {
           <InitiativeChat
             initiativeId={initiativeId}
             userId={session.user.id}
+            userName={session.user.name ?? null}
+            userAlias={session.user.alias ?? null}
+            userPhotoUrl={session.user.profile_photo_url ?? null}
+            participants={participants}
             isDay={isDay}
           />
         )}

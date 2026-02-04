@@ -1,8 +1,21 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { InitiativeChatMessage } from '@/types/initiative';
+
+interface ChatUserInfo {
+  readonly name: string | null;
+  readonly alias: string | null;
+  readonly profilePhotoUrl: string | null;
+}
+
+interface ChatParticipant {
+  readonly user_id: string;
+  readonly name: string | null;
+  readonly alias: string | null;
+  readonly profile_photo_url: string | null;
+}
 
 interface UseInitiativeChatReturn {
   readonly messages: ReadonlyArray<InitiativeChatMessage>;
@@ -15,7 +28,12 @@ interface UseInitiativeChatReturn {
   readonly loadMore: () => Promise<void>;
 }
 
-export function useInitiativeChat(initiativeId: string, userId: string): UseInitiativeChatReturn {
+export function useInitiativeChat(
+  initiativeId: string,
+  userId: string,
+  currentUser: ChatUserInfo,
+  participants: ReadonlyArray<ChatParticipant>,
+): UseInitiativeChatReturn {
   const [messages, setMessages] = useState<InitiativeChatMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -23,6 +41,20 @@ export function useInitiativeChat(initiativeId: string, userId: string): UseInit
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const pendingIdsRef = useRef<Set<string>>(new Set());
+
+  const participantMap = useMemo(() => {
+    const map = new Map<string, { name: string | null; alias: string | null; photo: string | null }>();
+    for (const p of participants) {
+      map.set(p.user_id, { name: p.name, alias: p.alias, photo: p.profile_photo_url });
+    }
+    return map;
+  }, [participants]);
+
+  const participantMapRef = useRef(participantMap);
+  participantMapRef.current = participantMap;
+
+  const currentUserRef = useRef(currentUser);
+  currentUserRef.current = currentUser;
 
   const fetchMessages = useCallback(async (cursor?: string): Promise<void> => {
     const isInitial = !cursor;
@@ -62,6 +94,47 @@ export function useInitiativeChat(initiativeId: string, userId: string): UseInit
     fetchMessages();
   }, [fetchMessages]);
 
+  const handleRealtimeInsert = useCallback((payload: { new: Record<string, unknown> }): void => {
+    const newMsg = payload.new as { id: string; initiative_id: string; user_id: string; content: string; created_at: string };
+
+    if (pendingIdsRef.current.has(newMsg.id)) {
+      pendingIdsRef.current.delete(newMsg.id);
+      return;
+    }
+
+    setMessages(prev => {
+      if (prev.some(m => m.id === newMsg.id)) return prev;
+
+      const optimisticIdx = prev.findIndex(
+        m => m.id.startsWith('temp-') && m.user_id === newMsg.user_id && m.content === newMsg.content
+      );
+
+      if (optimisticIdx !== -1) {
+        const updated = [...prev];
+        updated[optimisticIdx] = {
+          ...updated[optimisticIdx],
+          id: newMsg.id,
+          created_at: newMsg.created_at,
+        };
+        return updated;
+      }
+
+      const cached = prev.find(m => m.user_id === newMsg.user_id && !m.id.startsWith('temp-'));
+      const participant = participantMapRef.current.get(newMsg.user_id);
+
+      return [...prev, {
+        id: newMsg.id,
+        initiative_id: newMsg.initiative_id,
+        user_id: newMsg.user_id,
+        content: newMsg.content,
+        created_at: newMsg.created_at,
+        user_name: cached?.user_name ?? participant?.name ?? null,
+        user_alias: cached?.user_alias ?? participant?.alias ?? null,
+        user_profile_photo_url: cached?.user_profile_photo_url ?? participant?.photo ?? null,
+      }];
+    });
+  }, []);
+
   useEffect(() => {
     const channel = supabase
       .channel(`initiative-chat:${initiativeId}`)
@@ -70,49 +143,13 @@ export function useInitiativeChat(initiativeId: string, userId: string): UseInit
         schema: 'public',
         table: 'initiative_messages',
         filter: `initiative_id=eq.${initiativeId}`,
-      }, (payload) => {
-        const newMsg = payload.new as { id: string; initiative_id: string; user_id: string; content: string; created_at: string };
-
-        if (pendingIdsRef.current.has(newMsg.id)) {
-          pendingIdsRef.current.delete(newMsg.id);
-          return;
-        }
-
-        setMessages(prev => {
-          if (prev.some(m => m.id === newMsg.id)) return prev;
-
-          const optimisticIdx = prev.findIndex(
-            m => m.id.startsWith('temp-') && m.user_id === newMsg.user_id && m.content === newMsg.content
-          );
-
-          if (optimisticIdx !== -1) {
-            const updated = [...prev];
-            updated[optimisticIdx] = {
-              ...updated[optimisticIdx],
-              id: newMsg.id,
-              created_at: newMsg.created_at,
-            };
-            return updated;
-          }
-
-          return [...prev, {
-            id: newMsg.id,
-            initiative_id: newMsg.initiative_id,
-            user_id: newMsg.user_id,
-            content: newMsg.content,
-            created_at: newMsg.created_at,
-            user_name: null,
-            user_alias: null,
-            user_profile_photo_url: null,
-          }];
-        });
-      })
+      }, handleRealtimeInsert)
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel).catch(() => {});
     };
-  }, [initiativeId]);
+  }, [initiativeId, handleRealtimeInsert]);
 
   const sendMessage = useCallback(async (content: string): Promise<boolean> => {
     setSending(true);
@@ -125,9 +162,9 @@ export function useInitiativeChat(initiativeId: string, userId: string): UseInit
       user_id: userId,
       content: content.trim(),
       created_at: new Date().toISOString(),
-      user_name: null,
-      user_alias: null,
-      user_profile_photo_url: null,
+      user_name: currentUserRef.current.name,
+      user_alias: currentUserRef.current.alias,
+      user_profile_photo_url: currentUserRef.current.profilePhotoUrl,
     };
 
     setMessages(prev => [...prev, optimisticMsg]);

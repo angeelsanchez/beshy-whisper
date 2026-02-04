@@ -4,7 +4,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { authOptions } from '@/app/api/auth/[...nextauth]/auth';
 import { logger } from '@/lib/logger';
 import { sendMessageSchema, messagesQuerySchema } from '@/lib/schemas/initiative-chat';
-import { sendPushToUserIfEnabled } from '@/lib/push-notify';
+import { sendPushToUser } from '@/lib/push-notify';
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -229,11 +229,11 @@ async function sendNotificationsToParticipants(
 
     if (recentMsg && recentMsg.length > 0) continue;
 
-    await sendPushToUserIfEnabled(p.user_id, {
+    await sendPushToUser(p.user_id, {
       title,
       body: `${senderName}: ${preview}`,
       tag: `chat-${initiativeId}`,
       data: { url: `/initiatives/${initiativeId}`, type: 'chat' },
-    }, 'chat');
+    });
   }
 }

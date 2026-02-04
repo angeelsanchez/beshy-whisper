@@ -2,27 +2,18 @@
 
 import { useRef, useEffect, useCallback } from 'react';
 import { useInitiativeChat } from '@/hooks/useInitiativeChat';
-import type { InitiativeParticipant } from '@/types/initiative';
 import InitiativeChatMessage from '@/components/InitiativeChatMessage';
 import InitiativeChatInput from '@/components/InitiativeChatInput';
 
 interface InitiativeChatProps {
   readonly initiativeId: string;
   readonly userId: string;
-  readonly userName: string | null;
-  readonly userAlias: string | null;
-  readonly userPhotoUrl: string | null;
-  readonly participants: ReadonlyArray<InitiativeParticipant>;
   readonly isDay: boolean;
 }
 
 export default function InitiativeChat({
   initiativeId,
   userId,
-  userName,
-  userAlias,
-  userPhotoUrl,
-  participants,
   isDay,
 }: InitiativeChatProps): React.ReactElement {
   const {
@@ -34,12 +25,7 @@ export default function InitiativeChat({
     error,
     sendMessage,
     loadMore,
-  } = useInitiativeChat(
-    initiativeId,
-    userId,
-    { name: userName, alias: userAlias, profilePhotoUrl: userPhotoUrl },
-    participants,
-  );
+  } = useInitiativeChat(initiativeId, userId);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const isAtBottomRef = useRef(true);
@@ -77,7 +63,7 @@ export default function InitiativeChat({
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center flex-1 min-h-0">
+      <div className="flex flex-col items-center justify-center h-[calc(100vh-220px)]">
         <div className={`w-6 h-6 border-2 rounded-full animate-spin ${
           isDay ? 'border-[#4A2E1B]/20 border-t-[#4A2E1B]' : 'border-[#F5F0E1]/20 border-t-[#F5F0E1]'
         }`} />
@@ -86,7 +72,7 @@ export default function InitiativeChat({
   }
 
   return (
-    <div className="flex flex-col flex-1 min-h-0">
+    <div className="flex flex-col h-[calc(100vh-220px)]">
       {error && (
         <div className="px-4 py-2 text-xs text-red-500 text-center">{error}</div>
       )}
@@ -94,7 +80,7 @@ export default function InitiativeChat({
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto px-3 py-2 min-h-0"
+        className="flex-1 overflow-y-auto px-3 py-2"
       >
         {hasMore && (
           <div className="text-center py-2">

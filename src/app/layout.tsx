@@ -8,6 +8,7 @@ import dynamic from "next/dynamic";
 const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 
 const AdaptiveNavigation = dynamic(() => import("@/components/AdaptiveNavigation"));
+const FloatingTimer = dynamic(() => import("@/components/FloatingTimer"));
 const InstallPrompt = dynamic(() => import("@/components/InstallPrompt"));
 const NotificationBanner = dynamic(() => import("@/components/NotificationBanner"));
 
@@ -189,6 +190,7 @@ export default function RootLayout({
             <main className="lg:pl-20 pb-16 lg:pb-0 safe-area-top overflow-x-hidden">
               {children}
             </main>
+            <FloatingTimer />
             <AdaptiveNavigation />
             <NotificationBanner />
             <InstallPrompt />

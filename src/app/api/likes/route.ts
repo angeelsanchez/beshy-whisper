@@ -4,7 +4,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { authOptions } from '../auth/[...nextauth]/auth';
 import { toggleLikeSchema } from '@/lib/schemas/likes';
 import { uuidSchema } from '@/lib/schemas/common';
-import { sendPushToUser } from '@/lib/push-notify';
+import { sendPushToUserIfEnabled } from '@/lib/push-notify';
 import { logger } from '@/lib/logger';
 
 async function sendLikeNotification(entryId: string, likerUserId: string): Promise<void> {
@@ -34,7 +34,7 @@ async function sendLikeNotification(entryId: string, likerUserId: string): Promi
 
   const likerName = likerData.name || likerData.bsy_id || 'Alguien';
 
-  await sendPushToUser(entryData.user_id, {
+  await sendPushToUserIfEnabled(entryData.user_id, {
     title: '❤️ Nuevo like en tu Whisper',
     body: `${likerName} le dio like a tu whisper`,
     tag: 'like-notification',
@@ -45,7 +45,7 @@ async function sendLikeNotification(entryId: string, likerUserId: string): Promi
       liker_user_id: likerUserId,
       liker_name: likerName,
     },
-  });
+  }, 'like');
 }
 
 export async function POST(request: NextRequest) {

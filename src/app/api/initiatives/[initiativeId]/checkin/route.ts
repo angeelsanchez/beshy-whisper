@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth/next';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { authOptions } from '../../../auth/[...nextauth]/auth';
 import { initiativeCheckinSchema } from '@/lib/schemas/initiatives';
-import { sendPushToUser } from '@/lib/push-notify';
+import { sendPushToUserIfEnabled } from '@/lib/push-notify';
 import { logger } from '@/lib/logger';
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -77,12 +77,12 @@ async function checkAndSendMilestoneNotifications(
           .eq('is_active', true);
 
         for (const p of participants ?? []) {
-          sendPushToUser(p.user_id, {
+          sendPushToUserIfEnabled(p.user_id, {
             title: t.msg,
             body: t.body,
             tag: `init-${t.pct}-${initiativeId}`,
             data: { url: `/initiatives/${initiativeId}`, type: 'initiative_milestone' },
-          }).catch(() => {});
+          }, 'initiative_checkin').catch(() => {});
         }
       }
     }

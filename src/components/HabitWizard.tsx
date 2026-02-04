@@ -805,64 +805,6 @@ function ReminderToggle({
   );
 }
 
-function DeleteSection({
-  showConfirm,
-  deleting,
-  isDay,
-  onDelete,
-  onCancel,
-}: {
-  readonly showConfirm: boolean;
-  readonly deleting: boolean;
-  readonly isDay: boolean;
-  readonly onDelete: () => void;
-  readonly onCancel: () => void;
-}): React.ReactElement {
-  if (showConfirm) {
-    return (
-      <div className={`pt-3 mt-2 border-t ${isDay ? 'border-[#4A2E1B]/10' : 'border-[#F5F0E1]/10'}`}>
-        <p className={`text-xs text-center mb-2 ${isDay ? 'text-[#4A2E1B]/60' : 'text-[#F5F0E1]/60'}`}>
-          Se desactivará el hábito y sus registros
-        </p>
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={onCancel}
-            disabled={deleting}
-            className={`flex-1 py-2 rounded-lg text-sm font-medium ${
-              isDay ? 'bg-[#4A2E1B]/10 text-[#4A2E1B]' : 'bg-[#F5F0E1]/10 text-[#F5F0E1]'
-            }`}
-          >
-            Cancelar
-          </button>
-          <button
-            type="button"
-            onClick={onDelete}
-            disabled={deleting}
-            className={`flex-1 py-2 rounded-lg text-sm font-medium bg-red-500 text-white ${
-              deleting ? 'opacity-50 cursor-not-allowed' : ''
-            }`}
-          >
-            {deleting ? 'Eliminando...' : 'Confirmar'}
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className={`pt-3 mt-2 border-t ${isDay ? 'border-[#4A2E1B]/10' : 'border-[#F5F0E1]/10'}`}>
-      <button
-        type="button"
-        onClick={onDelete}
-        className="w-full py-2 rounded-lg text-sm font-medium text-red-500 bg-red-500/10 hover:bg-red-500/20 transition-colors"
-      >
-        Eliminar hábito
-      </button>
-    </div>
-  );
-}
-
 function ConfirmStep({
   form,
   isDay,
@@ -871,7 +813,6 @@ function ConfirmStep({
   submitting,
   onChange,
   onSubmit,
-  deleteProps,
 }: {
   readonly form: FormState;
   readonly isDay: boolean;
@@ -880,12 +821,6 @@ function ConfirmStep({
   readonly submitting: boolean;
   readonly onChange: FieldUpdater;
   readonly onSubmit: () => void;
-  readonly deleteProps?: {
-    readonly onDelete: () => void;
-    readonly showConfirm: boolean;
-    readonly deleting: boolean;
-    readonly onCancel: () => void;
-  };
 }): React.ReactElement {
   return (
     <div className="space-y-4">
@@ -915,16 +850,6 @@ function ConfirmStep({
       >
         {submitting ? 'Guardando...' : mode === 'create' ? 'Crear hábito' : 'Guardar cambios'}
       </button>
-
-      {deleteProps && (
-        <DeleteSection
-          showConfirm={deleteProps.showConfirm}
-          deleting={deleteProps.deleting}
-          isDay={isDay}
-          onDelete={deleteProps.onDelete}
-          onCancel={deleteProps.onCancel}
-        />
-      )}
     </div>
   );
 }
@@ -1111,10 +1036,55 @@ export default function HabitWizard({ mode, initialData, onSubmit, onDelete }: H
               <path fillRule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z"/>
             </svg>
           </button>
-          <h1 className={`text-xl font-bold ${isDay ? 'text-[#4A2E1B]' : 'text-[#F5F0E1]'}`}>
+          <h1 className={`text-xl font-bold flex-1 ${isDay ? 'text-[#4A2E1B]' : 'text-[#F5F0E1]'}`}>
             {stepTitles[step]}
           </h1>
+          {mode === 'edit' && onDelete && (
+            <button
+              onClick={handleDelete}
+              disabled={deleting}
+              className={`p-2 -mr-2 rounded-lg transition-colors ${
+                deleting ? 'opacity-50 cursor-not-allowed' : ''
+              } text-red-500 hover:bg-red-500/10`}
+              aria-label="Eliminar hábito"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
+                <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
+                <path fillRule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H5.5l1-1h3l1 1H13.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
+              </svg>
+            </button>
+          )}
         </div>
+
+        {showConfirmDelete && (
+          <div className={`mb-4 p-3 rounded-xl ${isDay ? 'bg-red-50 border border-red-200' : 'bg-red-500/10 border border-red-500/20'}`}>
+            <p className={`text-xs text-center mb-2 ${isDay ? 'text-red-700' : 'text-red-400'}`}>
+              Se desactivará el hábito y sus registros
+            </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setShowConfirmDelete(false)}
+                disabled={deleting}
+                className={`flex-1 py-2 rounded-lg text-sm font-medium ${
+                  isDay ? 'bg-[#4A2E1B]/10 text-[#4A2E1B]' : 'bg-[#F5F0E1]/10 text-[#F5F0E1]'
+                }`}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={deleting}
+                className={`flex-1 py-2 rounded-lg text-sm font-medium bg-red-500 text-white ${
+                  deleting ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
+              >
+                {deleting ? 'Eliminando...' : 'Eliminar'}
+              </button>
+            </div>
+          </div>
+        )}
 
         <StepIndicator step={step} isDay={isDay} />
 
@@ -1147,12 +1117,6 @@ export default function HabitWizard({ mode, initialData, onSubmit, onDelete }: H
             submitting={submitting}
             onChange={updateField}
             onSubmit={handleSubmit}
-            deleteProps={mode === 'edit' && onDelete ? {
-              onDelete: handleDelete,
-              showConfirm: showConfirmDelete,
-              deleting,
-              onCancel: () => setShowConfirmDelete(false),
-            } : undefined}
           />
         )}
       </div>

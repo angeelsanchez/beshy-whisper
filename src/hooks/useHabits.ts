@@ -88,12 +88,16 @@ export function useHabits() {
   }, [fetchHabits]);
 
   useEffect(() => {
-    function handleFocus(): void {
+    function handleRefresh(): void {
       fetchHabits();
     }
 
-    window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
+    window.addEventListener('focus', handleRefresh);
+    window.addEventListener('habits-changed', handleRefresh);
+    return () => {
+      window.removeEventListener('focus', handleRefresh);
+      window.removeEventListener('habits-changed', handleRefresh);
+    };
   }, [fetchHabits]);
 
   const createHabit = useCallback(async (data: CreateHabitData): Promise<Habit | null> => {
@@ -115,6 +119,7 @@ export function useHabits() {
       const result = await res.json();
       setHabits(prev => [...prev, result.habit]);
       setError(null);
+      window.dispatchEvent(new Event('habits-changed'));
       return result.habit;
     } catch {
       setError('Error de conexión');
@@ -141,6 +146,7 @@ export function useHabits() {
       const result = await res.json();
       setHabits(prev => prev.map(h => h.id === habitId ? result.habit : h));
       setError(null);
+      window.dispatchEvent(new Event('habits-changed'));
       return true;
     } catch {
       setError('Error de conexión');
@@ -164,6 +170,7 @@ export function useHabits() {
       }
 
       setError(null);
+      window.dispatchEvent(new Event('habits-changed'));
       return true;
     } catch {
       setHabits(previousHabits);

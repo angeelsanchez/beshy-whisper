@@ -57,12 +57,16 @@ export function useHabitStats(habitId?: string) {
   }, [fetchStats]);
 
   useEffect(() => {
-    function handleFocus(): void {
+    function handleRefresh(): void {
       fetchStats();
     }
 
-    window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
+    window.addEventListener('focus', handleRefresh);
+    window.addEventListener('habits-changed', handleRefresh);
+    return () => {
+      window.removeEventListener('focus', handleRefresh);
+      window.removeEventListener('habits-changed', handleRefresh);
+    };
   }, [fetchStats]);
 
   const getStatForHabit = useCallback((id: string): HabitStatData | undefined => {

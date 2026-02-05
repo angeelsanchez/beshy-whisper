@@ -3,6 +3,7 @@ export const NOTIFICATION_TYPES = [
   'follow',
   'follow_post',
   'chat',
+  'dm',
   'reminder_morning',
   'reminder_streak',
   'reminder_night',
@@ -44,6 +45,7 @@ export const NOTIFICATION_CATEGORIES: ReadonlyArray<NotificationCategory> = [
       { type: 'follow', label: 'Nuevos seguidores', description: 'Cuando alguien te sigue' },
       { type: 'follow_post', label: 'Publicaciones de seguidos', description: 'Cuando alguien que sigues publica' },
       { type: 'chat', label: 'Mensajes de grupo', description: 'Mensajes en chats de iniciativas' },
+      { type: 'dm', label: 'Mensajes directos', description: 'Cuando recibes un mensaje directo' },
     ],
   },
   {

@@ -35,7 +35,7 @@ export default function DmMessage({
   if (isOwnMessage) {
     return (
       <div className={`flex justify-end ${showHeader ? 'mt-3' : 'mt-0.5'}`}>
-        <div className="max-w-[80%] w-fit">
+        <div className="max-w-[75%]">
           <div
             className={`px-3 py-2 rounded-2xl rounded-br-md ${
               isDay
@@ -68,7 +68,7 @@ export default function DmMessage({
           />
         )}
       </div>
-      <div className="max-w-[80%]">
+      <div className="max-w-[75%]">
         {showHeader && (
           <p
             className={`text-xs font-medium mb-0.5 ${
@@ -79,7 +79,7 @@ export default function DmMessage({
           </p>
         )}
         <div
-          className={`w-fit px-3 py-2 rounded-2xl rounded-bl-md ${
+          className={`px-3 py-2 rounded-2xl rounded-bl-md ${
             isDay
               ? 'bg-[#4A2E1B]/10 text-[#4A2E1B]'
               : 'bg-[#F5F0E1]/10 text-[#F5F0E1]'

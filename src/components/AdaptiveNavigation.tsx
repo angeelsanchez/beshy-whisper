@@ -6,7 +6,9 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useAuthSession } from '@/hooks/useAuthSession';
 import { useDailyPostStatus } from '@/hooks/useDailyPostStatus';
+import { useConversations } from '@/hooks/useConversations';
 import { useTheme } from '@/context/ThemeContext';
+import { MessageCircle } from 'lucide-react';
 
 // Navigation items configuration
 interface NavItem {
@@ -18,9 +20,9 @@ interface NavItem {
   badge?: number;
 }
 
-const getNavItems = (session: { user?: Record<string, unknown> } | null, isGuest: boolean) => {
-  const items = [];
-  
+const getNavItems = (session: { user?: Record<string, unknown> } | null, isGuest: boolean, unreadCount: number) => {
+  const items: NavItem[] = [];
+
   // Show profile for authenticated users, login prompt for guests only
   if (session) {
     // If user has a session, they are authenticated (not guest)
@@ -34,6 +36,13 @@ const getNavItems = (session: { user?: Record<string, unknown> } | null, isGuest
             <path d="M3 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1H3Zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/>
           </svg>
         )
+      },
+      {
+        id: 'messages',
+        label: 'Mensajes',
+        href: '/messages',
+        icon: <MessageCircle className="w-6 h-6" strokeWidth={2} />,
+        badge: unreadCount > 0 ? unreadCount : undefined,
       },
       {
         id: 'habits',
@@ -116,6 +125,7 @@ export default function AdaptiveNavigation() {
   const [mounted, setMounted] = useState(false);
   const [isGuest, setIsGuest] = useState(false);
   const { contextualMissingCount, loading: statusLoading } = useDailyPostStatus();
+  const { totalUnread } = useConversations(session?.user?.id);
 
   useEffect(() => {
     setMounted(true);
@@ -128,7 +138,7 @@ export default function AdaptiveNavigation() {
   // Don't show navigation on login page or home page (redirect only)
   if (pathname === '/login' || pathname === '/') return null;
 
-  const navItems = getNavItems(session, isGuest);
+  const navItems = getNavItems(session, isGuest, totalUnread);
 
   const getNavItemStyles = (item: NavItem, isActive: boolean) => {
     const baseStyles = "flex items-center justify-center transition-all duration-300 relative";
@@ -178,7 +188,7 @@ export default function AdaptiveNavigation() {
                 aria-label={item.label}
               >
                 <div className="flex flex-col items-center gap-1 relative">
-                  <div className={item.isPostButton ? 'relative' : 'w-6 h-6'}>
+                  <div className={item.isPostButton ? 'relative' : 'w-6 h-6 relative'}>
                     {typeof item.icon === 'function' ? item.icon(isDay) : item.icon}
                     {item.isPostButton && session && !isGuest && contextualMissingCount > 0 && !statusLoading && (
                       <output
@@ -186,6 +196,14 @@ export default function AdaptiveNavigation() {
                         aria-label={`${contextualMissingCount} whispers pendientes`}
                       >
                         {contextualMissingCount}
+                      </output>
+                    )}
+                    {item.badge && item.badge > 0 && (
+                      <output
+                        className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center"
+                        aria-label={`${item.badge} mensajes sin leer`}
+                      >
+                        {item.badge > 9 ? '9+' : item.badge}
                       </output>
                     )}
                   </div>
@@ -221,7 +239,7 @@ export default function AdaptiveNavigation() {
                 aria-label={item.label}
               >
                 <div className="flex items-center justify-center">
-                  <div className={item.isPostButton ? 'relative' : 'w-6 h-6'}>
+                  <div className={item.isPostButton ? 'relative' : 'w-6 h-6 relative'}>
                     {typeof item.icon === 'function' ? item.icon(isDay) : item.icon}
                     {item.isPostButton && session && !isGuest && contextualMissingCount > 0 && !statusLoading && (
                       <output
@@ -229,6 +247,14 @@ export default function AdaptiveNavigation() {
                         aria-label={`${contextualMissingCount} whispers pendientes`}
                       >
                         {contextualMissingCount}
+                      </output>
+                    )}
+                    {item.badge && item.badge > 0 && (
+                      <output
+                        className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center"
+                        aria-label={`${item.badge} mensajes sin leer`}
+                      >
+                        {item.badge > 9 ? '9+' : item.badge}
                       </output>
                     )}
                   </div>

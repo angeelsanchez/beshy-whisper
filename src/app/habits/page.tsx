@@ -52,7 +52,7 @@ interface HabitsTabContentProps {
   readonly onEdit: (habitId: string) => void;
   readonly onAdd: () => void;
   readonly onHabitsChanged: () => void;
-  readonly onRespondToLink: (linkId: string, action: 'accept' | 'decline', habitId?: string) => Promise<boolean>;
+  readonly onRespondToLink: (linkId: string, action: 'accept' | 'decline') => Promise<boolean>;
   readonly onDeleteLink: (linkId: string) => Promise<boolean>;
 }
 
@@ -111,7 +111,6 @@ function HabitsTabContent({
           <HabitLinkPendingList
             pendingReceived={pendingReceived}
             pendingSent={pendingSent}
-            myHabits={habits}
             isDay={isDay}
             onRespond={onRespondToLink}
             onCancel={onDeleteLink}

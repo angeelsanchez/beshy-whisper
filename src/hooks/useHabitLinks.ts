@@ -84,17 +84,17 @@ export function useHabitLinks() {
 
   const respondToLink = useCallback(async (
     linkId: string,
-    action: 'accept' | 'decline',
-    responderHabitId?: string
+    action: 'accept' | 'decline'
   ): Promise<boolean> => {
     try {
       const res = await fetch('/api/habits/links/respond', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ linkId, action, responderHabitId }),
+        body: JSON.stringify({ linkId, action }),
       });
       if (!res.ok) return false;
       await fetchLinks();
+      globalThis.dispatchEvent(new Event('habits-changed'));
       return true;
     } catch {
       return false;

@@ -25,8 +25,6 @@ export async function GET(): Promise<NextResponse> {
       return NextResponse.json({ error: 'Error interno' }, { status: 500 });
     }
 
-    logger.warn('DEBUG: Conversations fetched', { userId, count: conversations?.length ?? 0, raw: JSON.stringify(conversations?.slice(0, 2)) });
-
     if (!conversations || conversations.length === 0) {
       return NextResponse.json({ conversations: [], totalUnread: 0 });
     }
@@ -113,7 +111,6 @@ export async function GET(): Promise<NextResponse> {
       };
     });
 
-    logger.warn('DEBUG: Returning conversations', { resultCount: result.length, totalUnread, firstConv: JSON.stringify(result[0]) });
     return NextResponse.json({ conversations: result, totalUnread });
   } catch (error) {
     logger.error('Error in conversations GET', {

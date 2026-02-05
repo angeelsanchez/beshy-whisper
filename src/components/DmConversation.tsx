@@ -64,10 +64,9 @@ export default function DmConversation({
   return (
     <div className="flex flex-col flex-1 min-h-0">
       <header
-        className={`shrink-0 flex items-center gap-3 px-4 py-3 border-b ${
+        className={`shrink-0 flex items-center gap-3 px-4 py-2 border-b ${
           isDay ? 'border-[#4A2E1B]/10 bg-[#F5F0E1]' : 'border-[#F5F0E1]/10 bg-[#2D1E1A]'
         }`}
-        style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 0.75rem)' }}
       >
         <button
           onClick={onBack}

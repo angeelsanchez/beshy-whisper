@@ -153,6 +153,11 @@ export default function MessagesPage(): React.ReactElement {
         )}
       </header>
 
+      {/* DEBUG - REMOVE AFTER FIX */}
+      <div className="p-2 text-xs bg-yellow-200 text-black">
+        DEBUG: loading={String(loading)}, error={error ?? 'null'}, convCount={conversations.length}, userId={session?.user?.id ?? 'none'}
+      </div>
+
       <DmInbox
         conversations={conversations}
         loading={loading}

@@ -7,6 +7,7 @@ import { useTheme } from '@/context/ThemeContext';
 import { useHabits } from '@/hooks/useHabits';
 import HabitWizard from '@/components/HabitWizard';
 import HabitLinkSection from '@/components/HabitLinkSection';
+import HabitProgressionConfig from '@/components/HabitProgressionConfig';
 import type { HabitWizardData } from '@/components/HabitWizard';
 
 export default function EditHabitPage(): React.ReactElement | null {
@@ -57,7 +58,11 @@ export default function EditHabitPage(): React.ReactElement | null {
       onSubmit={handleSubmit}
       onDelete={handleDelete}
       additionalContent={
-        <div className="mt-6">
+        <div className="mt-6 space-y-4">
+          <HabitProgressionConfig
+            habit={habit}
+            isDay={isDay}
+          />
           <HabitLinkSection
             habitId={habitId}
             habits={habits}

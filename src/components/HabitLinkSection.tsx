@@ -128,7 +128,7 @@ export default function HabitLinkSection({
 
       {linksForThisHabit.length === 0 && pendingForThisHabit.length === 0 ? (
         <p className="text-xs opacity-50 py-2">
-          Invita a alguien a hacer este hábito contigo y motivaos mutuamente.
+          Cuando alguien cuenta contigo, es más difícil abandonar.
         </p>
       ) : (
         <div className="space-y-2">

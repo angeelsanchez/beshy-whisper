@@ -25,7 +25,7 @@ export async function GET(): Promise<NextResponse> {
       return NextResponse.json({ error: 'Error interno' }, { status: 500 });
     }
 
-    logger.info('Conversations fetched', { userId, count: conversations?.length ?? 0 });
+    logger.warn('DEBUG: Conversations fetched', { userId, count: conversations?.length ?? 0 });
 
     if (!conversations || conversations.length === 0) {
       return NextResponse.json({ conversations: [], totalUnread: 0 });

@@ -99,7 +99,8 @@ export default function FloatingTimer(): React.ReactElement | null {
 
   return (
     <div
-      className={`fixed top-3 right-3 z-[45] flex items-center gap-1 rounded-full shadow-lg transition-all duration-300 ${
+      style={{ top: 'calc(env(safe-area-inset-top, 0px) + 0.75rem)' }}
+      className={`fixed right-3 z-[45] flex items-center gap-1 rounded-full shadow-lg transition-all duration-300 ${
         show ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'
       } ${
         isDay

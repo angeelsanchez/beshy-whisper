@@ -30,6 +30,7 @@ html,
 body {
   overflow-x: hidden;
   max-width: 100vw;
+  background-color: var(--app-bg);
 }
 
 html {
@@ -616,6 +617,10 @@ button:active, .btn:active {
   100% {
     background-position: 0% 50%;
   }
+}
+
+.animate-gradient {
+  animation: gradientShift 4s ease infinite;
 }
 
 /* Enhanced button animations */

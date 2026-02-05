@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { logger } from '@/lib/logger';
 import type { Challenge } from '@/types/challenge';
 import type { Initiative } from '@/types/initiative';
 
@@ -101,7 +100,7 @@ export default function AdminPage() {
         setEntries(data);
       }
     } catch (err) {
-      logger.error('Error fetching entries', { error: String(err) });
+      console.error('Error fetching entries:', err);
       setError('Error loading entries');
     } finally {
       setLoading(false);
@@ -121,7 +120,7 @@ export default function AdminPage() {
 
       setEntries(entries.filter(entry => entry.id !== id));
     } catch (err) {
-      logger.error('Error deleting entry', { error: String(err) });
+      console.error('Error deleting entry:', err);
       setError('Error deleting entry');
     }
   };

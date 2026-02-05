@@ -87,12 +87,12 @@ export const HABIT_ICON_MAP: Record<string, LucideIcon> = {
 };
 
 export const CATEGORY_ICON_MAP: Record<string, LucideIcon> = {
-  health: Dumbbell,
-  mind: Brain,
-  productivity: BookOpen,
-  wellness: Leaf,
-  social: Users,
-  creativity: Palette,
+  dumbbell: Dumbbell,
+  brain: Brain,
+  'book-open': BookOpen,
+  leaf: Leaf,
+  users: Users,
+  palette: Palette,
 };
 
 export const EMOJI_TO_ICON_ID: Record<string, string> = {

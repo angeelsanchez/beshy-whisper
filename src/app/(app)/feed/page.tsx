@@ -7,6 +7,7 @@ import PullToRefresh from '@/components/PullToRefresh';
 import ActiveChallengeBanner from '@/components/ActiveChallengeBanner';
 import Link from 'next/link';
 import Image from 'next/image';
+import { Search } from 'lucide-react';
 
 // Custom hook for time of day
 const useTimeOfDay = () => {
@@ -65,7 +66,20 @@ export default function FeedPage() {
       isDay ? 'bg-[#F5F0E1] text-[#4A2E1B]' : 'bg-[#2D1E1A] text-[#F5F0E1]'
     }`}>
       <PullToRefresh onRefresh={handleRefresh} isDay={isDay}>
-        <div className="max-w-[600px] mx-auto px-4 py-8 sm:max-w-[600px]">
+        <div className="max-w-[600px] mx-auto px-4 py-8 sm:max-w-[600px] relative">
+          {/* Search button - top right */}
+          <Link
+            href="/search"
+            className={`absolute top-8 right-4 p-2.5 rounded-full transition-all duration-300 ${
+              isDay
+                ? 'bg-[#4A2E1B]/10 text-[#4A2E1B] hover:bg-[#4A2E1B]/20'
+                : 'bg-[#F5F0E1]/10 text-[#F5F0E1] hover:bg-[#F5F0E1]/20'
+            } hover:scale-105 active:scale-95`}
+            aria-label="Buscar usuarios"
+          >
+            <Search className="w-5 h-5" strokeWidth={2} />
+          </Link>
+
           {/* Header */}
           <header className="flex flex-col items-center mb-8">
             <div className="mb-2 flex flex-col items-center justify-center gap-3">

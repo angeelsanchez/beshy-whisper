@@ -68,6 +68,7 @@ interface HabitWizardProps {
   readonly initialData?: InitialHabitData;
   readonly onSubmit: (data: HabitWizardData) => Promise<boolean>;
   readonly onDelete?: () => Promise<boolean>;
+  readonly additionalContent?: React.ReactNode;
 }
 
 interface FormState {
@@ -948,7 +949,7 @@ function ConfirmStep({
   );
 }
 
-export default function HabitWizard({ mode, initialData, onSubmit, onDelete }: HabitWizardProps): React.ReactElement {
+export default function HabitWizard({ mode, initialData, onSubmit, onDelete, additionalContent }: HabitWizardProps): React.ReactElement {
   const router = useRouter();
   const { isDay } = useTheme();
 
@@ -1219,6 +1220,8 @@ export default function HabitWizard({ mode, initialData, onSubmit, onDelete }: H
             onSubmit={handleSubmit}
           />
         )}
+
+        {additionalContent}
       </div>
     </div>
   );

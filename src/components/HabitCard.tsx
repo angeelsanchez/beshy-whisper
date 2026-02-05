@@ -1,7 +1,7 @@
 'use client';
 
 import { HabitStatData } from '@/hooks/useHabitStats';
-import { Flame, Link2 } from 'lucide-react';
+import { Flame, Link2, Play, Square } from 'lucide-react';
 import AppIcon from '@/components/AppIcon';
 
 interface HabitCardProps {
@@ -234,7 +234,7 @@ function TimerControls({
           }`}
           aria-label={isRunning ? 'Detener temporizador' : 'Iniciar temporizador'}
         >
-          {isRunning ? '■' : '▶'}
+          {isRunning ? <Square className="w-3 h-3" fill="currentColor" /> : <Play className="w-3 h-3" fill="currentColor" />}
         </button>
       </div>
     </div>

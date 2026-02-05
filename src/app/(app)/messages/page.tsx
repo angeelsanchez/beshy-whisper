@@ -135,15 +135,15 @@ export default function MessagesPage(): React.ReactElement {
 
   return (
     <div
-      className={`min-h-screen pb-24 lg:pb-8 lg:pl-24 pt-safe ${
+      className={`min-h-screen pb-24 lg:pb-8 lg:pl-24 ${
         isDay ? 'bg-[#F5F0E1] text-[#4A2E1B]' : 'bg-[#2D1E1A] text-[#F5F0E1]'
       }`}
     >
       <header
-        className={`sticky z-10 px-4 py-3 border-b ${
+        className={`sticky top-0 z-10 px-4 pb-3 border-b ${
           isDay ? 'border-[#4A2E1B]/10 bg-[#F5F0E1]' : 'border-[#F5F0E1]/10 bg-[#2D1E1A]'
         }`}
-        style={{ top: 'env(safe-area-inset-top, 0px)' }}
+        style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 0.75rem)' }}
       >
         <h1 className="text-xl font-semibold">Mensajes</h1>
         {totalUnread > 0 && (
@@ -152,11 +152,6 @@ export default function MessagesPage(): React.ReactElement {
           </p>
         )}
       </header>
-
-      {/* DEBUG - REMOVE */}
-      <div className="bg-red-500 text-white p-2 text-xs">
-        L:{String(loading)} E:{error ?? 'null'} C:{conversations.length} U:{session?.user?.id?.slice(0, 8) ?? 'none'}
-      </div>
 
       <DmInbox
         conversations={conversations}

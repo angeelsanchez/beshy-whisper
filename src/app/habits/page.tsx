@@ -2,7 +2,6 @@
 
 import { useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Link2 } from 'lucide-react';
 import { useAuthSession } from '@/hooks/useAuthSession';
 import { useTheme } from '@/context/ThemeContext';
 import { useHabits, type Habit } from '@/hooks/useHabits';
@@ -15,7 +14,6 @@ import HabitCalendar from '@/components/HabitCalendar';
 import HabitStats from '@/components/HabitStats';
 import CommunityTab from '@/components/CommunityTab';
 import HabitLinkPendingList from '@/components/HabitLinkPendingList';
-import HabitLinkRequestModal from '@/components/HabitLinkRequestModal';
 
 type Tab = 'habits' | 'community';
 
@@ -47,7 +45,6 @@ interface HabitsTabContentProps {
   readonly currentUserId: string;
   readonly pendingReceived: HabitLink[];
   readonly pendingSent: HabitLink[];
-  readonly showLinkModal: boolean;
   readonly onToggle: (habitId: string) => void;
   readonly onIncrement: (habitId: string, amount: number) => void;
   readonly onTimerStart: (habitId: string) => void;
@@ -57,17 +54,14 @@ interface HabitsTabContentProps {
   readonly onHabitsChanged: () => void;
   readonly onRespondToLink: (linkId: string, action: 'accept' | 'decline', habitId?: string) => Promise<boolean>;
   readonly onDeleteLink: (linkId: string) => Promise<boolean>;
-  readonly onRequestLink: (responderId: string, habitId: string, message?: string) => Promise<boolean>;
-  readonly onShowLinkModal: () => void;
-  readonly onCloseLinkModal: () => void;
 }
 
 function HabitsTabContent({
   habits, habitsLoading, isDay, isCompleted, getValue, toggling, stats, today,
   activeTimerHabitId, elapsedSeconds, completedMap, linkedHabitIds, calendarCompletions,
-  activeLinks, currentUserId, pendingReceived, pendingSent, showLinkModal,
+  activeLinks, currentUserId, pendingReceived, pendingSent,
   onToggle, onIncrement, onTimerStart, onTimerStop, onEdit, onAdd,
-  onHabitsChanged, onRespondToLink, onDeleteLink, onRequestLink, onShowLinkModal, onCloseLinkModal,
+  onHabitsChanged, onRespondToLink, onDeleteLink,
 }: HabitsTabContentProps): React.ReactElement {
   if (habitsLoading) {
     return (
@@ -122,28 +116,8 @@ function HabitsTabContent({
             onRespond={onRespondToLink}
             onCancel={onDeleteLink}
           />
-
-          <button
-            onClick={onShowLinkModal}
-            className={`flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-xs font-medium transition-all ${
-              isDay
-                ? 'bg-[#4A2E1B]/5 text-[#4A2E1B]/70 hover:bg-[#4A2E1B]/10'
-                : 'bg-[#F5F0E1]/5 text-[#F5F0E1]/70 hover:bg-[#F5F0E1]/10'
-            }`}
-          >
-            <Link2 className="w-3.5 h-3.5" strokeWidth={2} />
-            Vincular hábito con alguien
-          </button>
         </>
       )}
-
-      <HabitLinkRequestModal
-        isOpen={showLinkModal}
-        isDay={isDay}
-        myHabits={habits}
-        onClose={onCloseLinkModal}
-        onSubmit={onRequestLink}
-      />
     </>
   );
 }
@@ -162,7 +136,6 @@ export default function HabitsPage(): React.ReactElement | null {
     pendingReceived,
     pendingSent,
     activeLinks,
-    requestLink,
     respondToLink,
     deleteLink,
   } = useHabitLinks();
@@ -170,7 +143,6 @@ export default function HabitsPage(): React.ReactElement | null {
   const [activeTab, setActiveTab] = useState<Tab>('habits');
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
-  const [showLinkModal, setShowLinkModal] = useState(false);
 
   const today = formatToday();
 
@@ -313,7 +285,6 @@ export default function HabitsPage(): React.ReactElement | null {
             currentUserId={session.user.id}
             pendingReceived={pendingReceived}
             pendingSent={pendingSent}
-            showLinkModal={showLinkModal}
             onToggle={handleToggle}
             onIncrement={handleIncrement}
             onTimerStart={handleTimerStart}
@@ -323,9 +294,6 @@ export default function HabitsPage(): React.ReactElement | null {
             onHabitsChanged={refetchStats}
             onRespondToLink={respondToLink}
             onDeleteLink={deleteLink}
-            onRequestLink={requestLink}
-            onShowLinkModal={() => setShowLinkModal(true)}
-            onCloseLinkModal={() => setShowLinkModal(false)}
           />
         )}
 

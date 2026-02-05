@@ -6,6 +6,7 @@ import { useAuthSession } from '@/hooks/useAuthSession';
 import { useTheme } from '@/context/ThemeContext';
 import { useHabits } from '@/hooks/useHabits';
 import HabitWizard from '@/components/HabitWizard';
+import HabitLinkSection from '@/components/HabitLinkSection';
 import type { HabitWizardData } from '@/components/HabitWizard';
 
 export default function EditHabitPage(): React.ReactElement | null {
@@ -55,6 +56,16 @@ export default function EditHabitPage(): React.ReactElement | null {
       initialData={habit}
       onSubmit={handleSubmit}
       onDelete={handleDelete}
+      additionalContent={
+        <div className="mt-6">
+          <HabitLinkSection
+            habitId={habitId}
+            habits={habits}
+            isDay={isDay}
+            currentUserId={session.user.id}
+          />
+        </div>
+      }
     />
   );
 }

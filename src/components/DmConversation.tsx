@@ -62,12 +62,11 @@ export default function DmConversation({
   const displayName = otherUser.name ?? otherUser.alias ?? 'Usuario';
 
   return (
-    <div className="flex flex-col flex-1 min-h-0">
+    <div className="flex flex-col h-full">
       <header
-        className={`shrink-0 flex items-center gap-3 px-4 pb-2 border-b ${
+        className={`flex items-center gap-3 px-4 py-3 border-b ${
           isDay ? 'border-[#4A2E1B]/10 bg-[#F5F0E1]' : 'border-[#F5F0E1]/10 bg-[#2D1E1A]'
         }`}
-        style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
       >
         <button
           onClick={onBack}
@@ -100,29 +99,29 @@ export default function DmConversation({
       <div
         ref={containerRef}
         onScroll={handleScroll}
-        className={`flex-1 min-h-0 overflow-y-auto px-4 py-2 flex flex-col ${
+        className={`flex-1 overflow-y-auto px-4 py-2 ${
           isDay ? 'bg-[#F5F0E1]/50' : 'bg-[#2D1E1A]/50'
         }`}
       >
         {loading ? (
-          <div className="flex items-center justify-center flex-1">
+          <div className="flex items-center justify-center h-full">
             <Loader2 className="w-6 h-6 animate-spin" />
           </div>
         ) : error ? (
-          <div className="flex items-center justify-center flex-1">
+          <div className="flex items-center justify-center h-full">
             <p className={`text-sm ${isDay ? 'text-[#4A2E1B]/60' : 'text-[#F5F0E1]/60'}`}>
               {error}
             </p>
           </div>
         ) : messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center flex-1 gap-2">
+          <div className="flex flex-col items-center justify-center h-full gap-2">
             <Avatar src={otherUser.profile_photo_url} name={displayName} size="lg" />
             <p className={`text-sm ${isDay ? 'text-[#4A2E1B]/60' : 'text-[#F5F0E1]/60'}`}>
               Inicia la conversacion con {displayName}
             </p>
           </div>
         ) : (
-          <div className="mt-auto">
+          <>
             {loadingMore && (
               <div className="flex justify-center py-2">
                 <Loader2 className="w-5 h-5 animate-spin" />
@@ -142,7 +141,7 @@ export default function DmConversation({
               );
             })}
             <div ref={messagesEndRef} />
-          </div>
+          </>
         )}
       </div>
 

@@ -10,6 +10,9 @@ import MoodSelector from './MoodSelector';
 import ChallengeToggle from './ChallengeToggle';
 import WhisperHabitSelector from './WhisperHabitSelector';
 import type { HabitSnapshotPayload } from './WhisperHabitSelector';
+import ManifestationSection from './ManifestationSection';
+import ManifestationCelebrationModal from './ManifestationCelebrationModal';
+import type { FulfilledManifestation } from '@/hooks/useManifestations';
 import { useActiveChallenge } from '@/hooks/useActiveChallenge';
 import type { Mood } from '@/types/mood';
 
@@ -55,6 +58,8 @@ export default function WhisperForm() {
   const [selectedMood, setSelectedMood] = useState<Mood | null>(null);
   const [objectives, setObjectives] = useState<Objective[]>([]);
   const [habitSnapshots, setHabitSnapshots] = useState<HabitSnapshotPayload[]>([]);
+  const [selectedManifestationIds, setSelectedManifestationIds] = useState<string[]>([]);
+  const [celebrationManifestation, setCelebrationManifestation] = useState<FulfilledManifestation | null>(null);
   const [participateInChallenge, setParticipateInChallenge] = useState(false);
   const { challenge: activeChallenge } = useActiveChallenge();
   
@@ -301,6 +306,19 @@ export default function WhisperForm() {
           }
         }
 
+        if (franja === 'NOCHE' && selectedManifestationIds.length > 0) {
+          const resData = await res.clone().json().catch(() => null);
+          const realEntryId = resData?.entry?.id;
+          fetch('/api/manifestations/reaffirm', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              manifestationIds: selectedManifestationIds,
+              entryId: realEntryId ?? undefined,
+            }),
+          }).catch(() => {});
+        }
+
         if (objectiveTexts.length > 0) {
           setTimeout(() => refreshPosts(), 800);
         }
@@ -362,6 +380,7 @@ export default function WhisperForm() {
       setMessage('');
       setObjectives([]);
       setHabitSnapshots([]);
+      setSelectedManifestationIds([]);
       setSelectedMood(null);
       setParticipateInChallenge(false);
     } catch (err: unknown) {
@@ -538,6 +557,15 @@ export default function WhisperForm() {
             />
           )}
 
+          {!isDay && session?.user?.id && (
+            <ManifestationSection
+              isDay={isDay}
+              userId={session.user.id}
+              onSelectionChange={setSelectedManifestationIds}
+              onFulfilled={setCelebrationManifestation}
+            />
+          )}
+
           {activeChallenge && session?.user && (
             <div className="mb-4">
               <ChallengeToggle
@@ -628,6 +656,17 @@ export default function WhisperForm() {
           </div>
         </form>
       </div>
+
+      <ManifestationCelebrationModal
+        isOpen={celebrationManifestation !== null}
+        onClose={() => setCelebrationManifestation(null)}
+        manifestation={celebrationManifestation}
+        isDay={isDay}
+        onShare={(m) => {
+          setCelebrationManifestation(null);
+          window.dispatchEvent(new CustomEvent('share-manifestation', { detail: m }));
+        }}
+      />
     </div>
   );
 } 

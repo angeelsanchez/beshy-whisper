@@ -111,7 +111,7 @@ export default function HabitLinkSection({
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-bold flex items-center gap-2">
           <Link2 className="w-4 h-4" strokeWidth={2} />
-          Compañeros vinculados
+          Hazlo en compañía
         </h3>
         <button
           onClick={() => setShowModal(true)}
@@ -122,13 +122,13 @@ export default function HabitLinkSection({
           }`}
         >
           <UserPlus className="w-3 h-3" strokeWidth={2} />
-          Vincular
+          Invitar
         </button>
       </div>
 
       {linksForThisHabit.length === 0 && pendingForThisHabit.length === 0 ? (
         <p className="text-xs opacity-50 py-2">
-          No tienes compañeros vinculados a este hábito. Vincula con alguien para motivaros mutuamente.
+          Invita a alguien a hacer este hábito contigo y motivaos mutuamente.
         </p>
       ) : (
         <div className="space-y-2">

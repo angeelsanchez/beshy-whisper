@@ -24,9 +24,11 @@ interface ImageRequest {
   display_name: string;
   display_id: string;
   fecha: string;
-  mode: 'normal' | 'bubble' | 'sticker';
+  mode: 'normal' | 'bubble' | 'sticker' | 'manifestation';
   isDay: boolean;
   profile_photo_url?: string | null;
+  daysManifesting?: number;
+  reaffirmationCount?: number;
 }
 
 interface FormattedObjective {
@@ -48,14 +50,32 @@ interface TemplateOptions {
   avatarDataUri: string | null;
 }
 
+interface ManifestationTemplateOptions {
+  content: string;
+  daysManifesting: number;
+  reaffirmationCount: number;
+  display_name: string;
+  display_id: string;
+  isDay: boolean;
+  logoSVG: string;
+  avatarDataUri: string | null;
+}
+
 export async function POST(request: NextRequest): Promise<NextResponse> {
   let browser: Awaited<ReturnType<typeof launchPuppeteerBrowser>> | null = null;
 
   try {
     const body: ImageRequest = await request.json();
-    const { mensaje, objetivos = [], display_name, display_id, fecha, mode, isDay, profile_photo_url } = body;
+    const { mensaje, objetivos = [], display_name, display_id, fecha, mode, isDay, profile_photo_url, daysManifesting, reaffirmationCount } = body;
 
-    if (!mensaje || !display_name || !display_id || !fecha || !mode) {
+    if (mode === 'manifestation') {
+      if (!mensaje || !display_name || !display_id || daysManifesting === undefined) {
+        return NextResponse.json(
+          { error: 'Missing required fields for manifestation mode' },
+          { status: 400 }
+        );
+      }
+    } else if (!mensaje || !display_name || !display_id || !fecha || !mode) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -85,7 +105,19 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     };
 
     let htmlContent: string;
-    if (mode === 'bubble') {
+    if (mode === 'manifestation') {
+      const manifestationOpts: ManifestationTemplateOptions = {
+        content: mensaje,
+        daysManifesting: daysManifesting ?? 1,
+        reaffirmationCount: reaffirmationCount ?? 0,
+        display_name,
+        display_id,
+        isDay,
+        logoSVG,
+        avatarDataUri,
+      };
+      htmlContent = createManifestationHTML(manifestationOpts);
+    } else if (mode === 'bubble') {
       htmlContent = createBubbleHTML(templateOpts);
     } else if (mode === 'sticker') {
       htmlContent = createStickerHTML(templateOpts);
@@ -96,7 +128,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     browser = await launchPuppeteerBrowser();
     const page = await browser.newPage();
 
-    if (mode === 'bubble' || mode === 'sticker') {
+    if (mode === 'bubble' || mode === 'sticker' || mode === 'manifestation') {
       await page.setViewport({ width: 960, height: 1600, deviceScaleFactor: 1 });
     } else {
       await page.setViewport({ width: 2160, height: 3840, deviceScaleFactor: 1 });
@@ -105,10 +137,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     await loadPageWithFonts(page, htmlContent);
     await loadTwemoji(page);
 
+    const isTransparentMode = mode === 'bubble' || mode === 'sticker' || mode === 'manifestation';
     const screenshot = await page.screenshot({
       type: 'png',
-      fullPage: mode === 'bubble' || mode === 'sticker',
-      omitBackground: mode === 'bubble' || mode === 'sticker',
+      fullPage: isTransparentMode,
+      omitBackground: isTransparentMode,
       captureBeyondViewport: false,
       optimizeForSpeed: true,
     });
@@ -468,4 +501,251 @@ function formatDate(dateString: string): string {
   const year = String(date.getFullYear()).slice(-2);
 
   return `${day}/${month}/${year}`;
+}
+
+function createManifestationHTML(opts: ManifestationTemplateOptions): string {
+  const { content, daysManifesting, reaffirmationCount, display_name, display_id, isDay, logoSVG, avatarDataUri } = opts;
+  const colors = isDay ? BRAND_COLORS.day : BRAND_COLORS.night;
+  const processedLogo = processLogoSVG(logoSVG, 80, 80, colors.text, colors.text);
+  const avatarHTML = createAvatarHTML(avatarDataUri, display_name, 80, colors.avatarText, colors.avatarBg);
+  const accentColor = '#D4A574';
+
+  return `
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+      <meta charset="UTF-8">
+      <style>
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
+
+        * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+        }
+
+        html, body {
+          width: 960px;
+          height: auto;
+          min-height: 800px;
+          background: transparent;
+        }
+
+        body {
+          font-family: 'Nunito', sans-serif;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 60px;
+        }
+
+        .card {
+          background: linear-gradient(145deg, ${colors.background}, ${isDay ? '#EDE8D9' : '#3D2E2A'});
+          border-radius: 48px;
+          padding: 60px;
+          width: 100%;
+          max-width: 840px;
+          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+          text-align: center;
+          position: relative;
+          overflow: hidden;
+        }
+
+        .card::before {
+          content: '';
+          position: absolute;
+          top: -50%;
+          left: -50%;
+          width: 200%;
+          height: 200%;
+          background: radial-gradient(circle, ${accentColor}15 0%, transparent 60%);
+          pointer-events: none;
+        }
+
+        .sparkle-icon {
+          width: 120px;
+          height: 120px;
+          margin: 0 auto 32px;
+          background: linear-gradient(135deg, ${accentColor}30, ${accentColor}10);
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          position: relative;
+        }
+
+        .sparkle-icon svg {
+          width: 64px;
+          height: 64px;
+          color: ${accentColor};
+        }
+
+        .title {
+          font-size: 36px;
+          font-weight: 800;
+          color: ${accentColor};
+          margin-bottom: 16px;
+          letter-spacing: -0.5px;
+        }
+
+        .subtitle {
+          font-size: 20px;
+          color: ${colors.text}99;
+          margin-bottom: 40px;
+        }
+
+        .content {
+          font-size: 32px;
+          font-weight: 700;
+          color: ${colors.text};
+          line-height: 1.4;
+          margin-bottom: 40px;
+          padding: 32px;
+          background: ${isDay ? 'rgba(74, 46, 27, 0.05)' : 'rgba(245, 240, 225, 0.05)'};
+          border-radius: 24px;
+          position: relative;
+        }
+
+        .content::before {
+          content: '"';
+          position: absolute;
+          top: 8px;
+          left: 20px;
+          font-size: 64px;
+          color: ${accentColor}40;
+          font-family: Georgia, serif;
+        }
+
+        .stats {
+          display: flex;
+          justify-content: center;
+          gap: 60px;
+          margin-bottom: 40px;
+        }
+
+        .stat {
+          text-align: center;
+        }
+
+        .stat-value {
+          font-size: 56px;
+          font-weight: 800;
+          color: ${accentColor};
+          line-height: 1;
+        }
+
+        .stat-label {
+          font-size: 16px;
+          color: ${colors.text}80;
+          margin-top: 8px;
+        }
+
+        .divider {
+          width: 2px;
+          height: 80px;
+          background: ${colors.text}20;
+        }
+
+        .user-info {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 16px;
+          margin-bottom: 24px;
+        }
+
+        .avatar {
+          width: 80px;
+          height: 80px;
+          border-radius: 50%;
+          overflow: hidden;
+          border: 3px solid ${accentColor};
+        }
+
+        .avatar img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+
+        .user-details {
+          text-align: left;
+        }
+
+        .user-name {
+          font-size: 22px;
+          font-weight: 700;
+          color: ${colors.text};
+        }
+
+        .user-id {
+          font-size: 16px;
+          color: ${colors.text}80;
+        }
+
+        .footer {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 12px;
+          opacity: 0.6;
+        }
+
+        .beshy-text {
+          font-size: 24px;
+          font-weight: 800;
+          color: ${colors.text};
+          letter-spacing: 2px;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="card">
+        <div class="sparkle-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
+            <path d="M5 3v4"/>
+            <path d="M19 17v4"/>
+            <path d="M3 5h4"/>
+            <path d="M17 19h4"/>
+          </svg>
+        </div>
+
+        <div class="title">¡Manifestación cumplida!</div>
+        <div class="subtitle">Lo que visualizaste con fe, ahora es realidad</div>
+
+        <div class="content">
+          ${escapeHtml(content)}
+        </div>
+
+        <div class="stats">
+          <div class="stat">
+            <div class="stat-value">${daysManifesting}</div>
+            <div class="stat-label">días manifestando</div>
+          </div>
+          <div class="divider"></div>
+          <div class="stat">
+            <div class="stat-value">${reaffirmationCount}</div>
+            <div class="stat-label">reafirmaciones</div>
+          </div>
+        </div>
+
+        <div class="user-info">
+          <div class="avatar">
+            ${avatarHTML}
+          </div>
+          <div class="user-details">
+            <div class="user-name">${escapeHtml(display_name)}</div>
+            <div class="user-id">@${escapeHtml(display_id)}</div>
+          </div>
+        </div>
+
+        <div class="footer">
+          <div class="beshy-text">BESHY</div>
+          ${processedLogo}
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
 }

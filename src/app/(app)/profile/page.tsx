@@ -16,6 +16,7 @@ import OnThisDaySection from '@/components/OnThisDaySection';
 import PullToRefresh from '@/components/PullToRefresh';
 import FollowButton from '@/components/FollowButton';
 import FollowCounts from '@/components/FollowCounts';
+import StartDmButton from '@/components/StartDmButton';
 import FollowListModal from '@/components/FollowListModal';
 import Avatar from '@/components/Avatar';
 import { isMood, getMoodEmoji } from '@/types/mood';
@@ -708,7 +709,10 @@ export default function Profile() {
               onFollowingClick={() => setFollowListModal({ isOpen: true, type: 'following' })}
             />
             {!isOwnProfile && (
-              <FollowButton targetUserId={userId} isDay={isDay} />
+              <div className="flex items-center gap-2">
+                <FollowButton targetUserId={userId} isDay={isDay} />
+                <StartDmButton targetUserId={userId} isDay={isDay} />
+              </div>
             )}
           </div>
         )}

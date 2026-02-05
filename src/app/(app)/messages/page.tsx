@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { MessageCircle } from 'lucide-react';
 import { useAuthSession } from '@/hooks/useAuthSession';
@@ -20,46 +20,19 @@ export default function MessagesPage(): React.ReactElement {
   const [selectedConversation, setSelectedConversation] = useState<ConversationListItem | null>(
     null
   );
-  const fetchedChatIdRef = useRef<string | null>(null);
 
   const { conversations, loading, error, totalUnread, refresh } = useConversations(
     session?.user?.id
   );
 
   useEffect(() => {
-    if (!chatId || !session?.user?.id) {
-      fetchedChatIdRef.current = null;
-      return;
-    }
-
-    const conv = conversations.find((c) => c.id === chatId);
-    if (conv) {
-      setSelectedConversation(conv);
-      fetchedChatIdRef.current = chatId;
-      return;
-    }
-
-    if (fetchedChatIdRef.current === chatId) return;
-    fetchedChatIdRef.current = chatId;
-
-    const fetchConversation = async () => {
-      try {
-        const res = await fetch('/api/messages/conversations');
-        if (!res.ok) return;
-        const data = await res.json();
-        const convs: ConversationListItem[] = data.conversations ?? [];
-        const found = convs.find((c) => c.id === chatId);
-        if (found) {
-          setSelectedConversation(found);
-          refresh();
-        }
-      } catch {
-        // Ignore fetch errors
+    if (chatId && conversations.length > 0 && !selectedConversation) {
+      const conv = conversations.find((c) => c.id === chatId);
+      if (conv) {
+        setSelectedConversation(conv);
       }
-    };
-
-    fetchConversation();
-  }, [chatId, conversations, session?.user?.id, refresh]);
+    }
+  }, [chatId, conversations, selectedConversation]);
 
   const handleSelectConversation = useCallback(
     (conversation: ConversationListItem) => {
@@ -115,7 +88,7 @@ export default function MessagesPage(): React.ReactElement {
 
     return (
       <div
-        className={`chat-fullscreen flex flex-col overflow-hidden ${
+        className={`h-[100dvh] flex flex-col ${
           isDay ? 'bg-[#F5F0E1] text-[#4A2E1B]' : 'bg-[#2D1E1A] text-[#F5F0E1]'
         }`}
       >
@@ -140,10 +113,10 @@ export default function MessagesPage(): React.ReactElement {
       }`}
     >
       <header
-        className={`sticky top-0 z-10 px-4 pb-3 border-b ${
+        className={`sticky top-0 z-10 px-4 py-4 border-b ${
           isDay ? 'border-[#4A2E1B]/10 bg-[#F5F0E1]' : 'border-[#F5F0E1]/10 bg-[#2D1E1A]'
         }`}
-        style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
+        style={{ top: 'env(safe-area-inset-top, 0px)' }}
       >
         <h1 className="text-xl font-semibold">Mensajes</h1>
         {totalUnread > 0 && (

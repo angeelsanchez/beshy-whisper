@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuthSession } from '@/hooks/useAuthSession';
 
 interface FollowStatusState {
@@ -10,25 +10,41 @@ interface FollowStatusState {
 }
 
 export function useFollowStatus(targetUserId: string | undefined) {
-  const { session } = useAuthSession();
+  const { session, isLoading: sessionLoading } = useAuthSession();
   const [state, setState] = useState<FollowStatusState>({
     isFollowing: false,
     loading: true,
     toggling: false,
   });
+  const hasFetchedRef = useRef(false);
 
   const currentUserId = session?.user?.id;
   const isSelf = currentUserId === targetUserId;
 
   useEffect(() => {
+    // Wait for session to finish loading before making any decisions
+    if (sessionLoading) {
+      return;
+    }
+
+    // If no user is logged in, or no target, or viewing self - stop loading
     if (!currentUserId || !targetUserId || isSelf) {
       setState(prev => ({ ...prev, loading: false }));
+      hasFetchedRef.current = false;
+      return;
+    }
+
+    // Prevent duplicate fetches for the same targetUserId
+    if (hasFetchedRef.current) {
       return;
     }
 
     const controller = new AbortController();
+    hasFetchedRef.current = true;
 
     const fetchStatus = async () => {
+      setState(prev => ({ ...prev, loading: true }));
+
       try {
         const res = await fetch(`/api/follows/status?targetUserId=${targetUserId}`, {
           signal: controller.signal,
@@ -50,8 +66,15 @@ export function useFollowStatus(targetUserId: string | undefined) {
 
     fetchStatus();
 
-    return () => controller.abort();
-  }, [currentUserId, targetUserId, isSelf]);
+    return () => {
+      controller.abort();
+    };
+  }, [currentUserId, targetUserId, isSelf, sessionLoading]);
+
+  // Reset fetch flag when targetUserId changes
+  useEffect(() => {
+    hasFetchedRef.current = false;
+  }, [targetUserId]);
 
   const toggleFollow = useCallback(async () => {
     if (!currentUserId || !targetUserId || isSelf || state.toggling) return;

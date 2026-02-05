@@ -100,8 +100,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     const requesterName = session.user.name || session.user.alias || 'Alguien';
     sendPushToUserIfEnabled(responderId, {
-      title: `${requesterName} quiere vincular un hábito contigo`,
-      body: message ? `"${message}" — Hábito: ${habit.name}` : `Hábito: ${habit.name}`,
+      title: `${requesterName} te invita a un hábito`,
+      body: message ? `"${message}" — ${habit.name}` : `Únete a: ${habit.name}`,
       tag: 'habit-link-request',
       data: { url: '/habits', type: 'habit_link_request' },
     }, 'habit_link_request').catch(() => {});

@@ -20,30 +20,25 @@ interface NavItem {
   badge?: number;
 }
 
-const getNavItems = (session: { user?: Record<string, unknown> } | null, isGuest: boolean, unreadCount: number) => {
+const getNavItems = (session: { user?: Record<string, unknown> } | null, unreadCount: number) => {
   const items: NavItem[] = [];
 
-  // Show profile for authenticated users, login prompt for guests only
+  // Feed siempre primero
+  items.push({
+    id: 'feed',
+    label: 'Feed',
+    href: '/feed',
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
+        <path d="M14.5 3a.5.5 0 0 1 .5.5v9a.5.5 0 0 1-.5.5h-13a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5h13zm-13-1A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h13a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 14.5 2h-13z"/>
+        <path d="M3 5.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zM3 8a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9A.5.5 0 0 1 3 8zm0 2.5a.5.5 0 0 1 .5-.5h6a.5.5 0 0 1 0 1h-6a.5.5 0 0 1-.5-.5z"/>
+      </svg>
+    )
+  });
+
   if (session) {
-    // If user has a session, they are authenticated (not guest)
+    // Usuarios autenticados: Feed, Habits, Create (W), Messages, Profile
     items.push(
-      {
-        id: 'profile',
-        label: 'Perfil',
-        href: '/profile',
-        icon: (
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
-            <path d="M3 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1H3Zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/>
-          </svg>
-        )
-      },
-      {
-        id: 'messages',
-        label: 'Mensajes',
-        href: '/messages',
-        icon: <MessageCircle className="w-6 h-6" strokeWidth={2} />,
-        badge: unreadCount > 0 ? unreadCount : undefined,
-      },
       {
         id: 'habits',
         label: 'Habitos',
@@ -56,65 +51,80 @@ const getNavItems = (session: { user?: Record<string, unknown> } | null, isGuest
         )
       },
       {
-        id: 'search',
-        label: 'Buscar',
-        href: '/search',
+        id: 'create',
+        label: 'Crear',
+        href: '/create',
+        icon: (isDay: boolean) => (
+          <Image
+            src="/w.svg"
+            alt="Crear Post"
+            width={24}
+            height={24}
+            className="w-6 h-6"
+            style={{
+              filter: isDay
+                ? 'brightness(0) saturate(100%) invert(96%) sepia(8%) saturate(349%) hue-rotate(17deg) brightness(101%) contrast(94%)'
+                : 'brightness(0) saturate(100%) invert(29%) sepia(17%) saturate(1290%) hue-rotate(359deg) brightness(96%) contrast(86%)'
+            }}
+          />
+        ),
+        isPostButton: true
+      },
+      {
+        id: 'messages',
+        label: 'Mensajes',
+        href: '/messages',
+        icon: <MessageCircle className="w-6 h-6" strokeWidth={2} />,
+        badge: unreadCount > 0 ? unreadCount : undefined,
+      },
+      {
+        id: 'profile',
+        label: 'Perfil',
+        href: '/profile',
         icon: (
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
-            <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/>
+            <path d="M3 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1H3Zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/>
           </svg>
         )
       }
     );
-  } else if (isGuest) {
-    // Only show login button for actual guest users (no session)
-    items.push({
-      id: 'login',
-      label: 'Ingresar',
-      href: '/login',
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
-          <path fillRule="evenodd" d="M6 3.5a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v9a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-2a.5.5 0 0 0-1 0v2A1.5 1.5 0 0 0 6.5 14h8a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 14.5 2h-8A1.5 1.5 0 0 0 5 3.5v2a.5.5 0 0 0 1 0v-2z"/>
-          <path fillRule="evenodd" d="M11.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 1 0-.708.708L10.293 7.5H1.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3z"/>
-        </svg>
-      )
-    });
+  } else {
+    // Guests y sin sesion: Feed, Create (W), Login
+    items.push(
+      {
+        id: 'create',
+        label: 'Crear',
+        href: '/create',
+        icon: (isDay: boolean) => (
+          <Image
+            src="/w.svg"
+            alt="Crear Post"
+            width={24}
+            height={24}
+            className="w-6 h-6"
+            style={{
+              filter: isDay
+                ? 'brightness(0) saturate(100%) invert(96%) sepia(8%) saturate(349%) hue-rotate(17deg) brightness(101%) contrast(94%)'
+                : 'brightness(0) saturate(100%) invert(29%) sepia(17%) saturate(1290%) hue-rotate(359deg) brightness(96%) contrast(86%)'
+            }}
+          />
+        ),
+        isPostButton: true
+      },
+      {
+        id: 'login',
+        label: 'Ingresar',
+        href: '/login',
+        icon: (
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
+            <path fillRule="evenodd" d="M6 3.5a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v9a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-2a.5.5 0 0 0-1 0v2A1.5 1.5 0 0 0 6.5 14h8a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 14.5 2h-8A1.5 1.5 0 0 0 5 3.5v2a.5.5 0 0 0 1 0v-2z"/>
+            <path fillRule="evenodd" d="M11.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 1 0-.708.708L10.293 7.5H1.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3z"/>
+          </svg>
+        )
+      }
+    );
   }
-  
-  items.push(
-    {
-      id: 'create',
-      label: 'Crear',
-      href: '/create',
-      icon: (isDay: boolean) => (
-        <Image
-          src="/w.svg"
-          alt="Crear Post"
-          width={24}
-          height={24}
-          className="w-6 h-6"
-          style={{
-            filter: isDay 
-              ? 'brightness(0) saturate(100%) invert(96%) sepia(8%) saturate(349%) hue-rotate(17deg) brightness(101%) contrast(94%)'
-              : 'brightness(0) saturate(100%) invert(29%) sepia(17%) saturate(1290%) hue-rotate(359deg) brightness(96%) contrast(86%)'
-          }}
-        />
-      ),
-      isPostButton: true
-    },
-    {
-      id: 'feed',
-      label: 'Feed',
-      href: '/feed',
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
-          <path d="M14.5 3a.5.5 0 0 1 .5.5v9a.5.5 0 0 1-.5.5h-13a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5h13zm-13-1A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h13a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 14.5 2h-13z"/>
-          <path d="M3 5.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zM3 8a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9A.5.5 0 0 1 3 8zm0 2.5a.5.5 0 0 1 .5-.5h6a.5.5 0 0 1 0 1h-6a.5.5 0 0 1-.5-.5z"/>
-        </svg>
-      )
-    }
-  );
-  
+
   return items;
 };
 
@@ -138,7 +148,7 @@ export default function AdaptiveNavigation() {
   // Don't show navigation on login page or home page (redirect only)
   if (pathname === '/login' || pathname === '/') return null;
 
-  const navItems = getNavItems(session, isGuest, totalUnread);
+  const navItems = getNavItems(session, totalUnread);
 
   const getNavItemStyles = (item: NavItem, isActive: boolean) => {
     const baseStyles = "flex items-center justify-center transition-all duration-300 relative";

@@ -22,7 +22,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       );
     }
 
-    const { linkId, action, responderHabitId } = parsed.data;
+    const { linkId, action } = parsed.data;
     const userId = session.user.id;
 
     const { data: link, error: linkError } = await supabaseAdmin
@@ -45,17 +45,78 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ error: 'Link already responded to' }, { status: 409 });
     }
 
-    if (action === 'accept' && responderHabitId) {
-      const { data: habit } = await supabaseAdmin
+    let responderHabitId: string | null = null;
+
+    if (action === 'accept') {
+      const { data: sourceHabit, error: habitError } = await supabaseAdmin
         .from('habits')
-        .select('id, user_id')
-        .eq('id', responderHabitId)
-        .eq('user_id', userId)
+        .select('*')
+        .eq('id', link.requester_habit_id)
         .maybeSingle();
 
-      if (!habit) {
-        return NextResponse.json({ error: 'Habit not found or not yours' }, { status: 404 });
+      if (habitError) {
+        logger.error('Error fetching source habit', { detail: habitError.message });
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
       }
+      if (!sourceHabit) {
+        return NextResponse.json({ error: 'Source habit no longer exists' }, { status: 404 });
+      }
+
+      const { data: existingHabit } = await supabaseAdmin
+        .from('habits')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('name', sourceHabit.name)
+        .maybeSingle();
+
+      if (existingHabit) {
+        return NextResponse.json(
+          { error: 'Ya tienes un hábito con ese nombre' },
+          { status: 409 }
+        );
+      }
+
+      const { count: habitCount } = await supabaseAdmin
+        .from('habits')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', userId);
+
+      const newSortOrder = (habitCount ?? 0) + 1;
+
+      const { data: newHabit, error: insertError } = await supabaseAdmin
+        .from('habits')
+        .insert({
+          user_id: userId,
+          name: sourceHabit.name,
+          description: sourceHabit.description,
+          frequency: sourceHabit.frequency,
+          frequency_mode: sourceHabit.frequency_mode,
+          target_days_per_week: sourceHabit.target_days_per_week,
+          target_days: sourceHabit.target_days,
+          weekly_target: sourceHabit.weekly_target,
+          color: sourceHabit.color,
+          tracking_type: sourceHabit.tracking_type,
+          target_value: sourceHabit.target_value,
+          unit: sourceHabit.unit,
+          icon: sourceHabit.icon,
+          category: sourceHabit.category,
+          reminder_time: null,
+          has_progression: false,
+          current_level: null,
+          level_started_at: null,
+          is_shareable: true,
+          is_active: true,
+          sort_order: newSortOrder,
+        })
+        .select('id')
+        .single();
+
+      if (insertError) {
+        logger.error('Error creating habit copy for responder', { detail: insertError.message });
+        return NextResponse.json({ error: 'Failed to create habit' }, { status: 500 });
+      }
+
+      responderHabitId = newHabit.id;
     }
 
     const newStatus = action === 'accept' ? 'accepted' : 'declined';
@@ -64,7 +125,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       status: newStatus,
       responded_at: new Date().toISOString(),
     };
-    if (action === 'accept' && responderHabitId) {
+    if (responderHabitId) {
       updateData.responder_habit_id = responderHabitId;
     }
 
@@ -79,16 +140,16 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     const responderName = session.user.name || session.user.alias || 'Alguien';
-    const actionLabel = action === 'accept' ? 'ha aceptado' : 'ha rechazado';
+    const actionLabel = action === 'accept' ? 'se ha unido a' : 'ha rechazado';
     sendPushToUserIfEnabled(link.requester_id, {
-      title: `${responderName} ${actionLabel} tu solicitud de vínculo`,
-      body: action === 'accept' ? 'Ya pueden ver el progreso del otro' : 'Puedes enviar otra solicitud más adelante',
+      title: `${responderName} ${actionLabel} tu hábito`,
+      body: action === 'accept' ? 'Ya estáis haciendo este hábito juntos' : 'Puedes invitar a otra persona',
       tag: 'habit-link-response',
       data: { url: '/habits', type: 'habit_link_response' },
     }, 'habit_link_response').catch(() => {});
 
-    logger.info('Habit link responded', { linkId, action, userId });
-    return NextResponse.json({ status: newStatus });
+    logger.info('Habit link responded', { linkId, action, userId, responderHabitId });
+    return NextResponse.json({ status: newStatus, habitCreated: responderHabitId !== null });
   } catch (error) {
     logger.error('Error in habit link respond', { detail: error instanceof Error ? error.message : String(error) });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

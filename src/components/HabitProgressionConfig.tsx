@@ -174,14 +174,14 @@ export default function HabitProgressionConfig({
 
       {!expanded && !hasProgression && (
         <p className={`text-xs ${muted}`}>
-          Define niveles para ir de menos a más (ej: 3 días/semana, luego 4, luego 5).
+          Empieza tan pequeño que sea imposible fallar. Luego sube poco a poco.
         </p>
       )}
 
       {expanded && (
         <div className="space-y-3 pt-1">
           <p className={`text-xs ${muted}`}>
-            Cada nivel puede tener un objetivo diferente. Cuando cumplas consistentemente, podrás avanzar al siguiente.
+            El truco está en empezar ridículamente fácil. Un hábito debe establecerse antes de poder mejorarse.
           </p>
 
           <div className="space-y-2">

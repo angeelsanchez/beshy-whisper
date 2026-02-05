@@ -56,7 +56,7 @@ export default function DmChatInput({
 
   return (
     <div
-      className={`flex items-end gap-2 p-3 border-t ${
+      className={`shrink-0 flex items-end gap-2 p-3 border-t pb-safe ${
         isDay
           ? 'border-[#4A2E1B]/10 bg-[#F5F0E1]'
           : 'border-[#F5F0E1]/10 bg-[#2D1E1A]'

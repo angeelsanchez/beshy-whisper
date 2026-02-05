@@ -88,7 +88,7 @@ export default function MessagesPage(): React.ReactElement {
 
     return (
       <div
-        className={`h-[100dvh] flex flex-col ${
+        className={`chat-fullscreen flex flex-col overflow-hidden lg:pl-20 ${
           isDay ? 'bg-[#F5F0E1] text-[#4A2E1B]' : 'bg-[#2D1E1A] text-[#F5F0E1]'
         }`}
       >

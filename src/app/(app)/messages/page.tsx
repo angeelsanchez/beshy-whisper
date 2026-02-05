@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { MessageCircle } from 'lucide-react';
 import { useAuthSession } from '@/hooks/useAuthSession';
@@ -20,19 +20,46 @@ export default function MessagesPage(): React.ReactElement {
   const [selectedConversation, setSelectedConversation] = useState<ConversationListItem | null>(
     null
   );
+  const fetchedChatIdRef = useRef<string | null>(null);
 
   const { conversations, loading, error, totalUnread, refresh } = useConversations(
     session?.user?.id
   );
 
   useEffect(() => {
-    if (chatId && conversations.length > 0 && !selectedConversation) {
-      const conv = conversations.find((c) => c.id === chatId);
-      if (conv) {
-        setSelectedConversation(conv);
-      }
+    if (!chatId || !session?.user?.id) {
+      fetchedChatIdRef.current = null;
+      return;
     }
-  }, [chatId, conversations, selectedConversation]);
+
+    const conv = conversations.find((c) => c.id === chatId);
+    if (conv) {
+      setSelectedConversation(conv);
+      fetchedChatIdRef.current = chatId;
+      return;
+    }
+
+    if (fetchedChatIdRef.current === chatId) return;
+    fetchedChatIdRef.current = chatId;
+
+    const fetchConversation = async () => {
+      try {
+        const res = await fetch('/api/messages/conversations');
+        if (!res.ok) return;
+        const data = await res.json();
+        const convs: ConversationListItem[] = data.conversations ?? [];
+        const found = convs.find((c) => c.id === chatId);
+        if (found) {
+          setSelectedConversation(found);
+          refresh();
+        }
+      } catch {
+        // Ignore fetch errors
+      }
+    };
+
+    fetchConversation();
+  }, [chatId, conversations, session?.user?.id, refresh]);
 
   const handleSelectConversation = useCallback(
     (conversation: ConversationListItem) => {

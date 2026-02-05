@@ -21,9 +21,11 @@ export async function GET(): Promise<NextResponse> {
       .order('last_message_at', { ascending: false });
 
     if (convError) {
-      logger.error('Error fetching conversations', { detail: convError.message });
+      logger.error('Error fetching conversations', { detail: convError.message, userId });
       return NextResponse.json({ error: 'Error interno' }, { status: 500 });
     }
+
+    logger.info('Conversations fetched', { userId, count: conversations?.length ?? 0 });
 
     if (!conversations || conversations.length === 0) {
       return NextResponse.json({ conversations: [], totalUnread: 0 });

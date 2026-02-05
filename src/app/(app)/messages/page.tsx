@@ -135,12 +135,12 @@ export default function MessagesPage(): React.ReactElement {
 
   return (
     <div
-      className={`min-h-screen pb-24 lg:pb-8 lg:pl-24 ${
+      className={`min-h-screen pb-24 lg:pb-8 lg:pl-24 pt-safe ${
         isDay ? 'bg-[#F5F0E1] text-[#4A2E1B]' : 'bg-[#2D1E1A] text-[#F5F0E1]'
       }`}
     >
       <header
-        className={`sticky top-0 z-10 px-4 py-4 border-b ${
+        className={`sticky z-10 px-4 py-3 border-b ${
           isDay ? 'border-[#4A2E1B]/10 bg-[#F5F0E1]' : 'border-[#F5F0E1]/10 bg-[#2D1E1A]'
         }`}
         style={{ top: 'env(safe-area-inset-top, 0px)' }}
@@ -152,11 +152,6 @@ export default function MessagesPage(): React.ReactElement {
           </p>
         )}
       </header>
-
-      {/* DEBUG - REMOVE AFTER FIX */}
-      <div className="p-2 text-xs bg-yellow-200 text-black">
-        DEBUG: loading={String(loading)}, error={error ?? 'null'}, convCount={conversations.length}, userId={session?.user?.id ?? 'none'}
-      </div>
 
       <DmInbox
         conversations={conversations}

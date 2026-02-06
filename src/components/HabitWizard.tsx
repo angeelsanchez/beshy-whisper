@@ -12,6 +12,7 @@ import {
   type HabitTemplate,
 } from '@/lib/habit-templates';
 import AppIcon from '@/components/AppIcon';
+import { Bell, BellOff } from 'lucide-react';
 
 const PRESET_COLORS = [
   '#4A2E1B', '#8B5E3C', '#A0522D', '#CD853F',
@@ -844,58 +845,73 @@ function ReminderToggle({
   readonly onToggle: () => void;
   readonly onTimeChange: (val: string) => void;
 }): React.ReactElement {
+  if (!enabled) {
+    return (
+      <button
+        type="button"
+        onClick={onToggle}
+        className={`w-full flex items-center gap-3 p-3 rounded-xl border border-dashed transition-colors ${
+          isDay
+            ? 'border-[#4A2E1B]/20 hover:border-[#4A2E1B]/40 hover:bg-[#4A2E1B]/5'
+            : 'border-[#F5F0E1]/20 hover:border-[#F5F0E1]/40 hover:bg-[#F5F0E1]/5'
+        }`}
+      >
+        <div className={`flex items-center justify-center w-8 h-8 rounded-lg ${
+          isDay ? 'bg-[#4A2E1B]/10' : 'bg-[#F5F0E1]/10'
+        }`}>
+          <BellOff className={`w-4 h-4 ${isDay ? 'text-[#4A2E1B]/40' : 'text-[#F5F0E1]/40'}`} strokeWidth={2} />
+        </div>
+        <div className="text-left flex-1">
+          <p className={`text-sm font-medium ${isDay ? 'text-[#4A2E1B]/60' : 'text-[#F5F0E1]/60'}`}>
+            Activar recordatorio
+          </p>
+          <p className={`text-xs ${isDay ? 'text-[#4A2E1B]/35' : 'text-[#F5F0E1]/35'}`}>
+            Recibe una notificación push diaria
+          </p>
+        </div>
+      </button>
+    );
+  }
+
   return (
-    <div className="space-y-3">
-      <div className={`flex items-center justify-between p-3 rounded-xl ${
-        isDay ? 'bg-[#4A2E1B]/5' : 'bg-[#F5F0E1]/5'
-      }`}>
-        <div className="min-w-0 flex-1 mr-3">
-          <div className={`text-sm font-medium ${isDay ? 'text-[#4A2E1B]' : 'text-[#F5F0E1]'}`}>
-            Recordatorio
-          </div>
-          <div className={`text-xs ${isDay ? 'text-[#4A2E1B]/50' : 'text-[#F5F0E1]/50'}`}>
-            Notificación push diaria
-          </div>
+    <div className={`rounded-xl border p-3 space-y-3 ${
+      isDay ? 'border-[#4A2E1B]/20 bg-[#4A2E1B]/5' : 'border-[#F5F0E1]/20 bg-[#F5F0E1]/5'
+    }`}>
+      <div className="flex items-center gap-3">
+        <div className={`flex items-center justify-center w-8 h-8 rounded-lg ${
+          isDay ? 'bg-[#4A2E1B]/15' : 'bg-[#F5F0E1]/15'
+        }`}>
+          <Bell className={`w-4 h-4 ${isDay ? 'text-[#4A2E1B]' : 'text-[#F5F0E1]'}`} strokeWidth={2} />
+        </div>
+        <div className="flex-1">
+          <p className={`text-sm font-medium ${isDay ? 'text-[#4A2E1B]' : 'text-[#F5F0E1]'}`}>
+            Recordatorio activo
+          </p>
         </div>
         <button
           type="button"
           onClick={onToggle}
-          className={`relative flex-shrink-0 w-11 h-6 rounded-full transition-colors ${
-            enabled
-              ? isDay ? 'bg-[#4A2E1B]' : 'bg-[#F5F0E1]'
-              : isDay ? 'bg-[#4A2E1B]/20' : 'bg-[#F5F0E1]/20'
+          className={`text-xs font-medium px-2 py-1 rounded-md transition-colors ${
+            isDay
+              ? 'text-[#4A2E1B]/50 hover:text-[#4A2E1B] hover:bg-[#4A2E1B]/10'
+              : 'text-[#F5F0E1]/50 hover:text-[#F5F0E1] hover:bg-[#F5F0E1]/10'
           }`}
-          role="switch"
-          aria-checked={enabled}
         >
-          <span className={`absolute top-0.5 w-5 h-5 rounded-full transition-transform ${
-            enabled ? 'translate-x-[22px]' : 'translate-x-0.5'
-          } ${
-            enabled
-              ? isDay ? 'bg-[#F5F0E1]' : 'bg-[#2D1E1A]'
-              : isDay ? 'bg-[#4A2E1B]/40' : 'bg-[#F5F0E1]/40'
-          }`} />
+          Desactivar
         </button>
       </div>
-      {enabled && (
-        <div>
-          <span className={`block text-sm font-medium mb-1 ${isDay ? 'text-[#4A2E1B]' : 'text-[#F5F0E1]'}`}>
-            Hora del recordatorio
-          </span>
-          <div className={`rounded-lg border overflow-hidden ${
-            isDay ? 'bg-white/60 border-[#4A2E1B]/20' : 'bg-white/5 border-[#F5F0E1]/20'
-          }`}>
-            <input
-              type="time"
-              value={time}
-              onChange={e => onTimeChange(e.target.value)}
-              className={`w-full px-3 py-2 text-sm border-none bg-transparent ${
-                isDay ? 'text-[#4A2E1B]' : 'text-[#F5F0E1]'
-              }`}
-            />
-          </div>
-        </div>
-      )}
+      <div className={`rounded-lg border overflow-hidden ${
+        isDay ? 'bg-white/60 border-[#4A2E1B]/15' : 'bg-white/5 border-[#F5F0E1]/15'
+      }`}>
+        <input
+          type="time"
+          value={time}
+          onChange={e => onTimeChange(e.target.value)}
+          className={`w-full px-3 py-2 text-sm border-none bg-transparent ${
+            isDay ? 'text-[#4A2E1B]' : 'text-[#F5F0E1]'
+          }`}
+        />
+      </div>
     </div>
   );
 }

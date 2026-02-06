@@ -143,7 +143,7 @@ export default function MessagesPage(): React.ReactElement {
         className={`sticky top-0 z-10 px-4 pb-3 border-b ${
           isDay ? 'border-[#4A2E1B]/10 bg-[#F5F0E1]' : 'border-[#F5F0E1]/10 bg-[#2D1E1A]'
         }`}
-        style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 0.75rem)' }}
+        style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
       >
         <h1 className="text-xl font-semibold">Mensajes</h1>
         {totalUnread > 0 && (

@@ -67,7 +67,7 @@ export default function DmConversation({
         className={`shrink-0 flex items-center gap-3 px-4 pb-2 border-b ${
           isDay ? 'border-[#4A2E1B]/10 bg-[#F5F0E1]' : 'border-[#F5F0E1]/10 bg-[#2D1E1A]'
         }`}
-        style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 0.25rem)' }}
+        style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
       >
         <button
           onClick={onBack}

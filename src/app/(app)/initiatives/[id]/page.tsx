@@ -300,10 +300,10 @@ export default function InitiativeDetailPage(): React.ReactElement | null {
   const isChatActive = activeTab === 'chat' && isJoined;
 
   return (
-    <div className={`lg:pl-20 ${bgColor} ${
+    <div className={`${bgColor} ${
       isChatActive
         ? 'chat-fullscreen flex flex-col overflow-hidden'
-        : 'min-h-screen pb-24 lg:pb-8'
+        : 'lg:pl-20 min-h-screen pb-24 lg:pb-8'
     }`}>
       <div className={`max-w-lg mx-auto px-4 pt-4 w-full ${
         isChatActive ? 'flex flex-col flex-1 min-h-0 gap-5' : 'space-y-5'

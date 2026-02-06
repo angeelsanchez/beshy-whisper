@@ -61,12 +61,16 @@ select {
 }
 
 .chat-fullscreen {
-  height: calc(100dvh - 8rem - env(safe-area-inset-bottom, 0px));
+  position: fixed;
+  inset: 0;
+  bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
+  z-index: 40;
 }
 
 @media (min-width: 1024px) {
   .chat-fullscreen {
-    height: 100dvh;
+    left: 5rem;
+    bottom: 0;
   }
 }
 

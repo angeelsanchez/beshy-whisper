@@ -61,7 +61,7 @@ select {
 }
 
 .chat-fullscreen {
-  height: calc(100dvh - 6rem - env(safe-area-inset-bottom, 0px));
+  height: calc(100dvh - 7rem - env(safe-area-inset-bottom, 0px));
 }
 
 @media (min-width: 1024px) {

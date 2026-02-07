@@ -135,7 +135,7 @@ SocialShareModal → POST /api/generate-image
 
 ## Rate Limiting
 
-Implementado en `src/middleware.ts` con Map en memoria:
+Implementado en `src/middleware.ts` con Redis (producción) y fallback a Map en memoria (desarrollo):
 
 | Ruta | Límite | Ventana |
 |------|--------|---------|
@@ -154,7 +154,7 @@ Implementado en `src/middleware.ts` con Map en memoria:
 | `/api/user/update-bio` | 15 req | 60s |
 | Resto de `/api/*` | 60 req | 60s |
 
-Cleanup automático cuando el Map supera 10K entries. Se resetea al reiniciar el proceso.
+En producción, Redis persiste los contadores entre reinicios de contenedor. En desarrollo (sin Redis), cleanup automático del Map cuando supera 10K entries.
 
 ## Tema Día/Noche
 

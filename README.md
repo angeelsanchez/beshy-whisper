@@ -185,7 +185,7 @@ src/
 └── middleware.ts                  # Rate limiting por IP en /api/*
 ```
 
-**Metricas del codigo**: ~315 archivos TypeScript, ~45.000 lineas de codigo, 68 API routes, 48 archivos de test.
+**Metricas del codigo**: ~346 archivos TypeScript, ~49.000 lineas de codigo, 69 API routes, 53 archivos de test.
 
 ## Instalacion y Ejecucion
 

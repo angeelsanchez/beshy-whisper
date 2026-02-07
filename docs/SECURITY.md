@@ -60,9 +60,9 @@
 
 ## Rate Limiting
 
-Implementado en `src/middleware.ts`. Map en memoria por IP + ruta. Ver `docs/ARCHITECTURE.md` para límites por ruta.
+Implementado en `src/middleware.ts`. Usa Redis como almacenamiento distribuido con fallback a Map en memoria si Redis no está disponible. Ver `docs/ARCHITECTURE.md` para límites por ruta.
 
-**Limitación conocida**: se resetea al reiniciar el proceso (no persistente). Aceptable para instancia única con PM2.
+**Persistencia**: con Redis, los contadores de rate limiting sobreviven reinicios de contenedor. El fallback en memoria solo aplica en desarrollo local o si Redis cae.
 
 ## Secrets
 

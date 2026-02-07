@@ -261,7 +261,8 @@ INTERNAL_API_KEY                  # Auth para endpoint de envío de notificacion
 - **Usuario de app**: `beshy` (tiene las SSH keys de GitHub)
 - **Contenedores**: Podman + podman-compose (ejecutados como root)
 - **Puerto**: 4000 (app) + 6380→6379 (Redis)
-- **Compose file**: `docker-compose.yml` en la raíz del proyecto
+- **Compose file**: `compose.yaml` en la raíz del proyecto
+- **Variables de entorno**: `.env.container.example` como referencia para configurar `.env` del contenedor
 
 ### Secuencia de deploy
 ```bash

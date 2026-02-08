@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuthSession } from '@/hooks/useAuthSession';
+import { logger } from '@/lib/logger';
 
 // Interfaz para los objetivos
 interface Objective {
@@ -62,7 +63,7 @@ export default function ObjectivesList({ entryId, authorId, isDay, isEditing = f
         setObjectives(data || []);
         setError(null); // Limpiar cualquier error previo
       } catch (err) {
-        console.error('Error al cargar objetivos:', err);
+        logger.error('Error al cargar objetivos', { error: String(err) });
         
         // Si hay error y aún no hemos intentado muchas veces, programamos un reintento
         if (retryCount < 3) {
@@ -123,7 +124,7 @@ export default function ObjectivesList({ entryId, authorId, isDay, isEditing = f
         throw new Error(errorData.error || 'Error al actualizar objetivo');
       }
     } catch (err) {
-      console.error('Error al actualizar objetivo:', err);
+      logger.error('Error al actualizar objetivo', { error: String(err) });
       // Revertir el cambio en la UI si hay error
       setObjectives(prev => 
         prev.map(obj => 
@@ -155,7 +156,7 @@ export default function ObjectivesList({ entryId, authorId, isDay, isEditing = f
         throw new Error(errorData.error || 'Error al eliminar objetivo');
       }
     } catch (err) {
-      console.error('Error al eliminar objetivo:', err);
+      logger.error('Error al eliminar objetivo', { error: String(err) });
       // Recargar los objetivos si hay error
       const { data } = await supabase
         .from('objectives')
@@ -196,7 +197,7 @@ export default function ObjectivesList({ entryId, authorId, isDay, isEditing = f
         setNewObjectiveText(''); // Limpiar el campo de texto
       }
     } catch (err) {
-      console.error('Error al añadir objetivo:', err);
+      logger.error('Error al añadir objetivo', { error: String(err) });
       setError('No se pudo añadir el objetivo');
       
       // Limpiar mensaje de error después de 3 segundos

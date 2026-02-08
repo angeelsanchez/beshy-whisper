@@ -1,6 +1,8 @@
 // Service Worker Manager - Prevents duplicate registrations and handles errors
 'use client';
 
+import { logger } from '@/lib/logger';
+
 class ServiceWorkerManager {
   private static instance: ServiceWorkerManager;
   private registrationPromise: Promise<ServiceWorkerRegistration | null> | null = null;
@@ -21,7 +23,7 @@ class ServiceWorkerManager {
 
     // Check if service workers are supported
     if (!('serviceWorker' in navigator)) {
-      console.warn('Service workers not supported');
+      logger.warn('Service workers not supported');
       return null;
     }
 
@@ -32,7 +34,7 @@ class ServiceWorkerManager {
         return existingRegistration;
       }
     } catch (error) {
-      console.warn('Error checking existing SW registration:', error);
+      logger.warn('Error checking existing SW registration', { error: String(error) });
     }
 
     // Create new registration promise
@@ -73,7 +75,7 @@ class ServiceWorkerManager {
 
       return registration;
     } catch (error) {
-      console.error('Service worker registration failed:', error);
+      logger.error('Service worker registration failed', { error: String(error) });
       return null;
     } finally {
       this.isRegistering = false;
@@ -98,7 +100,7 @@ class ServiceWorkerManager {
         await registration.update();
       }
     } catch (error) {
-      console.error('Service worker update failed:', error);
+      logger.error('Service worker update failed', { error: String(error) });
     }
   }
 
@@ -110,7 +112,7 @@ class ServiceWorkerManager {
       }
       return false;
     } catch (error) {
-      console.error('Service worker unregistration failed:', error);
+      logger.error('Service worker unregistration failed', { error: String(error) });
       return false;
     }
   }
@@ -128,14 +130,14 @@ export const initializeServiceWorker = () => {
     // Delay registration to avoid blocking initial render
     setTimeout(() => {
       manager.register().catch(error => {
-        console.error('Service worker initialization failed:', error);
+        logger.error('Service worker initialization failed', { error: String(error) });
       });
     }, 2000);
   } else {
     window.addEventListener('load', () => {
       setTimeout(() => {
         manager.register().catch(error => {
-          console.error('Service worker initialization failed:', error);
+          logger.error('Service worker initialization failed', { error: String(error) });
         });
       }, 2000);
     });

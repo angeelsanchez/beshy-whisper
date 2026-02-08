@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useAuthSession } from '@/hooks/useAuthSession';
 import { useRouter } from 'next/navigation';
 import { signOut } from 'next-auth/react';
+import { logger } from '@/lib/logger';
 
 import { SearchParamsWrapper } from '@/components/SearchParamsWrapper';
 import { supabase } from '@/lib/supabase';
@@ -337,7 +338,7 @@ export default function Profile() {
         setDeleteSuccess(null);
       }, 3000);
     } catch (err) {
-      console.error('Error deleting post:', err);
+      logger.error('Error deleting post', { error: String(err) });
       setError(err instanceof Error ? err.message : 'Error al eliminar el post');
     } finally {
       setDeleteLoading(false);
@@ -408,7 +409,7 @@ export default function Profile() {
         setDeleteSuccess(null);
       }, 3000);
     } catch (err) {
-      console.error('Error updating post:', err);
+      logger.error('Error updating post', { error: String(err) });
       setError(err instanceof Error ? err.message : 'Error al actualizar el post');
     }
   };
@@ -457,7 +458,7 @@ export default function Profile() {
         setDeleteSuccess(null);
       }, 3000);
     } catch (err) {
-      console.error('Error toggling post privacy:', err);
+      logger.error('Error toggling post privacy', { error: String(err) });
       setError(err instanceof Error ? err.message : 'Error al cambiar la privacidad del post');
     } finally {
       setPrivacyLoading(null);
@@ -489,14 +490,14 @@ export default function Profile() {
           .single();
         
         if (userError) {
-          console.error('Error fetching user profile:', userError);
+          logger.error('Error fetching user profile', { error: String(userError) });
           setError('Error al cargar el perfil del usuario.');
           setLoading(false);
           return;
         }
         
         if (!userData) {
-          console.error('No user data found for ID:', userId);
+          logger.error('No user data found', { userId: userId ?? 'null' });
           setError('Usuario no encontrado.');
           setLoading(false);
           return;
@@ -518,7 +519,7 @@ export default function Profile() {
         const { data: entriesData, error: entriesError } = await query.order('fecha', { ascending: false });
 
         if (entriesError) {
-          console.error('Error fetching user entries:', entriesError);
+          logger.error('Error fetching user entries', { error: String(entriesError) });
           setError('Error al cargar los susurros. Por favor, intenta de nuevo más tarde.');
           setLoading(false);
           return;
@@ -532,7 +533,7 @@ export default function Profile() {
           .eq('done', true);
           
         if (objectivesError) {
-          console.error('Error fetching completed objectives:', objectivesError);
+          logger.error('Error fetching completed objectives', { error: String(objectivesError) });
           // No interrumpimos el flujo si falla la consulta de objetivos
         }
         
@@ -559,7 +560,7 @@ export default function Profile() {
             .in('entry_id', entryIds);
           
           if (likesError) {
-            console.error('Error fetching likes data:', likesError);
+            logger.error('Error fetching likes data', { error: String(likesError) });
           } else if (likesData && likesData.length > 0) {
             totalLikes = likesData.length;
 
@@ -596,7 +597,7 @@ export default function Profile() {
             .in('entry_id', dayEntryIds);
           
           if (objectivesError) {
-            console.error('Error al cargar objetivos:', objectivesError);
+            logger.error('Error al cargar objetivos', { error: String(objectivesError) });
           } else if (objectivesData) {
             // Agrupar objetivos por entry_id
             const objectivesByEntry = objectivesData.reduce((acc, obj) => {
@@ -633,7 +634,7 @@ export default function Profile() {
         // Set entries with likes count
         setEntries(entriesWithObjectives);
       } catch (err) {
-        console.error('Unexpected error loading user data:', err);
+        logger.error('Unexpected error loading user data', { error: String(err) });
         setError('Error inesperado. Por favor, intenta de nuevo más tarde.');
       } finally {
         setLoading(false);

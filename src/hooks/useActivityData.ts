@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
+import { logger } from '@/lib/logger';
 
 interface ActivityDay {
   date: string;
@@ -48,7 +49,7 @@ export const useActivityData = (userId: string | null): ActivityData => {
           .order('fecha', { ascending: true });
 
         if (error) {
-          console.error('Error fetching activity data:', error);
+          logger.error('Error fetching activity data', { error: String(error) });
           setData(prev => ({ ...prev, loading: false }));
           return;
         }
@@ -129,7 +130,7 @@ export const useActivityData = (userId: string | null): ActivityData => {
         });
 
       } catch (err) {
-        console.error('Unexpected error fetching activity data:', err);
+        logger.error('Unexpected error fetching activity data', { error: String(err) });
         setData(prev => ({ ...prev, loading: false, streakStartDate: null }));
       }
     };

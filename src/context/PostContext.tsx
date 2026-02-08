@@ -4,6 +4,7 @@ import { createContext, useContext, useState, ReactNode, useEffect, useRef, useC
 import { supabase } from '@/lib/supabase';
 import { getCurrentUserId } from '@/utils/user-helpers';
 import { useSession } from 'next-auth/react';
+import { logger } from '@/lib/logger';
 
 export interface EntryWithUser {
   id: string;
@@ -98,7 +99,7 @@ export function PostProvider({ children }: { children: ReactNode }) {
         user_has_liked: entry.id ? userLikesMap.has(entry.id) : false
       })));
     } catch (err) {
-      console.error('Error processing likes data:', err);
+      logger.error('Error processing likes data', { error: String(err) });
     }
   }, [currentUserId]);
 
@@ -141,7 +142,7 @@ export function PostProvider({ children }: { children: ReactNode }) {
         user_has_reposted: entry.id ? userRepostsMap.has(entry.id) : false,
       })));
     } catch (err) {
-      console.error('Error processing reposts data:', err);
+      logger.error('Error processing reposts data', { error: String(err) });
     }
   }, [currentUserId]);
 
@@ -162,14 +163,14 @@ export function PostProvider({ children }: { children: ReactNode }) {
         .limit(100);
       
       if (error) {
-        console.error('Error fetching entries:', error);
+        logger.error('Error fetching entries', { error: String(error) });
         return;
       }
       
       if (data) {
         const formattedEntries = data.map((entry) => {
           if (!entry.id) {
-            console.warn('Entry missing ID:', entry);
+            logger.warn('Entry missing ID');
             return null;
           }
           
@@ -209,7 +210,7 @@ export function PostProvider({ children }: { children: ReactNode }) {
         ]);
       }
     } catch (err) {
-      console.error('Error fetching entries:', err);
+      logger.error('Error fetching entries', { error: String(err) });
     } finally {
       setLoading(false);
     }
@@ -236,7 +237,7 @@ export function PostProvider({ children }: { children: ReactNode }) {
             .limit(1);
           
           if (error) {
-            console.error('Error fetching real post:', error);
+            logger.error('Error fetching real post', { error: String(error) });
             return;
           }
           
@@ -254,7 +255,7 @@ export function PostProvider({ children }: { children: ReactNode }) {
             await fetchLikesCounts(entriesRef.current);
           }
         } catch (err) {
-          console.error('Error updating temporary post:', err);
+          logger.error('Error updating temporary post', { error: String(err) });
         }
       }, 1000);
     }
@@ -305,7 +306,7 @@ export function PostProvider({ children }: { children: ReactNode }) {
 
     const handleRealtimeError = (status: string, err?: Error) => {
       if (err || status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-        console.warn('Realtime subscription issue:', status);
+        logger.warn('Realtime subscription issue', { status });
       }
     };
 
@@ -349,7 +350,7 @@ export function PostProvider({ children }: { children: ReactNode }) {
         .subscribe(handleRealtimeError);
       channels.push(repostsChannel);
     } catch {
-      console.warn('Realtime subscriptions unavailable');
+      logger.warn('Realtime subscriptions unavailable');
     }
 
     return () => {

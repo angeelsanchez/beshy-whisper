@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useAuthSession } from '@/hooks/useAuthSession';
+import { logger } from '@/lib/logger';
 
 interface ReminderSettings {
   enabled: boolean;
@@ -44,7 +45,7 @@ export const useReminderNotifications = () => {
         const parsed = JSON.parse(savedSettings);
         setSettings({ ...DEFAULT_REMINDER_SETTINGS, ...parsed });
       } catch (error) {
-        console.error('Error parsing saved reminder settings:', error);
+        logger.error('Error parsing saved reminder settings', { error: String(error) });
       }
     }
   }, []);
@@ -112,7 +113,7 @@ export const useReminderNotifications = () => {
         setStreakInfo(data);
       }
     } catch (error) {
-      console.error('Error fetching streak info:', error);
+      logger.error('Error fetching streak info', { error: String(error) });
     } finally {
       setLoading(false);
     }
@@ -140,7 +141,7 @@ export const useReminderNotifications = () => {
         return data;
       }
     } catch (error) {
-      console.error('Error checking today posts:', error);
+      logger.error('Error checking today posts', { error: String(error) });
     }
 
     return { hasDayPost: false, hasNightPost: false };
@@ -161,7 +162,7 @@ export const useReminderNotifications = () => {
         return data;
       }
     } catch (error) {
-      console.error('Error getting reminder status:', error);
+      logger.error('Error getting reminder status', { error: String(error) });
     }
 
     return null;
@@ -184,10 +185,10 @@ export const useReminderNotifications = () => {
       });
 
       if (!response.ok) {
-        console.error('Test reminder request failed:', response.status);
+        logger.error('Test reminder request failed', { status: response.status });
       }
     } catch (error) {
-      console.error('Error sending test reminder:', error);
+      logger.error('Error sending test reminder', { error: String(error) });
     }
   }, [session?.user?.id]);
 

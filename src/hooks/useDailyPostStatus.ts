@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuthSession } from '@/hooks/useAuthSession';
 import { supabase } from '@/lib/supabase';
+import { logger } from '@/lib/logger';
 
 interface DailyPostStatus {
   hasDayPost: boolean;
@@ -44,7 +45,7 @@ export const useDailyPostStatus = (): DailyPostStatus => {
           .lt('fecha', `${todayString}T23:59:59`);
 
         if (error) {
-          console.error('Error checking daily posts:', error);
+          logger.error('Error checking daily posts', { error: String(error) });
           setStatus(prev => ({ ...prev, loading: false }));
           return;
         }
@@ -81,7 +82,7 @@ export const useDailyPostStatus = (): DailyPostStatus => {
         });
 
       } catch (err) {
-        console.error('Unexpected error checking daily posts:', err);
+        logger.error('Unexpected error checking daily posts', { error: String(err) });
         setStatus(prev => ({ ...prev, loading: false }));
       }
     };

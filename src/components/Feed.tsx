@@ -19,6 +19,7 @@ import dynamic from 'next/dynamic';
 import { isMood, getMoodEmoji } from '@/types/mood';
 import { Repeat2 } from 'lucide-react';
 import { useActiveChallenge } from '@/hooks/useActiveChallenge';
+import { logger } from '@/lib/logger';
 
 const SocialShareModal = dynamic(() => import('./SocialShareModal'), {
   ssr: false,
@@ -139,7 +140,7 @@ export default function Feed() {
         if (abortController.signal.aborted) return;
         
         if (error) {
-          console.error('Database connection error:', error);
+          logger.error('Database connection error', { error: String(error) });
           setDbStatus('error');
           return;
         }
@@ -148,7 +149,7 @@ export default function Feed() {
         clearTimeout(timeoutId);
       } catch (err) {
         if (abortController.signal.aborted) return;
-        console.error('Failed to check database connection:', err);
+        logger.error('Failed to check database connection', { error: String(err) });
         setDbStatus('error');
       }
     };
@@ -289,7 +290,7 @@ export default function Feed() {
       if (err instanceof Error && err.name === 'AbortError') {
         setError('La operación tardó demasiado tiempo');
       } else {
-        console.error('Error deleting post:', err);
+        logger.error('Error deleting post', { error: String(err) });
         setError(err instanceof Error ? err.message : 'Error al eliminar el post');
       }
     } finally {
@@ -366,7 +367,7 @@ export default function Feed() {
       if (err instanceof Error && err.name === 'AbortError') {
         setError('La operación tardó demasiado tiempo');
       } else {
-        console.error('Error updating post:', err);
+        logger.error('Error updating post', { error: String(err) });
         setError(err instanceof Error ? err.message : 'Error al actualizar el post');
       }
     }
@@ -426,7 +427,7 @@ export default function Feed() {
       if (err instanceof Error && err.name === 'AbortError') {
         setError('La operación tardó demasiado tiempo');
       } else {
-        console.error('Error toggling post privacy:', err);
+        logger.error('Error toggling post privacy', { error: String(err) });
         setError(err instanceof Error ? err.message : 'Error al cambiar la privacidad del post');
       }
     } finally {

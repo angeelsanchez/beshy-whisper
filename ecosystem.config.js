@@ -3,7 +3,7 @@ module.exports = {
     name: 'beshy-whisper',
     script: 'npm',
     args: 'start',
-    cwd: '/home/beshy/beshy-whisper',
+    cwd: __dirname,
     env_file: '.env.local'
   }]
 };

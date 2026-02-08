@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { formatLikeCount } from '@/utils/format-utils';
 import { useAuthSession } from '@/hooks/useAuthSession';
+import { logger } from '@/lib/logger';
 
 interface LikeButtonProps {
   entryId: string;
@@ -41,7 +42,7 @@ export default function LikeButton({
         setLikeCount(data.count);
         setHasInitialized(true);
       } catch (err) {
-        console.error('Error fetching like status:', err);
+        logger.error('Error fetching like status', { error: String(err) });
         // Don't show error to user, just use initial values
         setHasInitialized(true);
       }
@@ -105,7 +106,7 @@ export default function LikeButton({
       // Optimistically update the like count
       setLikeCount(prevCount => data.liked ? prevCount + 1 : Math.max(0, prevCount - 1));
     } catch (err) {
-      console.error('Error toggling like:', err);
+      logger.error('Error toggling like', { error: String(err) });
       setError('Error al procesar tu me gusta');
       
       // Limpiar el error después de 3 segundos

@@ -1,5 +1,6 @@
 export const NOTIFICATION_TYPES = [
   'like',
+  'repost',
   'follow',
   'follow_post',
   'chat',
@@ -42,6 +43,7 @@ export const NOTIFICATION_CATEGORIES: ReadonlyArray<NotificationCategory> = [
     icon: 'Users',
     types: [
       { type: 'like', label: 'Likes', description: 'Cuando alguien da like a tu whisper' },
+      { type: 'repost', label: 'Reposts', description: 'Cuando alguien repostea tu whisper' },
       { type: 'follow', label: 'Nuevos seguidores', description: 'Cuando alguien te sigue' },
       { type: 'follow_post', label: 'Publicaciones de seguidos', description: 'Cuando alguien que sigues publica' },
       { type: 'chat', label: 'Mensajes de grupo', description: 'Mensajes en chats de iniciativas' },

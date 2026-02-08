@@ -27,7 +27,7 @@
     "@sentry/nextjs": "^10.38.0",
     "@supabase/supabase-js": "^2.93.3",
     "bcryptjs": "^2.4.3",
-    "chalk": "^4.1.2",
+    "chalk": "^5.6.2",
     "commander": "^11.1.0",
     "dotenv": "^16.6.1",
     "fs-extra": "^11.3.3",

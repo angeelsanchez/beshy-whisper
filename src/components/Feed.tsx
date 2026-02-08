@@ -9,6 +9,7 @@ import { usePostContext, EntryWithUser } from '@/context/PostContext';
 import { useTheme } from '@/context/ThemeContext';
 import { supabase } from '@/lib/supabase';
 import LikeButton from './LikeButton';
+import RepostButton from './RepostButton';
 import ObjectivesList from './ObjectivesList';
 import EntryHabitsDisplay from './EntryHabitsDisplay';
 import FeedFilter from './FeedFilter';
@@ -16,6 +17,7 @@ import Avatar from './Avatar';
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
 import { isMood, getMoodEmoji } from '@/types/mood';
+import { Repeat2 } from 'lucide-react';
 import { useActiveChallenge } from '@/hooks/useActiveChallenge';
 
 const SocialShareModal = dynamic(() => import('./SocialShareModal'), {
@@ -495,10 +497,26 @@ export default function Feed() {
       ) : (
         <div className={`space-y-4 transition-all duration-300 ${dbStatus === 'connecting' ? 'opacity-50' : 'opacity-100'}`}>
           {visibleEntries
-            .filter(entry => !entry.id.startsWith('temp-')) // Filtrar posts temporales
+            .filter(entry => !entry.id.startsWith('temp-'))
             .map((entry) => (
+            <div key={entry.id}>
+              {entry.is_repost && entry.reposted_by && (
+                <div className={`flex items-center gap-1.5 text-xs mb-1.5 ml-1 ${
+                  isDay ? 'text-[#4A2E1B]/60' : 'text-[#F5F0E1]/60'
+                }`}>
+                  <Repeat2 size={12} />
+                  <span>
+                    <Link
+                      href={`/profile?user=${entry.reposted_by.user_id}`}
+                      className="font-medium hover:underline"
+                    >
+                      {entry.reposted_by.display_name}
+                    </Link>
+                    {' reposteó'}
+                  </span>
+                </div>
+              )}
             <article
-              key={entry.id}
               aria-label={`Whisper de ${entry.display_name}`}
               className={`relative overflow-hidden ${
                 isDay
@@ -619,13 +637,19 @@ export default function Feed() {
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
                   {/* Like button using our new component */}
-                  <LikeButton 
+                  <LikeButton
                     entryId={entry.id}
                     initialLikeCount={entry.likes_count}
                     initialLiked={entry.user_has_liked}
                     isDay={isDay}
                   />
-                  
+                  <RepostButton
+                    entryId={entry.id}
+                    initialRepostCount={entry.reposts_count}
+                    initialReposted={entry.user_has_reposted}
+                    isDay={isDay}
+                  />
+
                   {/* Menu de opciones - solo mostrar para posts propios */}
                   {isAuthenticated && currentUserId === entry.user_id && !entry.guest && (
                     <div className="relative">
@@ -758,6 +782,7 @@ export default function Feed() {
                 </button>
               </div>
             </article>
+            </div>
           ))}
 
           {visibleEntries.length < (feedFilter === 'all' ? allEntries.length : followingEntries.length) && (

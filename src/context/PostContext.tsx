@@ -23,6 +23,14 @@ export interface EntryWithUser {
   display_name: string;
   likes_count: number;
   user_has_liked?: boolean;
+  reposts_count: number;
+  user_has_reposted?: boolean;
+  is_repost?: boolean;
+  reposted_by?: {
+    user_id: string;
+    display_name: string;
+    reposted_at: string;
+  };
   has_objectives: boolean;
   edited?: boolean;
   is_private?: boolean;
@@ -94,6 +102,49 @@ export function PostProvider({ children }: { children: ReactNode }) {
     }
   }, [currentUserId]);
 
+  const fetchRepostsCounts = useCallback(async (entriesArray: EntryWithUser[]) => {
+    if (!entriesArray.length) return;
+
+    try {
+      const entryIds = entriesArray.map(entry => entry.id).filter(Boolean);
+      if (!entryIds.length) return;
+
+      const [repostsResponse, userRepostsResponse] = await Promise.all([
+        supabase.from('reposts').select('entry_id').in('entry_id', entryIds),
+        currentUserId
+          ? supabase.from('reposts')
+              .select('entry_id')
+              .eq('user_id', currentUserId)
+              .in('entry_id', entryIds)
+          : null,
+      ]);
+
+      const repostsCountMap = new Map<string, number>();
+      if (!repostsResponse.error && repostsResponse.data) {
+        repostsResponse.data.forEach(repost => {
+          if (repost?.entry_id) {
+            repostsCountMap.set(repost.entry_id, (repostsCountMap.get(repost.entry_id) || 0) + 1);
+          }
+        });
+      }
+
+      const userRepostsMap = new Map<string, boolean>();
+      if (userRepostsResponse && !userRepostsResponse.error && userRepostsResponse.data) {
+        userRepostsResponse.data.forEach(repost => {
+          if (repost?.entry_id) userRepostsMap.set(repost.entry_id, true);
+        });
+      }
+
+      setEntries(prevEntries => prevEntries.map(entry => ({
+        ...entry,
+        reposts_count: entry.id ? (repostsCountMap.get(entry.id) || 0) : 0,
+        user_has_reposted: entry.id ? userRepostsMap.has(entry.id) : false,
+      })));
+    } catch (err) {
+      console.error('Error processing reposts data:', err);
+    }
+  }, [currentUserId]);
+
   const fetchEntries = useCallback(async () => {
     setLoading(true);
     try {
@@ -139,6 +190,7 @@ export function PostProvider({ children }: { children: ReactNode }) {
             display_id,
             display_name,
             likes_count: 0,
+            reposts_count: 0,
             has_objectives: entry.franja === 'DIA',
             profile_photo_url: entry.users?.profile_photo_url ?? null,
           };
@@ -151,14 +203,17 @@ export function PostProvider({ children }: { children: ReactNode }) {
         );
         
         setEntries(filteredEntries);
-        await fetchLikesCounts(filteredEntries);
+        await Promise.all([
+          fetchLikesCounts(filteredEntries),
+          fetchRepostsCounts(filteredEntries),
+        ]);
       }
     } catch (err) {
       console.error('Error fetching entries:', err);
     } finally {
       setLoading(false);
     }
-  }, [session, fetchLikesCounts]);
+  }, [session, fetchLikesCounts, fetchRepostsCounts]);
 
   const addLocalPost = useCallback((post: EntryWithUser) => {
     setEntries(prevEntries => [post, ...prevEntries]);
@@ -222,6 +277,25 @@ export function PostProvider({ children }: { children: ReactNode }) {
     }));
   }, [currentUserId]);
 
+  const handleRepostsChange = useCallback((payload: { new: Record<string, string> | null; old: Record<string, string> | null; eventType: string }) => {
+    const { new: newRepost, old: oldRepost, eventType } = payload;
+    const entryId = newRepost?.entry_id || oldRepost?.entry_id;
+    if (!entryId || !entriesRef.current.length) return;
+
+    setEntries(prevEntries => prevEntries.map(entry => {
+      if (entry.id !== entryId) return entry;
+      const delta = eventType === 'INSERT' ? 1 : eventType === 'DELETE' ? -1 : 0;
+      const userHasReposted = eventType === 'INSERT' && newRepost?.user_id === currentUserId;
+      return {
+        ...entry,
+        reposts_count: Math.max(0, entry.reposts_count + delta),
+        user_has_reposted: eventType === 'DELETE' && oldRepost?.user_id === currentUserId
+          ? false
+          : userHasReposted || entry.user_has_reposted,
+      };
+    }));
+  }, [currentUserId]);
+
   useEffect(() => {
     fetchEntries();
   }, [fetchEntries]);
@@ -263,6 +337,17 @@ export function PostProvider({ children }: { children: ReactNode }) {
         })
         .subscribe(handleRealtimeError);
       channels.push(likesChannel);
+
+      const repostsChannel = supabase
+        .channel('public:reposts')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'reposts' }, (payload) => {
+          handleRepostsChange({ ...payload, eventType: 'INSERT' });
+        })
+        .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'reposts' }, (payload) => {
+          handleRepostsChange({ ...payload, eventType: 'DELETE' });
+        })
+        .subscribe(handleRealtimeError);
+      channels.push(repostsChannel);
     } catch {
       console.warn('Realtime subscriptions unavailable');
     }
@@ -272,7 +357,7 @@ export function PostProvider({ children }: { children: ReactNode }) {
         supabase.removeChannel(ch).catch(() => {});
       }
     };
-  }, [currentUserId, fetchEntries, handleLikesChange]);
+  }, [currentUserId, fetchEntries, handleLikesChange, handleRepostsChange]);
 
   return (
     <PostContext.Provider value={{ 

@@ -10,6 +10,7 @@ import { supabase } from '@/lib/supabase';
 import { formatLikeCount } from '@/utils/format-utils';
 import dynamic from 'next/dynamic';
 import LikeButton from '@/components/LikeButton';
+import RepostButton from '@/components/RepostButton';
 import ObjectivesList from '@/components/ObjectivesList';
 
 import OnThisDaySection from '@/components/OnThisDaySection';
@@ -20,6 +21,7 @@ import StartDmButton from '@/components/StartDmButton';
 import FollowListModal from '@/components/FollowListModal';
 import Avatar from '@/components/Avatar';
 import { isMood, getMoodEmoji } from '@/types/mood';
+import { Repeat2 } from 'lucide-react';
 import StatsSection from '@/components/StatsSection';
 
 const ProfileEditForm = dynamic(() => import('@/components/ProfileEditForm'), {
@@ -140,12 +142,14 @@ const GlobeIcon = ({ isDay }: { isDay: boolean }) => (
   </svg>
 );
 
+type ProfileTab = 'whispers' | 'reposts';
+
 interface UserEntry {
   id: string;
   mensaje: string;
   fecha: string;
   franja: 'DIA' | 'NOCHE';
-  likes_count: number; // Count of likes for this entry
+  likes_count: number;
   objectives?: Array<{
     id: string;
     text: string;
@@ -153,6 +157,18 @@ interface UserEntry {
   }>;
   is_private: boolean;
   mood?: string | null;
+}
+
+interface RepostedEntry extends UserEntry {
+  user_id: string | null;
+  nombre: string;
+  guest: boolean;
+  edited?: boolean;
+  display_id: string;
+  display_name: string;
+  has_objectives: boolean;
+  profile_photo_url: string | null;
+  reposted_at: string;
 }
 
 interface UserProfile {
@@ -190,6 +206,9 @@ export default function Profile() {
   const [followListModal, setFollowListModal] = useState<{ isOpen: boolean; type: 'followers' | 'following' }>({
     isOpen: false, type: 'followers',
   });
+  const [activeProfileTab, setActiveProfileTab] = useState<ProfileTab>('whispers');
+  const [repostedEntries, setRepostedEntries] = useState<RepostedEntry[]>([]);
+  const [repostsLoading, setRepostsLoading] = useState(false);
 
   const router = useRouter();
   const [userId, setUserId] = useState<string | null>(session?.user?.id || null);
@@ -202,6 +221,36 @@ export default function Profile() {
   
   // Use custom hook for time of day
   const isDay = useTimeOfDay();
+
+  useEffect(() => {
+    if (activeProfileTab !== 'reposts' || !userId) return;
+
+    const controller = new AbortController();
+    setRepostsLoading(true);
+
+    const fetchReposts = async () => {
+      try {
+        const res = await fetch(`/api/reposts/user?userId=${userId}&limit=50`, {
+          signal: controller.signal,
+        });
+        if (!res.ok) {
+          setRepostsLoading(false);
+          return;
+        }
+        const data = await res.json();
+        setRepostedEntries(data.entries || []);
+      } catch (err) {
+        if (err instanceof Error && err.name !== 'AbortError') {
+          setRepostedEntries([]);
+        }
+      } finally {
+        setRepostsLoading(false);
+      }
+    };
+
+    fetchReposts();
+    return () => controller.abort();
+  }, [activeProfileTab, userId]);
 
   // Handle pull-to-refresh
   const handleRefresh = async () => {
@@ -903,6 +952,33 @@ export default function Profile() {
         <OnThisDaySection userId={userId} isDay={isDay} />
       )}
 
+      {/* Profile Tabs */}
+      <div className="flex gap-1 mb-4 p-1 rounded-xl" role="tablist" aria-label="Secciones del perfil">
+        {(['whispers', 'reposts'] as const).map(tab => (
+          <button
+            key={tab}
+            role="tab"
+            aria-selected={activeProfileTab === tab}
+            onClick={() => setActiveProfileTab(tab)}
+            className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center gap-1.5 ${
+              activeProfileTab === tab
+                ? isDay
+                  ? 'bg-[#4A2E1B] text-[#F5F0E1] shadow-sm'
+                  : 'bg-[#F5F0E1] text-[#2D1E1A] shadow-sm'
+                : isDay
+                  ? 'text-[#4A2E1B]/60 hover:bg-[#4A2E1B]/10'
+                  : 'text-[#F5F0E1]/60 hover:bg-[#F5F0E1]/10'
+            }`}
+          >
+            {tab === 'reposts' && <Repeat2 size={14} />}
+            {tab === 'whispers' ? 'Whispers' : 'Reposts'}
+          </button>
+        ))}
+      </div>
+
+      {/* Whispers Tab */}
+      {activeProfileTab === 'whispers' && (
+      <>
       {entries.length === 0 ? (
         <div className={`bg-white/10 p-6 text-center rounded-lg shadow-md transition-all duration-300`}>
           <p className="font-montserrat">
@@ -915,7 +991,7 @@ export default function Profile() {
       ) : (
         <div className="space-y-4">
           {entries.map((entry) => (
-            <div 
+            <div
               key={entry.id}
               className={`bg-white/10 p-4 rounded-lg shadow-md transition-all duration-300`}
             >
@@ -996,12 +1072,16 @@ export default function Profile() {
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
                   {/* Like count using the LikeButton component */}
-                  <LikeButton 
+                  <LikeButton
                     entryId={entry.id}
                     initialLikeCount={entry.likes_count}
                     isDay={isDay}
                   />
-                  
+                  <RepostButton
+                    entryId={entry.id}
+                    isDay={isDay}
+                  />
+
                   {/* Menu de opciones - solo mostrar para posts propios */}
                   {isOwnProfile && (
                     <div className="relative">
@@ -1103,6 +1183,80 @@ export default function Profile() {
             </div>
           ))}
         </div>
+      )}
+      </>
+      )}
+
+      {/* Reposts Tab */}
+      {activeProfileTab === 'reposts' && (
+        <>
+          {repostsLoading ? (
+            <div className={`w-full text-center py-8 ${isDay ? 'text-[#4A2E1B]' : 'text-[#F5F0E1]'}`}>
+              <p className="opacity-80">Cargando reposts...</p>
+            </div>
+          ) : repostedEntries.length === 0 ? (
+            <div className="bg-white/10 p-6 text-center rounded-lg shadow-md transition-all duration-300">
+              <Repeat2 size={32} className="mx-auto mb-2 opacity-40" />
+              <p className="font-montserrat">
+                {isOwnProfile ? 'No has reposteado nada aún.' : 'Este usuario no ha reposteado nada aún.'}
+              </p>
+              <p className="text-sm mt-2 opacity-75">
+                {isOwnProfile ? 'Los whispers que repostees aparecerán aquí.' : 'Los reposts aparecerán aquí.'}
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {repostedEntries.map((entry) => (
+                <div
+                  key={`repost-${entry.id}`}
+                  className="bg-white/10 p-4 rounded-lg shadow-md transition-all duration-300"
+                >
+                  <div className={`flex items-center gap-1.5 text-xs mb-2 ${
+                    isDay ? 'text-[#4A2E1B]/60' : 'text-[#F5F0E1]/60'
+                  }`}>
+                    <Repeat2 size={12} />
+                    <span>
+                      {isOwnProfile ? 'Reposteaste' : `${userProfile?.name || 'Usuario'} reposteó`}
+                      {' · '}
+                      {new Date(entry.reposted_at).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between mb-3 border-b pb-2 border-opacity-20 border-current">
+                    <span className="font-bold text-sm">
+                      {entry.display_name}
+                      <span className="font-normal opacity-70 ml-1">
+                        {entry.display_id}
+                      </span>
+                    </span>
+                    <div className="flex items-center gap-2 text-xs">
+                      <span>
+                        {new Date(entry.fecha).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
+                        {' '}
+                        {new Date(entry.fecha).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: '2-digit' })}
+                      </span>
+                      {entry.franja === 'DIA' ? <SunIcon isDay={isDay} /> : <MoonIcon isDay={isDay} />}
+                      {entry.mood && isMood(entry.mood) && (
+                        <span className="text-sm" title={entry.mood}>{getMoodEmoji(entry.mood)}</span>
+                      )}
+                    </div>
+                  </div>
+                  <p className="mb-2 text-sm leading-relaxed break-words whitespace-pre-wrap overflow-hidden">{entry.mensaje}</p>
+                  <div className="flex items-center gap-2">
+                    <LikeButton
+                      entryId={entry.id}
+                      initialLikeCount={entry.likes_count}
+                      isDay={isDay}
+                    />
+                    <RepostButton
+                      entryId={entry.id}
+                      isDay={isDay}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
       )}
         </div>
       </PullToRefresh>

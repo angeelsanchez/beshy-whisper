@@ -171,7 +171,7 @@ export default function AdaptiveNavigation() {
         ? 'text-[#4A2E1B]/70 hover:text-[#4A2E1B] hover:bg-[#4A2E1B]/5' 
         : 'text-[#F5F0E1]/70 hover:text-[#F5F0E1] hover:bg-[#F5F0E1]/5';
 
-    return `${baseStyles} ${activeStyles} lg:w-16 lg:h-16 w-12 h-12 rounded-xl`;
+    return `${baseStyles} ${activeStyles} lg:w-16 lg:h-16 min-w-12 px-3 py-1.5 rounded-xl`;
   };
 
   return (

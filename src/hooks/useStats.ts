@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
+import { logger } from '@/lib/logger';
 
 export interface AppStats {
   totalEntries: number;
@@ -29,7 +30,7 @@ export function useStats(): AppStats {
           .select('*', { count: 'exact', head: true });
 
         if (entriesError) {
-          console.error('Error fetching entries count:', entriesError);
+          logger.error('Error fetching entries count', { error: String(entriesError) });
         }
 
         // Fetch total users (non-guest)
@@ -38,7 +39,7 @@ export function useStats(): AppStats {
           .select('*', { count: 'exact', head: true });
 
         if (usersError) {
-          console.error('Error fetching users count:', usersError);
+          logger.error('Error fetching users count', { error: String(usersError) });
         }
 
         // Fetch total likes
@@ -47,7 +48,7 @@ export function useStats(): AppStats {
           .select('*', { count: 'exact', head: true });
 
         if (likesError) {
-          console.error('Error fetching likes count:', likesError);
+          logger.error('Error fetching likes count', { error: String(likesError) });
         }
 
         // Calculate satisfaction rate based on engagement
@@ -65,7 +66,7 @@ export function useStats(): AppStats {
           loading: false
         });
       } catch (error) {
-        console.error('Error fetching stats:', error);
+        logger.error('Error fetching stats', { error: String(error) });
         setStats(prev => ({ ...prev, loading: false }));
       }
     }

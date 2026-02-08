@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { GoogleReCaptchaProvider, useGoogleReCaptcha } from 'react-google-recaptcha-v3';
 import { useTheme } from '@/context/ThemeContext';
+import { logger } from '@/lib/logger';
 
 function GuestForm() {
   const [name, setName] = useState('');
@@ -42,7 +43,7 @@ function GuestForm() {
         // Este cambio es el único necesario para solucionar el error
         window.location.href = '/';
       } catch (storageErr) {
-        console.error('Error saving to sessionStorage:', storageErr);
+        logger.error('Error saving to sessionStorage', { error: String(storageErr) });
         // Fall back to direct navigation if sessionStorage fails
         window.location.href = '/';
       }

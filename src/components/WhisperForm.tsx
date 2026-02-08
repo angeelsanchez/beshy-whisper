@@ -15,6 +15,7 @@ import ManifestationCelebrationModal from './ManifestationCelebrationModal';
 import type { FulfilledManifestation } from '@/hooks/useManifestations';
 import { useActiveChallenge } from '@/hooks/useActiveChallenge';
 import type { Mood } from '@/types/mood';
+import { logger } from '@/lib/logger';
 
 interface Objective {
   id: string;
@@ -245,7 +246,7 @@ export default function WhisperForm() {
           }
         }
       } catch (ipErr) {
-        console.error('Error fetching IP:', ipErr);
+        logger.error('Error fetching IP', { error: String(ipErr) });
         // Continue with default IP
       }
       

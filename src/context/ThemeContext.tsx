@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { logger } from '@/lib/logger';
 
 type Theme = 'day' | 'night' | 'auto';
 
@@ -48,7 +49,7 @@ function getStoredTheme(): Theme {
       return stored as Theme;
     }
   } catch (error) {
-    console.warn('Error reading theme from localStorage:', error);
+    logger.warn('Error reading theme from localStorage', { error: String(error) });
   }
   return 'auto';
 }
@@ -58,7 +59,7 @@ function setStoredTheme(theme: Theme) {
   try {
     localStorage.setItem('beshy-theme', theme);
   } catch (error) {
-    console.warn('Error saving theme to localStorage:', error);
+    logger.warn('Error saving theme to localStorage', { error: String(error) });
   }
 }
 

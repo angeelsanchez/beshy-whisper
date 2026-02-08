@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuthSession } from '@/hooks/useAuthSession';
 import { useSession } from 'next-auth/react';
 import { useFocusTrap } from '@/hooks/useFocusTrap';
+import { logger } from '@/lib/logger';
 
 // Custom hook for time of day
 const useTimeOfDay = () => {
@@ -64,7 +65,7 @@ export default function NameInputModal({ onClose }: Readonly<NameInputModalProps
           onClose();
         }
       } catch (err) {
-        console.error('Error checking name status:', err);
+        logger.error('Error checking name status', { error: String(err) });
       }
     };
     
@@ -127,7 +128,7 @@ export default function NameInputModal({ onClose }: Readonly<NameInputModalProps
       // Close the modal on success
       onClose();
     } catch (err) {
-      console.error('Error updating name:', err);
+      logger.error('Error updating name', { error: String(err) });
       setError(err instanceof Error ? err.message : 'Failed to update name');
     } finally {
       setLoading(false);

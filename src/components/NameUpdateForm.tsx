@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuthSession } from '@/hooks/useAuthSession';
 import { useSession } from 'next-auth/react';
+import { logger } from '@/lib/logger';
 
 // Custom hook for time of day
 const useTimeOfDay = () => {
@@ -83,7 +84,7 @@ export default function NameUpdateForm({
           setDaysRemaining(diffDays > 0 ? diffDays : 0);
         }
       } catch (err) {
-        console.error('Error al obtener el estado del nombre:', err);
+        logger.error('Error al obtener el estado del nombre', { error: String(err) });
         setError('Error al cargar la información de tu nombre');
       } finally {
         setLoading(false);
@@ -171,7 +172,7 @@ export default function NameUpdateForm({
         }, 2000);
       }
     } catch (err) {
-      console.error('Error al actualizar el nombre:', err);
+      logger.error('Error al actualizar el nombre', { error: String(err) });
       setError(err instanceof Error ? err.message : 'Error al actualizar el nombre');
     } finally {
       setLoading(false);

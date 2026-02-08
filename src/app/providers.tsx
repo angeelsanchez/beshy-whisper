@@ -7,6 +7,7 @@ import { PostProvider } from '@/context/PostContext';
 import { ThemeProvider } from '@/context/ThemeContext';
 import dynamic from 'next/dynamic';
 import { useAuthSession } from '@/hooks/useAuthSession';
+import { logger } from '@/lib/logger';
 
 // Dynamically import the modal to avoid SSR issues
 const NameInputModal = dynamic(() => import('@/components/NameInputModal'), {
@@ -44,7 +45,7 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
         const response = await fetch('/api/user/name-status');
         
         if (!response.ok) {
-          console.error('Failed to fetch name status');
+          logger.error('Failed to fetch name status');
           return;
         }
         
@@ -56,7 +57,7 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
         
         setCheckedNameStatus(true);
       } catch (err) {
-        console.error('Error checking name status:', err);
+        logger.error('Error checking name status', { error: String(err) });
       }
     };
     

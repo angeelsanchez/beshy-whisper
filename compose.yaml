@@ -1,0 +1,49 @@
+services:
+  app:
+    container_name: beshy-whisper
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "4000:4000"
+    env_file:
+      - .env.container
+    environment:
+      - NODE_ENV=production
+      - REDIS_URL=redis://host.containers.internal:6380
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - beshy-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:4000/api/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  redis:
+    container_name: beshy-redis
+    image: docker.io/library/redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - beshy-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    command: redis-server --appendonly yes --maxmemory 128mb --maxmemory-policy allkeys-lru
+
+networks:
+  beshy-network:
+    driver: bridge
+
+volumes:
+  redis-data:

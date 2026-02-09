@@ -26,6 +26,12 @@ vi.mock('@/lib/supabase-admin', () => ({
   },
 }));
 
+vi.mock('@/lib/cache/streaks', () => ({
+  getCachedStreak: vi.fn().mockResolvedValue(null),
+  setCachedStreak: vi.fn().mockResolvedValue(undefined),
+  invalidateStreakCache: vi.fn().mockResolvedValue(undefined),
+}));
+
 import { GET } from '../route';
 
 const VALID_UUID = '550e8400-e29b-41d4-a716-446655440000';

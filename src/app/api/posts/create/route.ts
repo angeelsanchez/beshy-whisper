@@ -5,6 +5,7 @@ import { authOptions } from '../../auth/[...nextauth]/auth';
 import { createPostSchema } from '@/lib/schemas/posts';
 import { logger } from '@/lib/logger';
 import { sendPushToUserIfEnabled } from '@/lib/push-notify';
+import { invalidateStreakCache } from '@/lib/cache/streaks';
 
 async function notifyFollowers(userId: string, userName: string, entryId: string) {
   try {
@@ -149,6 +150,9 @@ export async function POST(request: NextRequest) {
         logger.error('Error in follow notification', { detail: err instanceof Error ? err.message : String(err) });
       });
     }
+
+    // Invalidate streak cache since new post was created
+    await invalidateStreakCache(userId);
 
     logger.info('Post created', { userId, entryId: entry.id, franja });
     return NextResponse.json({

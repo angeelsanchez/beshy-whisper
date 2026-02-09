@@ -5,6 +5,7 @@ import { authOptions } from '../../auth/[...nextauth]/auth';
 import { likeStatusSchema } from '@/lib/schemas/likes';
 import { uuidSchema } from '@/lib/schemas/common';
 import { logger } from '@/lib/logger';
+import { getCachedLikesCount, setCachedLikesCount } from '@/lib/cache/counters';
 
 export async function GET(request: NextRequest) {
   try {
@@ -47,25 +48,26 @@ export async function GET(request: NextRequest) {
         { status: 400 }
       );
     }
-    
+
     try {
-      // Use the check_like_status function to check if the user has liked the entry
+      // Check if user has liked this entry
       const { data, error } = await supabaseAdmin.rpc('check_like_status', {
         p_user_id: userId,
         p_entry_id: entryId
       });
-      
+
+      let liked = false;
       if (error) {
         logger.error('Error checking like status with RPC', { detail: error?.message || String(error) });
-        
-        // Try with direct SQL as a fallback
+
+        // Fallback to direct query
         const { data: existingLike, error: checkError } = await supabaseAdmin
           .from('likes')
           .select('id')
           .eq('user_id', userId)
           .eq('entry_id', entryId)
           .maybeSingle();
-        
+
         if (checkError) {
           logger.error('Error checking existing like', { detail: checkError?.message || String(checkError) });
           return NextResponse.json(
@@ -73,61 +75,46 @@ export async function GET(request: NextRequest) {
             { status: 500 }
           );
         }
-        
-        // Get the total likes count for the entry
+
+        liked = !!existingLike;
+      } else {
+        liked = !!data;
+      }
+
+      // Try to get cached count first
+      let count = await getCachedLikesCount(entryId);
+
+      if (count === null) {
+        // Cache miss - fetch from database
         const { data: likesCount, error: countError } = await supabaseAdmin.rpc('get_likes_count', {
           p_entry_id: entryId
         });
-        
-        let count = 0;
+
         if (countError) {
           logger.error('Error getting likes count with RPC', { detail: countError?.message || String(countError) });
-          
-          // Try with direct SQL as a fallback
+
+          // Fallback to direct count
           const { data: countData, error: directCountError } = await supabaseAdmin
             .from('likes')
             .select('id', { count: 'exact' })
             .eq('entry_id', entryId);
-          
+
           if (!directCountError) {
             count = countData?.length || 0;
+          } else {
+            count = 0;
           }
         } else {
           count = likesCount || 0;
         }
-        
-        return NextResponse.json({
-          liked: !!existingLike,
-          count: count
-        });
+
+        // Cache the count
+        await setCachedLikesCount(entryId, count ?? 0);
       }
-      
-      // Get the total likes count for the entry
-      const { data: likesCount, error: countError } = await supabaseAdmin.rpc('get_likes_count', {
-        p_entry_id: entryId
-      });
-      
-      let count = 0;
-      if (countError) {
-        logger.error('Error getting likes count with RPC', { detail: countError?.message || String(countError) });
-        
-        // Try with direct SQL as a fallback
-        const { data: countData, error: directCountError } = await supabaseAdmin
-          .from('likes')
-          .select('id', { count: 'exact' })
-          .eq('entry_id', entryId);
-        
-        if (!directCountError) {
-          count = countData?.length || 0;
-        }
-      } else {
-        count = likesCount || 0;
-      }
-      
-      // Return the result
+
       return NextResponse.json({
-        liked: !!data,
-        count: count
+        liked,
+        count
       });
     } catch (error) {
       logger.error('Unexpected error checking like status', { detail: error instanceof Error ? error.message : String(error) });
@@ -143,4 +130,4 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
-} 
+}

@@ -6,6 +6,7 @@ import { toggleLikeSchema } from '@/lib/schemas/likes';
 import { uuidSchema } from '@/lib/schemas/common';
 import { sendPushToUserIfEnabled } from '@/lib/push-notify';
 import { logger } from '@/lib/logger';
+import { incrementCachedLikesCount, decrementCachedLikesCount, invalidateLikesCount } from '@/lib/cache/counters';
 
 async function sendLikeNotification(entryId: string, likerUserId: string): Promise<void> {
   const { data: entryData, error: entryError } = await supabaseAdmin
@@ -126,7 +127,7 @@ export async function POST(request: NextRequest) {
             .delete()
             .eq('user_id', userId)
             .eq('entry_id', entryId);
-          
+
           if (deleteError) {
             logger.error('Error removing like', { detail: deleteError?.message || String(deleteError) });
             return NextResponse.json(
@@ -134,9 +135,12 @@ export async function POST(request: NextRequest) {
               { status: 500 }
             );
           }
-          
-          return NextResponse.json({ 
-            success: true, 
+
+          // Update cache
+          await decrementCachedLikesCount(entryId);
+
+          return NextResponse.json({
+            success: true,
             action: 'unliked',
             liked: false
           });
@@ -156,7 +160,10 @@ export async function POST(request: NextRequest) {
               { status: 500 }
             );
           }
-          
+
+          // Update cache
+          await incrementCachedLikesCount(entryId);
+
           // Send like notification asynchronously
           sendLikeNotification(entryId, userId).catch(err => {
             logger.error('Failed to send like notification', { detail: err instanceof Error ? err.message : String(err) });
@@ -170,13 +177,16 @@ export async function POST(request: NextRequest) {
         }
       }
 
+      // Invalidate cache after RPC toggle
+      await invalidateLikesCount(entryId);
+
       // Send like notification if the action was 'liked'
       if (data && data.liked === true) {
         sendLikeNotification(entryId, userId).catch(err => {
           logger.error('Failed to send like notification', { detail: err instanceof Error ? err.message : String(err) });
         });
       }
-      
+
       // Return the result from the RPC function
       return NextResponse.json(data);
     } catch (error) {

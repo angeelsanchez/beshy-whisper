@@ -24,7 +24,8 @@ Desplegada en produccion: **https://whisper.beshy.es**
 | Analisis estatico | SonarQube |
 | Testing | Vitest + React Testing Library |
 | Linting | ESLint + Husky + lint-staged |
-| Process Manager | PM2 (produccion) |
+| Contenedores | Podman + podman-compose |
+| Cache | Redis 7 (rate limiting, contadores, streaks) |
 
 ## Funcionalidades Principales
 
@@ -170,6 +171,10 @@ src/
 ├── lib/                          # Clientes y logica compartida
 │   ├── supabase.ts               #   Cliente anon (client-side, RLS activo)
 │   ├── supabase-admin.ts         #   Cliente service_role (server-side)
+│   ├── redis.ts                  #   Cliente Redis con fallback a memoria
+│   ├── cache/                    #   Cache distribuido
+│   │   ├── counters.ts           #     Cache de likes (TTL 5min)
+│   │   └── streaks.ts            #     Cache de streaks (TTL 10min)
 │   ├── logger.ts                 #   Logger estructurado + Sentry
 │   ├── push-notify.ts            #   VAPID centralizado + helpers
 │   ├── icon-map.ts               #   Mapeo de iconos (mood, categoria, habito)
@@ -294,7 +299,7 @@ La aplicacion estara disponible en **http://localhost:4000**.
 
 - **Autenticacion**: NextAuth v4 con JWT, Google OAuth 2.0, bcrypt (cost factor 12)
 - **Autorizacion**: verificacion de sesion + ownership en toda mutacion (prevencion IDOR)
-- **Rate limiting**: middleware por IP en todas las rutas API
+- **Rate limiting**: middleware por IP en todas las rutas API (Redis en produccion, memoria en desarrollo)
 - **Validacion de input**: Zod schemas con `.safeParse()` en cada route handler
 - **Proteccion XSS**: HTML escaping para contenido de usuario, CSP configurado
 - **Security headers**: HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy
@@ -303,14 +308,131 @@ La aplicacion estara disponible en **http://localhost:4000**.
 - **Logging**: logger estructurado con Sentry (sin datos sensibles)
 - **Lockout**: bloqueo de cuenta tras intentos fallidos de login
 
-## Despliegue
+## Despliegue en Produccion (Podman + Redis)
 
-La aplicacion esta desplegada en un VPS con PM2:
+La aplicacion corre en contenedores Podman con Redis para cache distribuido.
+
+### Arquitectura
+
+```
+┌─────────────────────────────────────────────────┐
+│                 Podman Network                   │
+├─────────────────────────────────────────────────┤
+│  ┌─────────────┐         ┌─────────────────┐   │
+│  │   Redis     │◄───────►│   Next.js App   │   │
+│  │  (alpine)   │         │  (standalone)   │   │
+│  │  :6380      │         │     :4000       │   │
+│  └─────────────┘         └────────┬────────┘   │
+│                                   │            │
+└───────────────────────────────────┼────────────┘
+                                    │
+                              ┌─────▼─────┐
+                              │  Supabase │
+                              │  (cloud)  │
+                              └───────────┘
+```
+
+### Beneficios de Redis
+
+| Funcionalidad | Antes (memoria) | Despues (Redis) |
+|---------------|-----------------|-----------------|
+| Rate limiting | Se pierde en restart | Persistente, distribuido |
+| Likes count | COUNT(*) cada request (~100-500ms) | Cache 5min (~1ms) |
+| Streaks | Recalcula todas las entries | Cache 10min (~1ms) |
+
+### Comandos de Deploy
 
 ```bash
-pnpm run build
-pnpm start
+cd /home/beshy/beshy-whisper
+
+# Deploy completo (pull + build + restart)
+./scripts/deploy-podman.sh deploy
+
+# Solo build
+./scripts/deploy-podman.sh build
+
+# Iniciar contenedores
+./scripts/deploy-podman.sh up
+
+# Detener contenedores
+./scripts/deploy-podman.sh down
+
+# Reiniciar
+./scripts/deploy-podman.sh restart
+
+# Ver estado y health check
+./scripts/deploy-podman.sh status
+
+# Ver logs (todos o de un servicio)
+./scripts/deploy-podman.sh logs
+./scripts/deploy-podman.sh logs app
+
+# Shell en contenedor
+./scripts/deploy-podman.sh shell
+
+# Redis CLI
+./scripts/deploy-podman.sh redis-cli
+
+# Rollback a PM2 (emergencia)
+./scripts/deploy-podman.sh rollback
+
+# Limpiar todo (contenedores, imagenes, volumenes)
+./scripts/deploy-podman.sh clean
 ```
+
+### Health Check
+
+```bash
+curl https://whisper.beshy.es/api/health
+```
+
+Respuesta:
+```json
+{
+  "status": "ok",
+  "timestamp": "2026-02-09T23:53:32.224Z",
+  "uptime": 21.6,
+  "memory": { "rss": 202031104, "heapTotal": 125341696 },
+  "redis": { "available": true, "latency": 1 }
+}
+```
+
+### Configuracion Inicial (solo primera vez)
+
+```bash
+# 1. Instalar Podman (como root)
+sudo ./scripts/setup-podman.sh
+
+# 2. Crear archivo de entorno
+cp .env.container.example .env.container
+nano .env.container  # Rellenar con valores de produccion
+
+# 3. Build y deploy
+./scripts/deploy-podman.sh deploy
+```
+
+### Archivos de Contenedores
+
+| Archivo | Descripcion |
+|---------|-------------|
+| `Dockerfile` | Multi-stage build (deps → builder → runner) con Puppeteer |
+| `compose.yaml` | Servicios: app + redis con health checks |
+| `.dockerignore` | Exclusiones para optimizar build |
+| `.env.container` | Variables de entorno (no commitear) |
+| `.env.container.example` | Template de variables |
+| `scripts/deploy-podman.sh` | Script de operaciones |
+| `scripts/setup-podman.sh` | Instalacion inicial |
+
+### Desarrollo Local
+
+El desarrollo local sigue funcionando igual sin necesidad de contenedores:
+
+```bash
+pnpm install
+pnpm dev
+```
+
+Redis es opcional en desarrollo - el sistema usa fallback a memoria automaticamente.
 
 **URL de produccion**: https://whisper.beshy.es
 

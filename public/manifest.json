@@ -1,4 +1,5 @@
 {
+  "id": "/",
   "name": "BESHY Whisper",
   "short_name": "Whisper",
   "description": "Transforma tu vida con journaling diario anonimo. Escribe susurros, conecta con una comunidad y construye habitos de bienestar.",
@@ -20,13 +21,25 @@
       "src": "/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
     },
     {
       "src": "/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ],
   "prefer_related_applications": false,

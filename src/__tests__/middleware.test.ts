@@ -16,68 +16,68 @@ function makeRequest(path: string, ip = '127.0.0.1'): NextRequest {
 }
 
 describe('middleware', () => {
-  it('passes through non-API routes', () => {
-    const res = middleware(makeRequest('/about'));
+  it('passes through non-API routes', async () => {
+    const res = await middleware(makeRequest('/about'));
     expect(res.status).toBe(200);
   });
 
-  it('allows API requests within rate limit', () => {
-    const res = middleware(makeRequest('/api/likes', '10.0.0.1'));
+  it('allows API requests within rate limit', async () => {
+    const res = await middleware(makeRequest('/api/likes', '10.0.0.1'));
     expect(res.status).toBe(200);
   });
 
-  it('returns 429 when rate limit exceeded for register', () => {
+  it('returns 429 when rate limit exceeded for register', async () => {
     const ip = '10.0.0.2';
     for (let i = 0; i < 5; i++) {
-      middleware(makeRequest('/api/auth/register', ip));
+      await middleware(makeRequest('/api/auth/register', ip));
     }
-    const res = middleware(makeRequest('/api/auth/register', ip));
+    const res = await middleware(makeRequest('/api/auth/register', ip));
     expect(res.status).toBe(429);
     const retryAfter = res.headers.get('Retry-After');
     expect(retryAfter).toBeDefined();
   });
 
-  it('allows requests from different IPs independently', () => {
+  it('allows requests from different IPs independently', async () => {
     for (let i = 0; i < 5; i++) {
-      middleware(makeRequest('/api/auth/register', '10.0.0.3'));
+      await middleware(makeRequest('/api/auth/register', '10.0.0.3'));
     }
-    const res = middleware(makeRequest('/api/auth/register', '10.0.0.4'));
+    const res = await middleware(makeRequest('/api/auth/register', '10.0.0.4'));
     expect(res.status).toBe(200);
   });
 
-  it('uses default limit for unknown API paths', () => {
+  it('uses default limit for unknown API paths', async () => {
     const ip = '10.0.0.5';
     for (let i = 0; i < 60; i++) {
-      middleware(makeRequest('/api/some/other', ip));
+      await middleware(makeRequest('/api/some/other', ip));
     }
-    const res = middleware(makeRequest('/api/some/other', ip));
+    const res = await middleware(makeRequest('/api/some/other', ip));
     expect(res.status).toBe(429);
   });
 
-  it('returns 429 when check-lockout rate limit exceeded (5/min)', () => {
+  it('returns 429 when check-lockout rate limit exceeded (5/min)', async () => {
     const ip = '10.0.0.10';
     for (let i = 0; i < 5; i++) {
-      middleware(makeRequest('/api/auth/check-lockout', ip));
+      await middleware(makeRequest('/api/auth/check-lockout', ip));
     }
-    const res = middleware(makeRequest('/api/auth/check-lockout', ip));
+    const res = await middleware(makeRequest('/api/auth/check-lockout', ip));
     expect(res.status).toBe(429);
   });
 
-  it('returns 429 when callback rate limit exceeded (5/min)', () => {
+  it('returns 429 when callback rate limit exceeded (5/min)', async () => {
     const ip = '10.0.0.11';
     for (let i = 0; i < 5; i++) {
-      middleware(makeRequest('/api/auth/callback', ip));
+      await middleware(makeRequest('/api/auth/callback', ip));
     }
-    const res = middleware(makeRequest('/api/auth/callback', ip));
+    const res = await middleware(makeRequest('/api/auth/callback', ip));
     expect(res.status).toBe(429);
   });
 
-  it('allows check-lockout requests within limit', () => {
+  it('allows check-lockout requests within limit', async () => {
     const ip = '10.0.0.12';
     for (let i = 0; i < 4; i++) {
-      middleware(makeRequest('/api/auth/check-lockout', ip));
+      await middleware(makeRequest('/api/auth/check-lockout', ip));
     }
-    const res = middleware(makeRequest('/api/auth/check-lockout', ip));
+    const res = await middleware(makeRequest('/api/auth/check-lockout', ip));
     expect(res.status).toBe(200);
   });
 });

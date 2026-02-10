@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// In-memory fallback store for rate limiting (used when Redis is unavailable)
+// In-memory rate limiting (works in Edge Runtime, persists per container instance)
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
 
 const RATE_LIMITS: Record<string, { max: number; windowMs: number }> = {
@@ -48,40 +48,9 @@ function cleanupExpiredEntries() {
   }
 }
 
-async function checkRateLimitWithRedis(
-  key: string,
-  max: number,
-  windowSeconds: number,
-  baseUrl: string
-): Promise<{ allowed: boolean; remaining: number; resetIn: number } | null> {
-  try {
-    const response = await fetch(`${baseUrl}/api/internal/rate-limit`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-internal-secret': process.env.INTERNAL_API_SECRET || '',
-      },
-      body: JSON.stringify({ key, max, windowSeconds }),
-    });
-
-    if (!response.ok) return null;
-
-    const data = await response.json();
-    return {
-      allowed: data.allowed,
-      remaining: data.remaining,
-      resetIn: data.resetIn,
-    };
-  } catch {
-    // Redis/internal endpoint unavailable, fall back to memory
-    return null;
-  }
-}
-
-function checkRateLimitMemory(key: string, max: number, windowMs: number) {
+function checkRateLimit(key: string, max: number, windowMs: number) {
   const now = Date.now();
 
-  // Cleanup if map gets too large
   if (rateLimitMap.size > 10_000) {
     cleanupExpiredEntries();
   }
@@ -109,15 +78,13 @@ function checkRateLimitMemory(key: string, max: number, windowMs: number) {
   };
 }
 
-export async function middleware(request: NextRequest) {
+export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Skip rate limiting for non-API routes
   if (!pathname.startsWith('/api/')) {
     return NextResponse.next();
   }
 
-  // Skip rate limiting for internal endpoints
   if (pathname.startsWith('/api/internal/') || pathname.startsWith('/api/health')) {
     return NextResponse.next();
   }
@@ -125,16 +92,8 @@ export async function middleware(request: NextRequest) {
   const ip = getClientIp(request);
   const { max, windowMs } = getRateLimit(pathname);
   const key = `${ip}:${pathname.split('/').slice(0, 4).join('/')}`;
-  const windowSeconds = Math.ceil(windowMs / 1000);
 
-  // Try Redis-based rate limiting first
-  const baseUrl = request.nextUrl.origin;
-  let result = await checkRateLimitWithRedis(key, max, windowSeconds, baseUrl);
-
-  // Fall back to memory-based rate limiting
-  if (!result) {
-    result = checkRateLimitMemory(key, max, windowMs);
-  }
+  const result = checkRateLimit(key, max, windowMs);
 
   if (!result.allowed) {
     return NextResponse.json(

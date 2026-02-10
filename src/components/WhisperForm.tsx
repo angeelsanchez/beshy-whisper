@@ -177,17 +177,19 @@ export default function WhisperForm() {
     }
     
     // For authenticated users, check if they have already posted in this time frame today
-    // Only count posts made as authenticated user (guest: false)
-    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-    
+    // Use local timezone (Spain) for day boundaries so "today" matches user's calendar day
+    const now = new Date();
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+
     const { data: existingPosts } = await supabase
       .from('entries')
-      .select('*')
+      .select('id')
       .eq('user_id', session?.user.id)
-      .eq('guest', false) // Only count authenticated posts
+      .eq('guest', false)
       .eq('franja', franja)
-      .gte('fecha', `${today}T00:00:00`)
-      .lte('fecha', `${today}T23:59:59`);
+      .gte('fecha', startOfDay.toISOString())
+      .lt('fecha', endOfDay.toISOString());
     
     if (existingPosts && existingPosts.length > 0) {
       setError(`Ya has publicado un susurro ${franja === 'DIA' ? 'diurno' : 'nocturno'} hoy.`);

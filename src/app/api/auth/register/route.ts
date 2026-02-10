@@ -27,18 +27,20 @@ export async function POST(req: NextRequest) {
 
     const { email, password, token, name } = parsed.data;
 
-    const recaptchaVerification = await fetch(
-      `https://www.google.com/recaptcha/api/siteverify?secret=${process.env.RECAPTCHA_SECRET_KEY}&response=${token}`,
-      { method: 'POST' }
-    );
-
-    const recaptchaResult = await recaptchaVerification.json();
-
-    if (!recaptchaResult.success || (recaptchaResult.score !== undefined && recaptchaResult.score < 0.5)) {
-      return NextResponse.json(
-        { message: 'reCAPTCHA verification failed' },
-        { status: 400 }
+    if (process.env.E2E_BYPASS_RECAPTCHA !== 'true') {
+      const recaptchaVerification = await fetch(
+        `https://www.google.com/recaptcha/api/siteverify?secret=${process.env.RECAPTCHA_SECRET_KEY}&response=${token}`,
+        { method: 'POST' }
       );
+
+      const recaptchaResult = await recaptchaVerification.json();
+
+      if (!recaptchaResult.success || (recaptchaResult.score !== undefined && recaptchaResult.score < 0.5)) {
+        return NextResponse.json(
+          { message: 'reCAPTCHA verification failed' },
+          { status: 400 }
+        );
+      }
     }
 
     const { data: existingUser } = await supabaseAdmin

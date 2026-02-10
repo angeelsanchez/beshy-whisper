@@ -31,18 +31,19 @@ export const useDailyPostStatus = (): DailyPostStatus => {
       }
 
       try {
-        // Get today's date in YYYY-MM-DD format
-        const today = new Date();
-        const todayString = today.toISOString().split('T')[0];
-        
+        // Use local timezone for day boundaries so "today" matches user's calendar day
+        const now = new Date();
+        const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+
         // Get today's posts for this user (only non-guest posts)
         const { data: todaysPosts, error } = await supabase
           .from('entries')
           .select('franja')
           .eq('user_id', session.user.id)
           .eq('guest', false)
-          .gte('fecha', `${todayString}T00:00:00`)
-          .lt('fecha', `${todayString}T23:59:59`);
+          .gte('fecha', startOfDay.toISOString())
+          .lt('fecha', endOfDay.toISOString());
 
         if (error) {
           logger.error('Error checking daily posts', { error: String(error) });
@@ -59,7 +60,6 @@ export const useDailyPostStatus = (): DailyPostStatus => {
         if (!hasNightPost) missingCount++;
 
         // Calculate contextual missing count based on current time
-        const now = new Date();
         const hour = now.getHours();
         const isDay = hour >= 6 && hour < 18;
         

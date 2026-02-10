@@ -22,7 +22,8 @@ Desplegada en produccion: **https://whisper.beshy.es**
 | Error tracking | Sentry (client + server) |
 | Analytics | Google Analytics 4 |
 | Analisis estatico | SonarQube |
-| Testing | Vitest + React Testing Library |
+| Testing unitario | Vitest + React Testing Library |
+| Testing E2E | Playwright (19 tests, 8 specs) |
 | Linting | ESLint + Husky + lint-staged |
 | Contenedores | Podman + podman-compose |
 | Cache | Redis 7 (rate limiting, contadores, streaks) |
@@ -260,6 +261,9 @@ La aplicacion estara disponible en **http://localhost:4000**.
 | `pnpm test` | Ejecutar tests (modo watch) |
 | `pnpm run test:run` | Ejecutar tests (una vez) |
 | `pnpm run test:coverage` | Tests con reporte de cobertura |
+| `pnpm run e2e` | Tests E2E con Playwright |
+| `pnpm run e2e:ui` | Tests E2E con interfaz visual |
+| `pnpm run e2e:headed` | Tests E2E con navegador visible |
 
 ## Base de Datos
 

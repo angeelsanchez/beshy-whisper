@@ -20,7 +20,7 @@ function createRedisClient(): Redis | null {
       maxRetriesPerRequest: 3,
       enableReadyCheck: true,
       connectTimeout: 5000,
-      retryStrategy: (times) => {
+      retryStrategy: (times: number) => {
         if (times > 3) return null;
         return Math.min(times * 200, 1000);
       },
@@ -36,7 +36,7 @@ function createRedisClient(): Redis | null {
       redisAvailable = true;
     });
 
-    client.on('error', (err) => {
+    client.on('error', (err: Error) => {
       logger.error('Redis error', { detail: err.message });
       redisAvailable = false;
     });

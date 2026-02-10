@@ -173,6 +173,11 @@ export default function RootLayout({
             </Script>
           </>
         )}
+        <noscript>
+          <div style={{ padding: '2rem', textAlign: 'center', fontFamily: 'system-ui, sans-serif' }}>
+            <p>BESHY Whisper necesita JavaScript para funcionar. Activa JavaScript en tu navegador para continuar.</p>
+          </div>
+        </noscript>
         <a href="#main-content" className="sr-only-focusable">
           Saltar al contenido principal
         </a>

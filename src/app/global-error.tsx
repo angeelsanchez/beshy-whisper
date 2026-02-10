@@ -34,7 +34,7 @@ export default function GlobalError({
         minHeight: '100vh',
         textAlign: 'center',
       }}>
-        <div style={{ padding: '2rem', maxWidth: '400px' }}>
+        <div role="alert" aria-live="assertive" style={{ padding: '2rem', maxWidth: '400px' }}>
           <div style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'center' }}>
             <AlertCircle style={{ width: '4rem', height: '4rem' }} strokeWidth={1.5} color="#EF4444" />
           </div>

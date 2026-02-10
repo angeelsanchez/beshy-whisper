@@ -259,19 +259,32 @@ INTERNAL_API_KEY                  # Auth para endpoint de envío de notificacion
 - **Host**: `whisper.beshy.es` (IP: 147.189.175.230)
 - **Conexión**: comando `zap` (SSH como root)
 - **Usuario de app**: `beshy` (tiene las SSH keys de GitHub)
-- **Process manager**: PM2 ejecutado como usuario `beshy` via systemd (`pm2-beshy.service`)
-- **Puerto**: 4000
+- **Contenedores**: Podman + podman-compose (ejecutados como root)
+- **Puerto**: 4000 (app) + 6380→6379 (Redis)
+- **Compose file**: `docker-compose.yml` en la raíz del proyecto
 
 ### Secuencia de deploy
 ```bash
-zap "su - beshy -c 'cd /home/beshy/beshy-whisper && git pull origin main && pnpm install --frozen-lockfile && pnpm run build && pm2 restart beshy-whisper'"
+# 1. Pull como beshy (tiene SSH keys de GitHub)
+zap "su - beshy -c 'cd /home/beshy/beshy-whisper && git pull origin main'"
+
+# 2. Build y restart como root (los contenedores corren como root)
+zap "cd /home/beshy/beshy-whisper && podman-compose build && podman-compose down && podman-compose up -d"
 ```
+
+### Comandos útiles
+- **Health check**: `curl https://whisper.beshy.es/api/health`
+- **Estado contenedores**: `zap "podman ps --format '{{.Names}} {{.Status}}'"`
+- **Logs app**: `zap "podman logs -f --tail 50 beshy-whisper"`
+- **Logs Redis**: `zap "podman logs -f --tail 50 beshy-redis"`
+- **Redis CLI**: `zap "podman exec -it beshy-redis redis-cli"`
+- **Limpiar imágenes**: `zap "podman system prune -af"` (libera espacio)
 
 ### Reglas críticas
 - Git pull SIEMPRE como usuario `beshy` (`su - beshy -c '...'`), root no tiene SSH keys de GitHub
-- NUNCA crear procesos PM2 como root (causa EADDRINUSE en puerto 4000)
-- PM2 restart: `zap "su - beshy -c 'pm2 restart beshy-whisper'"`
-- PM2 logs: `zap "su - beshy -c 'pm2 logs beshy-whisper --lines 50'"`
+- Los contenedores corren como root — NO usar `su - beshy` para podman-compose (falla por cgroups)
+- Redis es un contenedor separado (`beshy-redis`), conectado via `redis://host.containers.internal:6380`
+- El script `scripts/deploy-podman.sh` existe pero tiene problemas de permisos al ejecutar como beshy — usar los comandos directos de arriba
 
 ## Integraciones Futuras
 
@@ -283,7 +296,7 @@ Estas integraciones están planificadas. Al implementarlas, consultar `docs/INTE
 | **Sentry** | Error tracking + performance monitoring (client + server) | Integrado |
 | **Microsoft Clarity** | Session recordings + heatmaps (solo client) | Planificado |
 | **SonarQube** | Análisis estático de código (quality gates) | Configurado (`sonar-project.properties`) |
-| **Offline-first PWA** | Funcionalidad offline completa en mobile (SW cache, sync queue, optimistic UI) | Planificado |
+| **Offline-first PWA** | SW cache, offline fallback, offline banner, error boundaries | Implementado |
 
 ## Checklist Pre-Implementación (OBLIGATORIO antes de cada tarea)
 
@@ -316,7 +329,7 @@ Problemas identificados pendientes de resolver (actualizar conforme se resuelvan
 - [ ] `HabitWizard.tsx` (1125 líneas) — dividir en subcomponentes
 - [ ] `generate-image/route.ts` tiene 3 templates HTML con estructura duplicada
 - [ ] Magic numbers para time windows en cron-reminders sin constantes con nombre
-- [ ] Faltan Error Boundaries en el client-side
+- [x] ~~Faltan Error Boundaries en el client-side~~ (implementado: `error.tsx`, `loading.tsx`, `not-found.tsx`)
 - [ ] 6+ rutas API sin validación Zod: `generate-image`, `send-like`, `send`, `like-notification`, `cron-reminders`, `test-push`
 
 ## Documentación Adicional

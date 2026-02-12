@@ -5,8 +5,7 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/auth';
 import { logger } from '@/lib/logger';
 import { sendMessageSchema, messagesQuerySchema } from '@/lib/schemas/initiative-chat';
 import { sendPushToUserIfEnabled } from '@/lib/push-notify';
-
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { UUID_REGEX } from '@/lib/constants';
 
 interface RouteParams {
   params: Promise<{ initiativeId: string }>;

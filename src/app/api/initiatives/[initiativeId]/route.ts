@@ -4,8 +4,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { authOptions } from '../../auth/[...nextauth]/auth';
 import { updateInitiativeSchema } from '@/lib/schemas/initiatives';
 import { logger } from '@/lib/logger';
-
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { UUID_REGEX } from '@/lib/constants';
 
 interface RouteParams {
   params: Promise<{ initiativeId: string }>;

@@ -4,12 +4,11 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { authOptions } from '@/app/api/auth/[...nextauth]/auth';
 import { setLevelsSchema } from '@/lib/schemas/habit-levels';
 import { logger } from '@/lib/logger';
+import { UUID_REGEX } from '@/lib/constants';
 
 interface RouteParams {
   params: Promise<{ habitId: string }>;
 }
-
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 async function verifyOwnership(habitId: string, userId: string): Promise<
   { error: string; status: 400 | 403 | 404 | 500 } | { habit: { id: string; user_id: string } }

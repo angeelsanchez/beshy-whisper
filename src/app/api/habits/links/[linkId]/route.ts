@@ -3,8 +3,7 @@ import { getServerSession } from 'next-auth/next';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { authOptions } from '@/app/api/auth/[...nextauth]/auth';
 import { logger } from '@/lib/logger';
-
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { UUID_REGEX } from '@/lib/constants';
 
 interface RouteParams {
   params: Promise<{ linkId: string }>;

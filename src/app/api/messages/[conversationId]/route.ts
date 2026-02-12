@@ -6,8 +6,7 @@ import { logger } from '@/lib/logger';
 import { sendDmSchema, messagesQuerySchema } from '@/lib/schemas/messages';
 import { areMutualFollows } from '@/lib/mutual-follow';
 import { sendPushToUserIfEnabled } from '@/lib/push-notify';
-
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { UUID_REGEX } from '@/lib/constants';
 const DM_PREVIEW_LENGTH = 100;
 
 interface RouteParams {

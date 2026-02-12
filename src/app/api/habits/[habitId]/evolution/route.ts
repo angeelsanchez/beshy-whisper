@@ -3,12 +3,11 @@ import { getServerSession } from 'next-auth/next';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { authOptions } from '@/app/api/auth/[...nextauth]/auth';
 import { logger } from '@/lib/logger';
+import { UUID_REGEX } from '@/lib/constants';
 
 interface RouteParams {
   params: Promise<{ habitId: string }>;
 }
-
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function toDateStr(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;

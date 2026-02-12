@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '../../auth/[...nextauth]/auth';
+import { authOptions } from '@/app/api/auth/[...nextauth]/auth';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { updateNameSchema } from '@/lib/schemas/user';
 import { logger } from '@/lib/logger';

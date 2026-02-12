@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { supabaseAdmin } from '@/lib/supabase-admin';
-import { authOptions } from '../../auth/[...nextauth]/auth';
+import { authOptions } from '@/app/api/auth/[...nextauth]/auth';
 import { followListSchema } from '@/lib/schemas/follows';
 import { logger } from '@/lib/logger';
 

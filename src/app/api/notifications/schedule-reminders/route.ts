@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import webpush from 'web-push';
 import { logger } from '@/lib/logger';
 import { safeCompare } from '@/utils/crypto-helpers';
+import { ensureVapidConfigured } from '@/lib/push-notify';
 
 function verifyCronAuth(request: NextRequest): NextResponse | null {
   const cronSecret = process.env.CRON_SECRET;
@@ -16,13 +17,6 @@ function verifyCronAuth(request: NextRequest): NextResponse | null {
   }
   return null;
 }
-
-// Configure web-push with VAPID keys
-webpush.setVapidDetails(
-  process.env.VAPID_EMAIL || 'mailto:hola@beshy.es',
-  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || '',
-  process.env.VAPID_PRIVATE_KEY || ''
-);
 
 // Helper function to calculate user's current streak
 async function calculateUserStreak(userId: string): Promise<number> {
@@ -120,12 +114,10 @@ async function sendPushNotification(userId: string, title: string, body: string,
       return false;
     }
 
-    // Check if VAPID keys are configured
-    if (!process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
-      logger.error('VAPID keys not configured');
+    if (!ensureVapidConfigured()) {
       return false;
     }
-    
+
     // Prepare the push subscription object
     const pushSubscription = {
       endpoint: pushTokenData.endpoint,

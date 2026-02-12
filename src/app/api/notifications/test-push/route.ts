@@ -3,12 +3,13 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/auth';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import webpush from 'web-push';
+import { ensureVapidConfigured } from '@/lib/push-notify';
 import { logger } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user?.id) {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -19,7 +20,6 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { title, body: messageBody, icon, tag, data } = body;
 
-    // Get user's push tokens
     const { data: pushTokens, error: tokensError } = await supabaseAdmin
       .from('push_tokens')
       .select('*')
@@ -40,26 +40,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Configure VAPID
-    const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-    const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
-    const vapidEmail = process.env.VAPID_EMAIL;
-
-    if (!vapidPublicKey || !vapidPrivateKey || !vapidEmail) {
-      logger.error('VAPID keys not configured');
+    if (!ensureVapidConfigured()) {
       return NextResponse.json(
         { error: 'VAPID configuration missing' },
         { status: 500 }
       );
     }
 
-    webpush.setVapidDetails(
-      vapidEmail,
-      vapidPublicKey,
-      vapidPrivateKey
-    );
-
-    // Send test notification to all user's tokens
     const results = [];
     for (const token of pushTokens) {
       try {
@@ -92,14 +79,13 @@ export async function POST(request: NextRequest) {
         logger.info('Test notification sent successfully', { tokenId: token.id });
       } catch (error) {
         logger.error('Error sending test notification', { tokenId: token.id, detail: error instanceof Error ? error.message : String(error) });
-        
+
         results.push({
           tokenId: token.id,
           status: 'error',
           error: error instanceof Error ? error.message : 'Unknown error'
         });
 
-        // If token is invalid, remove it
         if (error instanceof Error && error.message.includes('410')) {
           try {
             await supabaseAdmin
@@ -137,4 +123,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-} 
+}

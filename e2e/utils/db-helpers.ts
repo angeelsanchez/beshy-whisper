@@ -1,9 +1,16 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import bcrypt from 'bcryptjs';
 
+// Use E2E prefix (not BSY) so test users are excluded from BSY ID generation
 const TEST_USER_EMAIL = 'e2e-test@beshy.es';
 const TEST_USER_PASSWORD = 'TestPassword123!';
-const TEST_USER_BSY_ID = 'BSY999';
+const TEST_USER_BSY_ID = 'E2E001';
+
+const SECOND_USER_EMAIL = 'e2e-second@beshy.es';
+const SECOND_USER_BSY_ID = 'E2E002';
+
+// Email used by registration tests (cleaned up after each test)
+const REGISTER_TEST_EMAIL = 'e2e-register@beshy.es';
 
 let supabase: SupabaseClient;
 
@@ -56,13 +63,11 @@ export async function ensureTestUser(): Promise<{ id: string; email: string }> {
 
 export async function ensureSecondUser(): Promise<{ id: string; email: string; bsy_id: string }> {
   const db = getSupabase();
-  const email = 'e2e-second@beshy.es';
-  const bsyId = 'BSY998';
 
   const { data: existing } = await db
     .from('users')
     .select('id, email, bsy_id')
-    .eq('email', email)
+    .eq('email', SECOND_USER_EMAIL)
     .single();
 
   if (existing) {
@@ -74,9 +79,9 @@ export async function ensureSecondUser(): Promise<{ id: string; email: string; b
 
   const { error } = await db.from('users').insert({
     id,
-    email,
-    alias: bsyId,
-    bsy_id: bsyId,
+    email: SECOND_USER_EMAIL,
+    alias: SECOND_USER_BSY_ID,
+    bsy_id: SECOND_USER_BSY_ID,
     name: 'E2E Second User',
     password_hash: passwordHash,
     provider: 'credentials',
@@ -88,7 +93,7 @@ export async function ensureSecondUser(): Promise<{ id: string; email: string; b
     throw new Error(`Failed to create second user: ${error.message}`);
   }
 
-  return { id, email, bsy_id: bsyId };
+  return { id, email: SECOND_USER_EMAIL, bsy_id: SECOND_USER_BSY_ID };
 }
 
 export async function cleanTestEntries(userId: string): Promise<void> {
@@ -168,41 +173,56 @@ export async function cleanTestBio(userId: string): Promise<void> {
     .eq('id', userId);
 }
 
-export async function cleanAllTestData(): Promise<void> {
-  const db = getSupabase();
-
-  const { data: testUsers } = await db
+/** Delete a user by email along with all related data */
+async function deleteUserByEmail(db: SupabaseClient, email: string): Promise<void> {
+  const { data: user } = await db
     .from('users')
     .select('id')
-    .in('email', [TEST_USER_EMAIL, 'e2e-second@beshy.es']);
+    .eq('email', email)
+    .single();
 
-  if (!testUsers || testUsers.length === 0) return;
+  if (!user) return;
 
-  const userIds = testUsers.map((u) => u.id);
+  const uid = user.id;
 
-  const { data: habits } = await db
-    .from('habits')
-    .select('id')
-    .in('user_id', userIds);
-
+  // Clean related data
+  const { data: habits } = await db.from('habits').select('id').eq('user_id', uid);
   if (habits && habits.length > 0) {
     const habitIds = habits.map((h) => h.id);
     await db.from('habit_logs').delete().in('habit_id', habitIds);
   }
 
   await Promise.all([
-    db.from('habits').delete().in('user_id', userIds),
-    db.from('entries').delete().in('user_id', userIds),
-    db.from('likes').delete().in('user_id', userIds),
-    db.from('follows').delete().in('follower_id', userIds),
-    db.from('follows').delete().in('followed_id', userIds),
-    db.from('push_tokens').delete().in('user_id', userIds),
+    db.from('entry_habit_snapshots').delete().eq('entry_id', uid), // just in case
+    db.from('habits').delete().eq('user_id', uid),
+    db.from('entries').delete().eq('user_id', uid),
+    db.from('likes').delete().eq('user_id', uid),
+    db.from('follows').delete().eq('follower_id', uid),
+    db.from('follows').delete().eq('followed_id', uid),
+    db.from('push_tokens').delete().eq('user_id', uid),
+    db.from('objectives').delete().eq('user_id', uid),
+    db.from('login_attempts').delete().eq('email', email),
   ]);
 
-  await db
-    .from('users')
-    .update({ notification_preferences: null, bio: null })
-    .in('id', userIds);
+  // Delete the user record itself
+  await db.from('users').delete().eq('id', uid);
 }
 
-export { TEST_USER_EMAIL, TEST_USER_PASSWORD, TEST_USER_BSY_ID };
+/** Clean up ALL test data including user records */
+export async function cleanAllTestData(): Promise<void> {
+  const db = getSupabase();
+
+  const testEmails = [TEST_USER_EMAIL, SECOND_USER_EMAIL, REGISTER_TEST_EMAIL];
+
+  for (const email of testEmails) {
+    await deleteUserByEmail(db, email);
+  }
+}
+
+/** Delete only the registration test user (used in beforeEach) */
+export async function cleanRegisterTestUser(): Promise<void> {
+  const db = getSupabase();
+  await deleteUserByEmail(db, REGISTER_TEST_EMAIL);
+}
+
+export { TEST_USER_EMAIL, TEST_USER_PASSWORD, TEST_USER_BSY_ID, SECOND_USER_BSY_ID, REGISTER_TEST_EMAIL };

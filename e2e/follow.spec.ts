@@ -3,6 +3,7 @@ import {
   ensureTestUser,
   ensureSecondUser,
   cleanTestFollows,
+  SECOND_USER_BSY_ID,
 } from './utils/db-helpers';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
@@ -27,7 +28,7 @@ test.describe('Follow', () => {
   test('can follow and unfollow a user from their profile', async ({ page }) => {
     await page.goto(`/profile?user=${secondUserId}`);
 
-    await expect(page.getByText('BSY998').first()).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByText(SECOND_USER_BSY_ID).first()).toBeVisible({ timeout: 30_000 });
 
     const followButton = page.getByRole('button', { name: 'Seguir' });
     await expect(followButton).toBeVisible({ timeout: 15_000 });

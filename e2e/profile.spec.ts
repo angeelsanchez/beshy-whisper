@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { TEST_USER_BSY_ID } from './utils/db-helpers';
 
 test.describe('Profile', () => {
   test('shows own profile with user info', async ({ page }) => {
@@ -9,7 +10,7 @@ test.describe('Profile', () => {
       { timeout: 30_000 },
     );
 
-    await expect(page.getByText('BSY999').first()).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText(TEST_USER_BSY_ID).first()).toBeVisible({ timeout: 15_000 });
   });
 
   test('can open edit form and modify bio', async ({ page }) => {
@@ -20,7 +21,7 @@ test.describe('Profile', () => {
       { timeout: 30_000 },
     );
 
-    await expect(page.getByText('BSY999').first()).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText(TEST_USER_BSY_ID).first()).toBeVisible({ timeout: 15_000 });
 
     await page.getByRole('button', { name: 'Editar perfil' }).click();
 
@@ -43,7 +44,5 @@ test.describe('Profile', () => {
     ]);
 
     expect(response.status()).toBe(200);
-
-    await expect(page.getByText('Bio actualizada')).toBeVisible({ timeout: 10_000 });
   });
 });

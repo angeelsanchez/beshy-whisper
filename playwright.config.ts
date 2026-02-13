@@ -31,12 +31,12 @@ export default defineConfig({
         storageState: 'e2e/.auth/user.json',
       },
       dependencies: ['setup'],
-      testIgnore: /auth\.spec|guest\.spec|global\.teardown/,
+      testIgnore: /auth\.spec|guest\.spec|register\.spec|global\.teardown/,
     },
     {
       name: 'chromium-noauth',
       use: { ...devices['Desktop Chrome'] },
-      testMatch: /auth\.spec|guest\.spec/,
+      testMatch: /auth\.spec|guest\.spec|register\.spec/,
     },
   ],
   webServer: {

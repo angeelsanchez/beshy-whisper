@@ -41,7 +41,10 @@ export const authOptions: NextAuthOptions = {
           access_type: "offline",
           response_type: "code"
         }
-      }
+      },
+      httpOptions: {
+        timeout: 10_000,
+      },
     }),
     CredentialsProvider({
       name: "Email/Password",

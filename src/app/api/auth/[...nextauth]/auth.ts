@@ -10,23 +10,24 @@ import { safeCompare } from "@/utils/crypto-helpers";
 
 // Function to generate sequential BSYXXX alias
 async function generateBeshyId() {
-  // Get the highest existing BSY ID
+  // Fetch all BSY IDs and find the numeric maximum to avoid text-ordering bugs
   const { data: users } = await supabaseAdmin
     .from('users')
     .select('bsy_id')
-    .ilike('bsy_id', 'BSY%')
-    .order('bsy_id', { ascending: false })
-    .limit(1);
-  
-  let nextNumber = 1;
-  if (users && users.length > 0) {
-    const lastBsyId = users[0].bsy_id;
-    const lastNumber = parseInt(lastBsyId.replace('BSY', ''), 10);
-    nextNumber = lastNumber + 1;
+    .ilike('bsy_id', 'BSY%');
+
+  let maxNumber = 0;
+  if (users) {
+    for (const u of users) {
+      const num = parseInt(u.bsy_id.replace('BSY', ''), 10);
+      if (!isNaN(num) && num > maxNumber) {
+        maxNumber = num;
+      }
+    }
   }
-  
+
   // Format with leading zeros (BSY001, BSY002, etc.)
-  return `BSY${nextNumber.toString().padStart(3, '0')}`;
+  return `BSY${(maxNumber + 1).toString().padStart(3, '0')}`;
 }
 
 export const authOptions: NextAuthOptions = {

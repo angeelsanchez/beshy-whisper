@@ -47,7 +47,6 @@ function LoginForm() {
 
   useEffect(() => {
     setError('');
-    setMessage('');
     setConfirmPassword('');
     setShowPassword(false);
     setShowConfirmPassword(false);
@@ -57,6 +56,7 @@ function LoginForm() {
     e.preventDefault();
 
     if (cooldownEnd) return;
+    setMessage('');
 
     if (!executeRecaptcha) {
       setError('reCAPTCHA no disponible');

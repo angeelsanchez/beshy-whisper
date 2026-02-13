@@ -60,18 +60,20 @@ export async function POST(req: NextRequest) {
 
     const { data: users } = await supabaseAdmin
       .from('users')
-      .select('alias, bsy_id')
-      .order('bsy_id', { ascending: false })
-      .limit(1);
+      .select('bsy_id')
+      .ilike('bsy_id', 'BSY%');
 
-    let nextNumber = 1;
-    if (users && users.length > 0) {
-      const lastBsyId = users[0].bsy_id || users[0].alias;
-      const lastNumber = Number.parseInt(lastBsyId.replace('BSY', ''), 10);
-      nextNumber = lastNumber + 1;
+    let maxNumber = 0;
+    if (users) {
+      for (const u of users) {
+        const num = Number.parseInt(u.bsy_id.replace('BSY', ''), 10);
+        if (!Number.isNaN(num) && num > maxNumber) {
+          maxNumber = num;
+        }
+      }
     }
 
-    const bsyId = `BSY${nextNumber.toString().padStart(3, '0')}`;
+    const bsyId = `BSY${(maxNumber + 1).toString().padStart(3, '0')}`;
 
     const passwordHash = await bcrypt.hash(password, 12);
 

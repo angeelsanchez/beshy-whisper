@@ -4,6 +4,12 @@ import webpush from 'web-push';
 import { logger } from '@/lib/logger';
 import { safeCompare } from '@/utils/crypto-helpers';
 import { ensureVapidConfigured } from '@/lib/push-notify';
+import { calculateUserStreak, checkUserTodayPosts } from '@/lib/streak';
+import {
+  MORNING_REMINDER_START, MORNING_REMINDER_END,
+  STREAK_WARNING_START, STREAK_WARNING_END,
+  NIGHT_REMINDER_START, NIGHT_REMINDER_END,
+} from '@/lib/constants';
 
 function verifyCronAuth(request: NextRequest): NextResponse | null {
   const cronSecret = process.env.CRON_SECRET;
@@ -16,87 +22,6 @@ function verifyCronAuth(request: NextRequest): NextResponse | null {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   return null;
-}
-
-// Helper function to calculate user's current streak
-async function calculateUserStreak(userId: string): Promise<number> {
-  try {
-    const today = new Date();
-    const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    
-    // Get all entries for this user, ordered by date
-    const { data: entries, error } = await supabaseAdmin
-      .from('entries')
-      .select('fecha, franja')
-      .eq('user_id', userId)
-      .order('fecha', { ascending: false });
-    
-    if (error || !entries || entries.length === 0) {
-      return 0;
-    }
-    
-    let streak = 0;
-    const currentDate = new Date(startOfDay);
-    
-    // Check backwards from today
-    while (true) {
-      const dayEntries = entries.filter(entry => {
-        const entryDate = new Date(entry.fecha);
-        const entryStartOfDay = new Date(entryDate.getFullYear(), entryDate.getMonth(), entryDate.getDate());
-        return entryStartOfDay.getTime() === currentDate.getTime();
-      });
-      
-      // If no entries for this day, break the streak
-      if (dayEntries.length === 0) {
-        break;
-      }
-      
-      // Check if both day and night posts exist for this date
-      const hasDayPost = dayEntries.some(entry => entry.franja === 'DIA');
-      const hasNightPost = dayEntries.some(entry => entry.franja === 'NOCHE');
-      
-      if (hasDayPost && hasNightPost) {
-        streak++;
-        currentDate.setDate(currentDate.getDate() - 1);
-      } else {
-        break;
-      }
-    }
-    
-    return streak;
-  } catch (error) {
-    logger.error('Error calculating user streak', { detail: error instanceof Error ? error.message : String(error) });
-    return 0;
-  }
-}
-
-// Helper function to check if user has posted today
-async function checkUserTodayPosts(userId: string): Promise<{ hasDayPost: boolean; hasNightPost: boolean }> {
-  try {
-    const today = new Date();
-    const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
-
-    const { data: entries, error } = await supabaseAdmin
-      .from('entries')
-      .select('franja')
-      .eq('user_id', userId)
-      .gte('fecha', startOfDay.toISOString())
-      .lt('fecha', endOfDay.toISOString());
-
-    if (error) {
-      logger.error('Error checking today posts', { detail: error?.message || String(error) });
-      return { hasDayPost: false, hasNightPost: false };
-    }
-
-    const hasDayPost = entries?.some(entry => entry.franja === 'DIA') || false;
-    const hasNightPost = entries?.some(entry => entry.franja === 'NOCHE') || false;
-
-    return { hasDayPost, hasNightPost };
-  } catch (error) {
-    logger.error('Error checking today posts', { detail: error instanceof Error ? error.message : String(error) });
-    return { hasDayPost: false, hasNightPost: false };
-  }
 }
 
 // Helper function to send push notification
@@ -191,8 +116,7 @@ async function processReminders() {
         const currentMinute = now.getMinutes();
         const currentTime = currentHour * 60 + currentMinute;
         
-        // Morning reminder at 10:00 (600 minutes)
-        if (currentTime >= 600 && currentTime < 630 && !hasDayPost) {
+        if (currentTime >= MORNING_REMINDER_START && currentTime < MORNING_REMINDER_END && !hasDayPost) {
           const title = '🌅 ¡Hora de tu Whisper matutino!';
           const body = 'No olvides compartir tu whisper del día para mantener tu racha';
           
@@ -204,8 +128,7 @@ async function processReminders() {
           if (sent) notificationsSent++;
         }
         
-        // Afternoon streak warning between 15:00-18:00 (900-1080 minutes)
-        if (currentTime >= 900 && currentTime <= 1080 && (!hasDayPost || !hasNightPost)) {
+        if (currentTime >= STREAK_WARNING_START && currentTime <= STREAK_WARNING_END && (!hasDayPost || !hasNightPost)) {
           const streak = await calculateUserStreak(userId);
           
           if (streak > 0) {
@@ -221,8 +144,7 @@ async function processReminders() {
           }
         }
         
-        // Night reminder at 21:30 (1290 minutes)
-        if (currentTime >= 1290 && currentTime < 1320 && !hasNightPost) {
+        if (currentTime >= NIGHT_REMINDER_START && currentTime < NIGHT_REMINDER_END && !hasNightPost) {
           const title = '🌙 ¡Hora de tu Whisper nocturno!';
           const body = 'Completa tu día con tu whisper de la noche';
           
@@ -289,9 +211,9 @@ export async function GET(request: NextRequest) {
     const status = {
       currentTime: `${currentHour.toString().padStart(2, '0')}:${currentMinute.toString().padStart(2, '0')}`,
       nextReminders: {
-        morning: currentTime < 600 ? '10:00' : 'Tomorrow 10:00',
-        afternoon: currentTime < 900 ? '15:00' : currentTime > 1080 ? 'Tomorrow 15:00' : 'Active',
-        night: currentTime < 1290 ? '21:30' : 'Tomorrow 21:30'
+        morning: currentTime < MORNING_REMINDER_START ? '10:00' : 'Tomorrow 10:00',
+        afternoon: currentTime < STREAK_WARNING_START ? '15:00' : currentTime > STREAK_WARNING_END ? 'Tomorrow 15:00' : 'Active',
+        night: currentTime < NIGHT_REMINDER_START ? '21:30' : 'Tomorrow 21:30'
       },
       systemStatus: 'Active'
     };

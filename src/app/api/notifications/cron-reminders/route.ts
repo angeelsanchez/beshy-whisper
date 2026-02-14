@@ -4,88 +4,13 @@ import { safeCompare } from '@/utils/crypto-helpers';
 import { logger } from '@/lib/logger';
 import { sendPushToUser } from '@/lib/push-notify';
 import { isNotificationEnabled, getBatchUserPreferences } from '@/lib/notification-preferences';
+import { calculateUserStreak, checkUserTodayPosts } from '@/lib/streak';
+import {
+  MORNING_REMINDER_START, MORNING_REMINDER_END,
+  STREAK_WARNING_START, STREAK_WARNING_END,
+  NIGHT_REMINDER_START, NIGHT_REMINDER_END,
+} from '@/lib/constants';
 import type { NotificationType } from '@/types/notification-preferences';
-
-// Helper function to calculate user's current streak
-async function calculateUserStreak(userId: string): Promise<number> {
-  try {
-    const today = new Date();
-    const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    
-    // Get all entries for this user, ordered by date
-    const { data: entries, error } = await supabaseAdmin
-      .from('entries')
-      .select('fecha, franja')
-      .eq('user_id', userId)
-      .order('fecha', { ascending: false });
-    
-    if (error || !entries || entries.length === 0) {
-      return 0;
-    }
-    
-    let streak = 0;
-    const currentDate = new Date(startOfDay);
-    
-    // Check backwards from today
-    while (true) {
-      const dayEntries = entries.filter(entry => {
-        const entryDate = new Date(entry.fecha);
-        const entryStartOfDay = new Date(entryDate.getFullYear(), entryDate.getMonth(), entryDate.getDate());
-        return entryStartOfDay.getTime() === currentDate.getTime();
-      });
-      
-      // If no entries for this day, break the streak
-      if (dayEntries.length === 0) {
-        break;
-      }
-      
-      // Check if both day and night posts exist for this date
-      const hasDayPost = dayEntries.some(entry => entry.franja === 'DIA');
-      const hasNightPost = dayEntries.some(entry => entry.franja === 'NOCHE');
-      
-      if (hasDayPost && hasNightPost) {
-        streak++;
-        currentDate.setDate(currentDate.getDate() - 1);
-      } else {
-        break;
-      }
-    }
-    
-    return streak;
-  } catch (error) {
-    logger.error('Error calculating user streak', { detail: error instanceof Error ? error.message : String(error) });
-    return 0;
-  }
-}
-
-// Helper function to check if user has posted today
-async function checkUserTodayPosts(userId: string): Promise<{ hasDayPost: boolean; hasNightPost: boolean }> {
-  try {
-    const today = new Date();
-    const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
-
-    const { data: entries, error } = await supabaseAdmin
-      .from('entries')
-      .select('franja')
-      .eq('user_id', userId)
-      .gte('fecha', startOfDay.toISOString())
-      .lt('fecha', endOfDay.toISOString());
-
-    if (error) {
-      logger.error('Error checking today posts', { detail: error?.message || String(error) });
-      return { hasDayPost: false, hasNightPost: false };
-    }
-
-    const hasDayPost = entries?.some(entry => entry.franja === 'DIA') || false;
-    const hasNightPost = entries?.some(entry => entry.franja === 'NOCHE') || false;
-
-    return { hasDayPost, hasNightPost };
-  } catch (error) {
-    logger.error('Error checking today posts', { detail: error instanceof Error ? error.message : String(error) });
-    return { hasDayPost: false, hasNightPost: false };
-  }
-}
 
 async function hasReminderBeenSentToday(userId: string, reminderType: string): Promise<boolean> {
   const today = new Date();
@@ -182,7 +107,7 @@ async function sendAndLogReminder(
 }
 
 async function processMorningReminder(userId: string, currentTime: number, posts: UserPostStatus, prefs: PreferencesRecord): Promise<ReminderResult> {
-  if (!isInTimeWindow(currentTime, 600, 630) || posts.hasDayPost) {
+  if (!isInTimeWindow(currentTime, MORNING_REMINDER_START, MORNING_REMINDER_END) || posts.hasDayPost) {
     return { sent: false, type: 'notification' };
   }
 
@@ -198,7 +123,7 @@ async function processMorningReminder(userId: string, currentTime: number, posts
 }
 
 async function processStreakWarning(userId: string, currentTime: number, posts: UserPostStatus, prefs: PreferencesRecord): Promise<ReminderResult> {
-  if (!isInTimeWindow(currentTime, 900, 1081) || (posts.hasDayPost && posts.hasNightPost)) {
+  if (!isInTimeWindow(currentTime, STREAK_WARNING_START, STREAK_WARNING_END) || (posts.hasDayPost && posts.hasNightPost)) {
     return { sent: false, type: 'streak_warning' };
   }
 
@@ -222,7 +147,7 @@ async function processStreakWarning(userId: string, currentTime: number, posts: 
 }
 
 async function processNightReminder(userId: string, currentTime: number, posts: UserPostStatus, prefs: PreferencesRecord): Promise<ReminderResult> {
-  if (!isInTimeWindow(currentTime, 1290, 1320) || posts.hasNightPost) {
+  if (!isInTimeWindow(currentTime, NIGHT_REMINDER_START, NIGHT_REMINDER_END) || posts.hasNightPost) {
     return { sent: false, type: 'notification' };
   }
 

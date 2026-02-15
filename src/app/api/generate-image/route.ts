@@ -11,25 +11,7 @@ import {
   loadTwemoji,
   BRAND_COLORS,
 } from '@/utils/puppeteer-helpers';
-
-interface Objective {
-  id: string;
-  text: string;
-  done: boolean;
-}
-
-interface ImageRequest {
-  mensaje: string;
-  objetivos?: Objective[];
-  display_name: string;
-  display_id: string;
-  fecha: string;
-  mode: 'normal' | 'bubble' | 'sticker' | 'manifestation';
-  isDay: boolean;
-  profile_photo_url?: string | null;
-  daysManifesting?: number;
-  reaffirmationCount?: number;
-}
+import { generateImageSchema } from '@/lib/schemas/generate-image';
 
 interface FormattedObjective {
   id: string;
@@ -65,22 +47,16 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   let browser: Awaited<ReturnType<typeof launchPuppeteerBrowser>> | null = null;
 
   try {
-    const body: ImageRequest = await request.json();
-    const { mensaje, objetivos = [], display_name, display_id, fecha, mode, isDay, profile_photo_url, daysManifesting, reaffirmationCount } = body;
-
-    if (mode === 'manifestation') {
-      if (!mensaje || !display_name || !display_id || daysManifesting === undefined) {
-        return NextResponse.json(
-          { error: 'Missing required fields for manifestation mode' },
-          { status: 400 }
-        );
-      }
-    } else if (!mensaje || !display_name || !display_id || !fecha || !mode) {
+    const body = await request.json();
+    const parsed = generateImageSchema.safeParse(body);
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: 'Datos inválidos', details: parsed.error.flatten().fieldErrors },
         { status: 400 }
       );
     }
+
+    const { mensaje, objetivos, display_name, display_id, fecha, mode, isDay, profile_photo_url, daysManifesting, reaffirmationCount } = parsed.data;
 
     const [logoSVG, avatarDataUri] = await Promise.all([
       getCachedLogo(),

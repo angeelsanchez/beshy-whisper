@@ -63,3 +63,8 @@ next-env.d.ts
 e2e/.auth/
 playwright-report/
 test-results/
+
+# Local documentation and PDFs (never commit)
+RESUMEN_*.md
+RESUMEN_*.html
+*.pdf

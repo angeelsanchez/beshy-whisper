@@ -17,7 +17,7 @@ interface SocialShareModalProps {
     id: string;
     mensaje: string;
     fecha: string;
-    franja: 'DIA' | 'NOCHE';
+    franja: 'DIA' | 'NOCHE' | 'SEMANA';
     display_name: string;
     display_id: string;
     profile_photo_url?: string | null;

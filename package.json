@@ -2,6 +2,8 @@
   "name": "beshy-whisper",
   "version": "0.1.0",
   "private": true,
+  "author": "Angel Sanchez <angelsanchezdev@gmail.com>",
+  "license": "SEE LICENSE IN LICENSE",
   "packageManager": "pnpm@10.18.0",
   "scripts": {
     "dev": "next dev -p 4000",

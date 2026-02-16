@@ -42,7 +42,7 @@ Posts/whispers de los usuarios.
 | `mensaje` | text | NO | — | Contenido del whisper |
 | `fecha` | timestamptz | SÍ | `now()` | Fecha de publicación |
 | `ip` | text | SÍ | — | IP del autor |
-| `franja` | text | SÍ | — | CHECK: 'DIA' o 'NOCHE' |
+| `franja` | text | SÍ | — | CHECK: 'DIA', 'NOCHE', o 'SEMANA' |
 | `guest` | boolean | SÍ | `false` | Post de invitado |
 | `edited` | boolean | SÍ | `false` | Si fue editado |
 | `is_private` | boolean | SÍ | `false` | Post privado (solo visible al autor) |

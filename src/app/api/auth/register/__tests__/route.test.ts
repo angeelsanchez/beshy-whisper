@@ -8,6 +8,7 @@ vi.mock('@/lib/supabase-admin', () => {
   mockQueryBuilder.eq = vi.fn().mockReturnValue(mockQueryBuilder);
   mockQueryBuilder.order = vi.fn().mockReturnValue(mockQueryBuilder);
   mockQueryBuilder.limit = vi.fn().mockReturnValue(mockQueryBuilder);
+  mockQueryBuilder.ilike = vi.fn().mockResolvedValue({ data: [], error: null });
   mockQueryBuilder.single = vi.fn().mockResolvedValue({ data: null, error: null });
 
   return {
@@ -40,7 +41,7 @@ describe('POST /api/auth/register', () => {
       json: () => Promise.resolve({ success: true, score: 0.9 }),
     });
     qb.single.mockResolvedValue({ data: null, error: null });
-    qb.limit.mockResolvedValue({ data: [], error: null });
+    qb.ilike.mockResolvedValue({ data: [], error: null });
     qb.insert.mockReturnValue({ error: null });
   });
 
@@ -97,7 +98,7 @@ describe('POST /api/auth/register', () => {
 
   it('returns 200 on successful registration', async () => {
     qb.single.mockResolvedValueOnce({ data: null, error: { code: 'PGRST116' } });
-    qb.limit.mockResolvedValueOnce({ data: [{ bsy_id: 'BSY005', alias: 'BSY005' }], error: null });
+    qb.ilike.mockResolvedValueOnce({ data: [{ bsy_id: 'BSY005' }], error: null });
     qb.insert.mockReturnValueOnce({ error: null });
 
     const res = await POST(makeRequest({

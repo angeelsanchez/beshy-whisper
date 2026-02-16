@@ -22,6 +22,12 @@ interface Objective {
   text: string;
 }
 
+interface DailyObjective {
+  id: string;
+  text: string;
+  done: boolean;
+}
+
 // Custom hook for time of day
 const useTimeOfDay = () => {
   const [isDay, setIsDay] = useState(true);
@@ -58,14 +64,90 @@ export default function WhisperForm() {
   
   const [selectedMood, setSelectedMood] = useState<Mood | null>(null);
   const [objectives, setObjectives] = useState<Objective[]>([]);
+  const [dailyObjectives, setDailyObjectives] = useState<DailyObjective[]>([]);
+  const [loadingDailyObjectives, setLoadingDailyObjectives] = useState(false);
   const [habitSnapshots, setHabitSnapshots] = useState<HabitSnapshotPayload[]>([]);
   const [selectedManifestationIds, setSelectedManifestationIds] = useState<string[]>([]);
   const [celebrationManifestation, setCelebrationManifestation] = useState<FulfilledManifestation | null>(null);
   const [participateInChallenge, setParticipateInChallenge] = useState(false);
+  const [isWeekly, setIsWeekly] = useState(false);
+  const [weeklyObjectives, setWeeklyObjectives] = useState<DailyObjective[]>([]);
+  const [loadingWeeklyObjectives, setLoadingWeeklyObjectives] = useState(false);
   const { challenge: activeChallenge } = useActiveChallenge();
-  
+
   // Use our custom hook to determine time of day
   const isDay = useTimeOfDay();
+
+  // Load daily objectives for night whisper
+  useEffect(() => {
+    if (!isDay && session?.user?.id) {
+      const loadDailyObjectives = async () => {
+        setLoadingDailyObjectives(true);
+        try {
+          const response = await fetch('/api/objectives/today?franja=DIA');
+          if (!response.ok) {
+            throw new Error('Failed to load daily objectives');
+          }
+          const data = await response.json();
+          setDailyObjectives(data.objectives || []);
+        } catch (error) {
+          logger.error('Error loading daily objectives', { error: String(error) });
+          setDailyObjectives([]);
+        } finally {
+          setLoadingDailyObjectives(false);
+        }
+      };
+
+      loadDailyObjectives();
+    } else {
+      setDailyObjectives([]);
+    }
+  }, [isDay, session?.user?.id]);
+
+  // Load previous week's objectives for weekly whisper
+  useEffect(() => {
+    if (isWeekly && session?.user?.id) {
+      const loadWeeklyObjectives = async () => {
+        setLoadingWeeklyObjectives(true);
+        try {
+          const response = await fetch('/api/objectives/previous-week');
+          if (!response.ok) {
+            throw new Error('Failed to load weekly objectives');
+          }
+          const data = await response.json();
+          setWeeklyObjectives(data.objectives || []);
+        } catch (error) {
+          logger.error('Error loading weekly objectives', { error: String(error) });
+          setWeeklyObjectives([]);
+        } finally {
+          setLoadingWeeklyObjectives(false);
+        }
+      };
+
+      loadWeeklyObjectives();
+    } else {
+      setWeeklyObjectives([]);
+    }
+  }, [isWeekly, session?.user?.id]);
+
+  // Load user's default post privacy preference
+  useEffect(() => {
+    if (session?.user?.id) {
+      const loadPrivacyPreference = async () => {
+        try {
+          const response = await fetch('/api/user/settings');
+          if (response.ok) {
+            const data = await response.json();
+            setIsPrivate(data.defaultPostPrivacy === 'private');
+          }
+        } catch (error) {
+          logger.error('Error loading privacy preference', { error: String(error) });
+        }
+      };
+
+      loadPrivacyPreference();
+    }
+  }, [session?.user?.id]);
 
   // Handle mobile keyboard and viewport changes
   useEffect(() => {
@@ -159,13 +241,13 @@ export default function WhisperForm() {
     });
   };
 
-  // Check if user can post (limit: 1 day post and 1 night post per day)
-  const canUserPost = async (franja: 'DIA' | 'NOCHE'): Promise<boolean> => {
+  // Check if user can post (limit: 1 day post and 1 night post per day, 1 weekly per week)
+  const canUserPost = async (franja: 'DIA' | 'NOCHE' | 'SEMANA'): Promise<boolean> => {
     if (!session?.user.id && !sessionStorage.getItem('isGuest')) {
       router.push('/login');
       return false;
     }
-    
+
     // Guest users can only post once
     if (sessionStorage.getItem('isGuest') === 'true') {
       const hasPosted = sessionStorage.getItem('guestHasPosted');
@@ -175,49 +257,81 @@ export default function WhisperForm() {
       }
       return true;
     }
-    
-    // For authenticated users, check if they have already posted in this time frame today
-    // Use local timezone (Spain) for day boundaries so "today" matches user's calendar day
-    const now = new Date();
-    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
 
-    const { data: existingPosts } = await supabase
-      .from('entries')
-      .select('id')
-      .eq('user_id', session?.user.id)
-      .eq('guest', false)
-      .eq('franja', franja)
-      .gte('fecha', startOfDay.toISOString())
-      .lt('fecha', endOfDay.toISOString());
-    
-    if (existingPosts && existingPosts.length > 0) {
-      setError(`Ya has publicado un susurro ${franja === 'DIA' ? 'diurno' : 'nocturno'} hoy.`);
-      return false;
+    const now = new Date();
+
+    if (franja === 'SEMANA') {
+      // For weekly posts, check if user has already posted this week (Monday-Sunday)
+      const currentDay = now.getDay();
+      const daysToStartOfWeek = currentDay === 0 ? 6 : currentDay - 1;
+      const weekStart = new Date(now);
+      weekStart.setDate(now.getDate() - daysToStartOfWeek);
+      weekStart.setHours(0, 0, 0, 0);
+
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekStart.getDate() + 7);
+      weekEnd.setHours(0, 0, 0, 0);
+
+      const { data: existingPosts } = await supabase
+        .from('entries')
+        .select('id')
+        .eq('user_id', session?.user.id)
+        .eq('guest', false)
+        .eq('franja', 'SEMANA')
+        .gte('fecha', weekStart.toISOString())
+        .lt('fecha', weekEnd.toISOString());
+
+      if (existingPosts && existingPosts.length > 0) {
+        setError('Ya has publicado una reflexión semanal esta semana.');
+        return false;
+      }
+    } else {
+      // For daily posts (DIA/NOCHE), check if they have already posted today
+      const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+
+      const { data: existingPosts } = await supabase
+        .from('entries')
+        .select('id')
+        .eq('user_id', session?.user.id)
+        .eq('guest', false)
+        .eq('franja', franja)
+        .gte('fecha', startOfDay.toISOString())
+        .lt('fecha', endOfDay.toISOString());
+
+      if (existingPosts && existingPosts.length > 0) {
+        setError(`Ya has publicado un susurro ${franja === 'DIA' ? 'diurno' : 'nocturno'} hoy.`);
+        return false;
+      }
     }
-    
+
     return true;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!message.trim()) {
       setError('Por favor escribe un mensaje.');
       return;
     }
-    
+
     if (message.length > 300) {
       setError('El mensaje no puede exceder los 300 caracteres.');
       return;
     }
-    
+
+    if (isWeekly && objectives.length > 3) {
+      setError('La reflexión semanal puede tener máximo 3 objetivos.');
+      return;
+    }
+
     setIsSubmitting(true);
     setError('');
-    
+
     try {
-      const franja: 'DIA' | 'NOCHE' = isDay ? 'DIA' : 'NOCHE';
-      
+      const franja: 'DIA' | 'NOCHE' | 'SEMANA' = isWeekly ? 'SEMANA' : (isDay ? 'DIA' : 'NOCHE');
+
       // Check if user can post
       const canPost = await canUserPost(franja);
       if (!canPost) {
@@ -435,6 +549,29 @@ export default function WhisperForm() {
     setHabitSnapshots(snapshots);
   }, []);
 
+  const handleToggleDailyObjective = async (objectiveId: string, newDoneStatus: boolean) => {
+    try {
+      const response = await fetch('/api/objectives', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          objectiveId,
+          done: newDoneStatus
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update objective');
+      }
+
+      setDailyObjectives(dailyObjectives.map(obj =>
+        obj.id === objectiveId ? { ...obj, done: newDoneStatus } : obj
+      ));
+    } catch (error) {
+      logger.error('Error toggling objective', { error: String(error) });
+    }
+  };
+
   return (
     <div 
       className={`w-full max-w-[600px] mx-auto px-4 py-4 font-montserrat mobile-form-container ${
@@ -460,13 +597,38 @@ export default function WhisperForm() {
       <div className={`rounded-lg shadow-md p-6 ${isDay ? 'bg-[#F5F0E1]' : 'bg-[#2D1E1A]'} transition-all duration-300`}>
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-bold">
-            {isDay ? 'Establece tus objetivos diarios' : 'Reflexiona y agradece'}
+            {isWeekly ? 'Reflexión semanal' : (isDay ? 'Establece tus objetivos diarios' : 'Reflexiona y agradece')}
           </h2>
           <div className="text-sm opacity-80">
             {getCurrentTime()}
           </div>
         </div>
-        
+
+        <div className="mb-6 flex gap-2">
+          <button
+            type="button"
+            onClick={() => setIsWeekly(false)}
+            className={`flex-1 px-4 py-2 rounded-lg font-medium transition-all ${
+              !isWeekly
+                ? isDay ? 'bg-[#4A2E1B] text-[#F5F0E1]' : 'bg-[#F5F0E1] text-[#2D1E1A]'
+                : isDay ? 'bg-[#4A2E1B]/20 text-[#4A2E1B]' : 'bg-[#F5F0E1]/20 text-[#F5F0E1]'
+            }`}
+          >
+            Diaria
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsWeekly(true)}
+            className={`flex-1 px-4 py-2 rounded-lg font-medium transition-all ${
+              isWeekly
+                ? isDay ? 'bg-[#4A2E1B] text-[#F5F0E1]' : 'bg-[#F5F0E1] text-[#2D1E1A]'
+                : isDay ? 'bg-[#4A2E1B]/20 text-[#4A2E1B]' : 'bg-[#F5F0E1]/20 text-[#F5F0E1]'
+            }`}
+          >
+            Semanal
+          </button>
+        </div>
+
         <form onSubmit={handleSubmit}>
           {/* Help text moved above textarea */}
           <label htmlFor="whisper-textarea" className="text-sm opacity-70 mb-2 block">Escribe tu whisper aqui</label>
@@ -525,10 +687,16 @@ export default function WhisperForm() {
                       type="text"
                       value={objective.text}
                       onChange={(e) => handleObjectiveTextChange(objective.id, e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddObjective();
+                        }
+                      }}
                       placeholder="Escribe tu objetivo aqui"
                       className={`flex-grow p-2 rounded-md ${
-                        isDay 
-                          ? 'bg-white border-[#4A2E1B]/20 focus:border-[#4A2E1B]' 
+                        isDay
+                          ? 'bg-white border-[#4A2E1B]/20 focus:border-[#4A2E1B]'
                           : 'bg-[#3A2723] border-[#F5F0E1]/20 focus:border-[#F5F0E1]'
                       } border focus:outline-none`}
                     />
@@ -553,6 +721,88 @@ export default function WhisperForm() {
             onChange={setSelectedMood}
             isDay={isDay}
           />
+
+          {isWeekly && session?.user?.id && (
+            <div className="mb-4">
+              {loadingWeeklyObjectives ? (
+                <div className="p-3 bg-[#F5F0E1]/10 rounded-lg text-[#F5F0E1] text-sm">
+                  Cargando objetivos de la semana anterior...
+                </div>
+              ) : weeklyObjectives.length > 0 ? (
+                <div className="space-y-2">
+                  <p className="text-sm font-medium mb-2">Objetivos de la semana anterior:</p>
+                  {weeklyObjectives.map(objective => (
+                    <label
+                      key={objective.id}
+                      className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all ${
+                        objective.done
+                          ? 'bg-green-500/20 border border-green-500/40'
+                          : isDay ? 'bg-[#4A2E1B]/10 border border-[#4A2E1B]/20' : 'bg-[#F5F0E1]/10 border border-[#F5F0E1]/20'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={objective.done}
+                        disabled
+                        className="w-4 h-4 cursor-pointer"
+                      />
+                      <span className={`flex-grow text-sm ${
+                        objective.done ? 'line-through opacity-60' : ''
+                      }`}>
+                        {objective.text}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              ) : (
+                <div className={`p-3 rounded-lg text-sm ${
+                  isDay ? 'bg-[#4A2E1B]/10 text-[#4A2E1B]' : 'bg-[#F5F0E1]/10 text-[#F5F0E1]'
+                }`}>
+                  No tenías objetivos semanales la semana anterior
+                </div>
+              )}
+            </div>
+          )}
+
+          {!isWeekly && !isDay && session?.user?.id && (
+            <div className="mb-4">
+              {loadingDailyObjectives ? (
+                <div className="p-3 bg-[#F5F0E1]/10 rounded-lg text-[#F5F0E1] text-sm">
+                  Cargando objetivos de hoy...
+                </div>
+              ) : dailyObjectives.length > 0 ? (
+                <div className="space-y-2">
+                  <p className="text-sm font-medium mb-2">Objetivos de hoy:</p>
+                  {dailyObjectives.map(objective => (
+                    <label
+                      key={objective.id}
+                      className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all ${
+                        objective.done
+                          ? 'bg-green-500/20 border border-green-500/40'
+                          : 'bg-[#F5F0E1]/10 border border-[#F5F0E1]/20'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={objective.done}
+                        onChange={(e) => handleToggleDailyObjective(objective.id, e.target.checked)}
+                        className="w-4 h-4 cursor-pointer"
+                      />
+                      <span className={`flex-grow text-sm ${
+                        objective.done ? 'line-through opacity-60' : ''
+                      }`}>
+                        {objective.text}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-3 bg-[#F5F0E1]/10 rounded-lg text-[#F5F0E1] text-sm">
+                  No estableciste objetivos para hoy por la mañana
+                </div>
+              )}
+            </div>
+          )}
 
           {!isDay && session?.user?.id && (
             <WhisperHabitSelector

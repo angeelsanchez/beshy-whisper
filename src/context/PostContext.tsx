@@ -13,7 +13,7 @@ export interface EntryWithUser {
   mensaje: string;
   fecha: string;
   ip: string;
-  franja: 'DIA' | 'NOCHE';
+  franja: 'DIA' | 'NOCHE' | 'SEMANA';
   guest: boolean;
   users?: {
     alias: string;

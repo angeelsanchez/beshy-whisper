@@ -23,6 +23,10 @@ interface ObjectivesListProps {
   isEditing?: boolean; // Nuevo prop para indicar si el post está en modo edición
 }
 
+interface ObjectiveEditState {
+  [key: string]: string; // objectiveId -> editedText
+}
+
 export default function ObjectivesList({ entryId, authorId, isDay, isEditing = false }: ObjectivesListProps) {
   const [objectives, setObjectives] = useState<Objective[]>([]);
   const [loading, setLoading] = useState(true);
@@ -30,6 +34,8 @@ export default function ObjectivesList({ entryId, authorId, isDay, isEditing = f
   const [retryCount, setRetryCount] = useState(0);
   const [newObjectiveText, setNewObjectiveText] = useState('');
   const [showAllObjectives, setShowAllObjectives] = useState(false);
+  const [editingObjectiveId, setEditingObjectiveId] = useState<string | null>(null);
+  const [editedTexts, setEditedTexts] = useState<ObjectiveEditState>({});
   const { session } = useAuthSession();
   
   // Verificar si el usuario actual es el autor del post
@@ -171,35 +177,84 @@ export default function ObjectivesList({ entryId, authorId, isDay, isEditing = f
     }
   };
   
+  // Actualizar el texto de un objetivo existente
+  const updateObjectiveText = async (objectiveId: string, newText: string) => {
+    if (!isAuthor || !isEditing || !newText.trim()) return;
+
+    try {
+      // Actualizar optimistamente en la UI
+      setObjectives(prev =>
+        prev.map(obj =>
+          obj.id === objectiveId ? { ...obj, text: newText.trim() } : obj
+        )
+      );
+
+      // Actualizar en la base de datos usando la API
+      const response = await fetch('/api/objectives', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          objectiveId,
+          text: newText.trim(),
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al actualizar objetivo');
+      }
+    } catch (err) {
+      logger.error('Error al actualizar objetivo', { error: String(err) });
+      setError('No se pudo actualizar el objetivo');
+
+      // Recargar los objetivos si hay error
+      const { data } = await supabase
+        .from('objectives')
+        .select('*')
+        .eq('entry_id', entryId);
+
+      setObjectives(data || []);
+
+      // Limpiar mensaje de error después de 3 segundos
+      setTimeout(() => setError(null), 3000);
+    }
+  };
+
   // Añadir un nuevo objetivo
   const addNewObjective = async () => {
     if (!isAuthor || !isEditing || !newObjectiveText.trim()) return;
-    
+
     try {
-      // Crear el nuevo objetivo en la base de datos
-      const { data, error: insertError } = await supabase
-        .from('objectives')
-        .insert({
-          entry_id: entryId,
-          user_id: session?.user?.id,
+      // Crear el nuevo objetivo usando la API
+      const response = await fetch('/api/objectives', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          entryId,
           text: newObjectiveText.trim(),
-          done: false
-        })
-        .select();
-      
-      if (insertError) {
-        throw new Error(insertError.message);
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al crear objetivo');
       }
-      
+
+      const data = await response.json();
+
       // Añadir el nuevo objetivo a la lista local
-      if (data && data[0]) {
-        setObjectives(prev => [...prev, data[0] as Objective]);
+      if (data.objective) {
+        setObjectives(prev => [...prev, data.objective as Objective]);
         setNewObjectiveText(''); // Limpiar el campo de texto
       }
     } catch (err) {
       logger.error('Error al añadir objetivo', { error: String(err) });
       setError('No se pudo añadir el objetivo');
-      
+
       // Limpiar mensaje de error después de 3 segundos
       setTimeout(() => setError(null), 3000);
     }
@@ -238,14 +293,14 @@ export default function ObjectivesList({ entryId, authorId, isDay, isEditing = f
       <h4 className="text-sm font-medium mb-2">Objetivos:</h4>
       <ul className="space-y-2">
         {visibleObjectives.map((objective) => (
-          <li 
-            key={objective.id} 
+          <li
+            key={objective.id}
             className={`flex items-center gap-2 p-2 rounded-md transition-opacity duration-200 ${
               isDay ? 'bg-[#4A2E1B]/5' : 'bg-[#F5F0E1]/5'
             } ${objective.done ? 'opacity-70' : ''}`}
-            style={{ 
-              minHeight: '40px', // Consistent height for better layout
-              wordWrap: 'break-word' // Handle long text gracefully
+            style={{
+              minHeight: '40px',
+              wordWrap: 'break-word'
             }}
           >
             {/* Checkbox - solo interactivo para el autor */}
@@ -254,25 +309,65 @@ export default function ObjectivesList({ entryId, authorId, isDay, isEditing = f
                 type="checkbox"
                 checked={objective.done}
                 onChange={() => isAuthor && toggleObjectiveStatus(objective.id, objective.done)}
-                disabled={!isAuthor}
+                disabled={!isAuthor || (isAuthor && isEditing && editingObjectiveId === objective.id)}
                 className={`w-4 h-4 cursor-${isAuthor ? 'pointer' : 'not-allowed'}`}
               />
             </div>
-            
-            {/* Texto del objetivo */}
-            <span 
-              className={`flex-grow text-sm ${objective.done ? 'line-through' : ''}`}
-              style={{ 
-                wordBreak: 'break-word', 
-                hyphens: 'auto',
-                lineHeight: '1.4'
-              }}
-            >
-              {objective.text}
-            </span>
-            
+
+            {/* Texto del objetivo - editable en modo edición */}
+            {isAuthor && isEditing && editingObjectiveId === objective.id ? (
+              <input
+                type="text"
+                value={editedTexts[objective.id] ?? objective.text}
+                onChange={(e) => setEditedTexts(prev => ({ ...prev, [objective.id]: e.target.value }))}
+                onBlur={() => {
+                  const newText = editedTexts[objective.id] ?? objective.text;
+                  if (newText.trim() && newText !== objective.text) {
+                    updateObjectiveText(objective.id, newText.trim());
+                  }
+                  setEditingObjectiveId(null);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    const newText = editedTexts[objective.id] ?? objective.text;
+                    if (newText.trim() && newText !== objective.text) {
+                      updateObjectiveText(objective.id, newText.trim());
+                    }
+                    setEditingObjectiveId(null);
+                  }
+                  if (e.key === 'Escape') {
+                    setEditingObjectiveId(null);
+                  }
+                }}
+                autoFocus
+                className={`flex-grow p-2 text-sm rounded-md ${
+                  isDay
+                    ? 'bg-white border-[#4A2E1B]/20 focus:border-[#4A2E1B]'
+                    : 'bg-[#3A2723] border-[#F5F0E1]/20 focus:border-[#F5F0E1]'
+                } border focus:outline-none`}
+              />
+            ) : (
+              <button
+                type="button"
+                className={`flex-grow text-sm text-left ${objective.done ? 'line-through' : ''} ${isAuthor && isEditing ? 'cursor-pointer hover:opacity-80' : ''}`}
+                onClick={() => isAuthor && isEditing && setEditingObjectiveId(objective.id)}
+                disabled={!isAuthor || !isEditing}
+                style={{
+                  wordBreak: 'break-word',
+                  hyphens: 'auto',
+                  lineHeight: '1.4',
+                  padding: '0.5rem',
+                  background: 'transparent',
+                  border: 'none',
+                }}
+                title={isAuthor && isEditing ? 'Click para editar' : undefined}
+              >
+                {objective.text}
+              </button>
+            )}
+
             {/* Botón de eliminar - solo visible para el autor en modo edición */}
-            {isAuthor && isEditing && (
+            {isAuthor && isEditing && editingObjectiveId !== objective.id && (
               <button
                 onClick={() => deleteObjective(objective.id)}
                 className="p-1 rounded-full hover:bg-red-100 text-red-500"

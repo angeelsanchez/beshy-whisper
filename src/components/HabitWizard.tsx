@@ -47,6 +47,7 @@ export interface HabitWizardData {
   icon?: string;
   category?: HabitCategory;
   reminderTime?: string;
+  hasProgression?: boolean;
 }
 
 interface InitialHabitData {
@@ -62,6 +63,7 @@ interface InitialHabitData {
   readonly icon: string | null;
   readonly category: HabitCategory | null;
   readonly reminder_time: string | null;
+  readonly has_progression?: boolean;
 }
 
 interface HabitWizardProps {
@@ -86,6 +88,7 @@ interface FormState {
   category: HabitCategory | null;
   reminderEnabled: boolean;
   reminderTime: string;
+  hasProgression: boolean;
 }
 
 type FieldUpdater = <K extends keyof FormState>(key: K, value: FormState[K]) => void;
@@ -106,6 +109,7 @@ function getInitialForm(initialData?: InitialHabitData): FormState {
       category: null,
       reminderEnabled: false,
       reminderTime: '09:00',
+      hasProgression: false,
     };
   }
 
@@ -125,6 +129,7 @@ function getInitialForm(initialData?: InitialHabitData): FormState {
     category: initialData.category,
     reminderEnabled: initialData.reminder_time !== null,
     reminderTime: initialData.reminder_time ?? '09:00',
+    hasProgression: initialData.has_progression ?? false,
   };
 }
 
@@ -951,6 +956,21 @@ function ConfirmStep({
         onTimeChange={val => onChange('reminderTime', val)}
       />
 
+      <div className={`p-4 rounded-lg border ${isDay ? 'bg-[#4A2E1B]/5 border-[#4A2E1B]/20' : 'bg-[#F5F0E1]/5 border-[#F5F0E1]/20'}`}>
+        <label className={`flex items-center gap-3 cursor-pointer ${isDay ? 'text-[#4A2E1B]' : 'text-[#F5F0E1]'}`}>
+          <input
+            type="checkbox"
+            checked={form.hasProgression}
+            onChange={e => onChange('hasProgression', e.target.checked)}
+            className="w-4 h-4 cursor-pointer"
+          />
+          <span className="text-sm font-medium">Activar progresión de niveles</span>
+        </label>
+        <p className={`text-xs mt-2 ${isDay ? 'text-[#4A2E1B]/60' : 'text-[#F5F0E1]/60'}`}>
+          Divide este hábito en 2-10 niveles progresivos para aumentar la dificultad con el tiempo
+        </p>
+      </div>
+
       <button
         type="button"
         onClick={onSubmit}
@@ -996,6 +1016,7 @@ export default function HabitWizard({ mode, initialData, onSubmit, onDelete, add
       category: template.category,
       reminderEnabled: false,
       reminderTime: '09:00',
+      hasProgression: false,
     });
     setStep(2);
     setError(null);
@@ -1096,6 +1117,9 @@ export default function HabitWizard({ mode, initialData, onSubmit, onDelete, add
     if (form.category) data.category = form.category;
     if (form.reminderEnabled && form.reminderTime) {
       data.reminderTime = form.reminderTime;
+    }
+    if (form.hasProgression) {
+      data.hasProgression = true;
     }
     return data;
   }, [form]);

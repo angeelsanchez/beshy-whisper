@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useHabitLevels } from '@/hooks/useHabitLevels';
 import type { EvolutionPeriod } from '@/hooks/useHabitLevels';
-import { TrendingUp, ChevronUp, Award } from 'lucide-react';
+import { TrendingUp, ChevronUp, ChevronDown, Award } from 'lucide-react';
+import { logger } from '@/lib/logger';
 
 interface HabitEvolutionProps {
   readonly habitId: string;
@@ -12,6 +13,7 @@ interface HabitEvolutionProps {
   readonly currentLevel: number;
   readonly maxLevel: number;
   readonly onAdvanced?: () => void;
+  readonly onDecreased?: () => void;
 }
 
 function PeriodBar({
@@ -69,9 +71,12 @@ export default function HabitEvolution({
   currentLevel,
   maxLevel,
   onAdvanced,
+  onDecreased,
 }: HabitEvolutionProps): React.ReactElement | null {
   const { evolution, fetchEvolution, advanceLevel } = useHabitLevels(habitId);
   const [advancing, setAdvancing] = useState(false);
+  const [decreasing, setDecreasing] = useState(false);
+  const [showDecreaseConfirm, setShowDecreaseConfirm] = useState(false);
 
   useEffect(() => {
     fetchEvolution();
@@ -87,9 +92,55 @@ export default function HabitEvolution({
     }
   };
 
+  const confirmDecrease = (): void => {
+    setShowDecreaseConfirm(true);
+  };
+
+  const executeDecrease = async (): Promise<void> => {
+    setDecreasing(true);
+    try {
+      const response = await fetch(`/api/habits/${habitId}/decrease-level`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ confirm: true }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al bajar de nivel');
+      }
+
+      fetchEvolution();
+      onDecreased?.();
+      setShowDecreaseConfirm(false);
+    } catch (error) {
+      logger.error('Error al bajar de nivel', { error: String(error) });
+    } finally {
+      setDecreasing(false);
+    }
+  };
+
+  const handleDecrease = (): void => {
+    if (showDecreaseConfirm) {
+      executeDecrease();
+    } else {
+      confirmDecrease();
+    }
+  };
+
   const text = isDay ? 'text-[#4A2E1B]' : 'text-[#F5F0E1]';
   const muted = isDay ? 'text-[#4A2E1B]/50' : 'text-[#F5F0E1]/50';
   const isMaxLevel = currentLevel >= maxLevel;
+  const canDecrease = currentLevel > 1;
+
+  const suggestedAdvanceColor = isDay ? 'bg-green-600/10 text-green-700 hover:bg-green-600/20' : 'bg-green-400/10 text-green-400 hover:bg-green-400/20';
+  const defaultButtonColor = isDay ? 'bg-[#4A2E1B]/5 text-[#4A2E1B]/60 hover:bg-[#4A2E1B]/10 hover:text-[#4A2E1B]/80' : 'bg-[#F5F0E1]/5 text-[#F5F0E1]/60 hover:bg-[#F5F0E1]/10 hover:text-[#F5F0E1]/80';
+  const advanceButtonClass = shouldSuggestAdvance ? suggestedAdvanceColor : defaultButtonColor;
+
+  const confirmDecreaseColor = isDay ? 'bg-red-600/10 text-red-700 hover:bg-red-600/20' : 'bg-red-400/10 text-red-400 hover:bg-red-400/20';
+  const decreaseButtonClass = showDecreaseConfirm ? confirmDecreaseColor : defaultButtonColor;
+
+  const maxLevelClass = isDay ? 'bg-amber-500/10 text-amber-700' : 'bg-amber-400/10 text-amber-400';
 
   return (
     <div className="space-y-3">
@@ -118,31 +169,37 @@ export default function HabitEvolution({
         <p className={`text-xs ${muted}`}>Cargando evolución...</p>
       )}
 
-      {!isMaxLevel && (
-        <button
-          onClick={handleAdvance}
-          disabled={advancing}
-          className={`w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-medium transition-all ${
-            advancing ? 'opacity-50 cursor-not-allowed' : 'active:scale-[0.98]'
-          } ${
-            shouldSuggestAdvance
-              ? (isDay
-                  ? 'bg-green-600/10 text-green-700 hover:bg-green-600/20'
-                  : 'bg-green-400/10 text-green-400 hover:bg-green-400/20')
-              : (isDay
-                  ? 'bg-[#4A2E1B]/5 text-[#4A2E1B]/60 hover:bg-[#4A2E1B]/10 hover:text-[#4A2E1B]/80'
-                  : 'bg-[#F5F0E1]/5 text-[#F5F0E1]/60 hover:bg-[#F5F0E1]/10 hover:text-[#F5F0E1]/80')
-          }`}
-        >
-          <ChevronUp className="w-4 h-4" strokeWidth={2} />
-          {advancing ? 'Avanzando...' : 'Subir de nivel'}
-        </button>
-      )}
+      <div className="flex gap-2">
+        {!isMaxLevel && (
+          <button
+            onClick={handleAdvance}
+            disabled={advancing}
+            className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-medium transition-all ${
+              advancing ? 'opacity-50 cursor-not-allowed' : 'active:scale-[0.98]'
+            } ${advanceButtonClass}`}
+          >
+            <ChevronUp className="w-4 h-4" strokeWidth={2} />
+            {advancing ? 'Avanzando...' : 'Subir de nivel'}
+          </button>
+        )}
+
+        {canDecrease && (
+          <button
+            onClick={handleDecrease}
+            disabled={decreasing}
+            className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-medium transition-all ${
+              decreasing ? 'opacity-50 cursor-not-allowed' : 'active:scale-[0.98]'
+            } ${decreaseButtonClass}`}
+            title={showDecreaseConfirm ? 'Click nuevamente para confirmar' : 'Bajar de nivel'}
+          >
+            <ChevronDown className="w-4 h-4" strokeWidth={2} />
+            {decreasing ? 'Bajando...' : showDecreaseConfirm ? 'Confirmar' : 'Bajar de nivel'}
+          </button>
+        )}
+      </div>
 
       {isMaxLevel && (
-        <div className={`flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium ${
-          isDay ? 'bg-amber-500/10 text-amber-700' : 'bg-amber-400/10 text-amber-400'
-        }`}>
+        <div className={`flex items-center gap-2 py-2 px-3 rounded-lg text-xs font-medium ${maxLevelClass}`}>
           <Award className="w-4 h-4" strokeWidth={2} />
           Nivel máximo alcanzado
         </div>

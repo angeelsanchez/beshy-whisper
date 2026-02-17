@@ -103,6 +103,8 @@ export async function GET(request: NextRequest) {
 
 type HabitLog = { habit_id: string; completed_at: string; value: number | null };
 
+const WEEKDAY_LABELS = ['D', 'L', 'M', 'X', 'J', 'V', 'S'] as const;
+
 function calculateGlobalChartData(
   logs: HabitLog[],
   totalHabits: number,
@@ -124,7 +126,7 @@ function calculateGlobalChartData(
 
       weekData.push({
         date: dateStr,
-        label: date.toLocaleDateString('es-ES', { weekday: 'short' }).slice(0, 1),
+        label: WEEKDAY_LABELS[date.getDay()],
         percentage,
       });
     }

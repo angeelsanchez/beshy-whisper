@@ -97,7 +97,7 @@ export default function HabitChartsSimple({ isDay }: HabitChartsSimpleProps) {
       <div>
         <div className="flex items-center justify-between mb-3">
           <h2 className={`text-base font-bold ${text}`}>
-            Completitud global
+            Cumplimiento global
           </h2>
           <div className="flex gap-1">
             {(['week', 'month', 'year'] as const).map(v => (
@@ -137,9 +137,9 @@ export default function HabitChartsSimple({ isDay }: HabitChartsSimpleProps) {
                   borderRadius: '8px',
                 }}
                 labelStyle={{ color: isDay ? '#4A2E1B' : '#F5F0E1' }}
-                formatter={(value: number | undefined) => [`${value ?? 0}%`, 'Completitud']}
+                formatter={(value: number | undefined) => [`${value ?? 0}%`, 'Cumplimiento']}
               />
-              <Bar dataKey="percentage" name="Completitud" fill={isDay ? '#4A2E1B' : '#F5F0E1'} radius={[8, 8, 0, 0]} />
+              <Bar dataKey="percentage" name="Cumplimiento" fill={isDay ? '#4A2E1B' : '#F5F0E1'} radius={[8, 8, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         )}

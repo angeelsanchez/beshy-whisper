@@ -137,8 +137,9 @@ export default function HabitChartsSimple({ isDay }: HabitChartsSimpleProps) {
                   borderRadius: '8px',
                 }}
                 labelStyle={{ color: isDay ? '#4A2E1B' : '#F5F0E1' }}
+                formatter={(value: number | undefined) => [`${value ?? 0}%`, 'Completitud']}
               />
-              <Bar dataKey="percentage" fill={isDay ? '#4A2E1B' : '#F5F0E1'} radius={[8, 8, 0, 0]} />
+              <Bar dataKey="percentage" name="Completitud" fill={isDay ? '#4A2E1B' : '#F5F0E1'} radius={[8, 8, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         )}
@@ -187,6 +188,7 @@ export default function HabitChartsSimple({ isDay }: HabitChartsSimpleProps) {
                     borderRadius: '8px',
                   }}
                   labelStyle={{ color: isDay ? '#4A2E1B' : '#F5F0E1' }}
+                  formatter={(value: number | undefined) => [`${value ?? 0}%`]}
                 />
                 <Legend />
                 {habitsData.map((habit, idx) => (

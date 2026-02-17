@@ -65,11 +65,11 @@ export async function GET(request: NextRequest) {
 
     const { data: logs, error: logsError } = await supabaseAdmin
       .from('habit_logs')
-      .select('habit_id, completed, log_date')
+      .select('habit_id, completed_at, value')
       .eq('user_id', session.user.id)
-      .gte('log_date', startDate.toISOString())
-      .lte('log_date', now.toISOString())
-      .order('log_date', { ascending: true });
+      .gte('completed_at', startDate.toISOString().split('T')[0])
+      .lte('completed_at', now.toISOString().split('T')[0])
+      .order('completed_at', { ascending: true });
 
     if (logsError) {
       logger.error('Error fetching habit logs', { detail: logsError.message });
@@ -101,7 +101,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-type HabitLog = { habit_id: string; completed: boolean; log_date: string };
+type HabitLog = { habit_id: string; completed_at: string; value: number | null };
 
 function calculateGlobalChartData(
   logs: HabitLog[],
@@ -117,8 +117,7 @@ function calculateGlobalChartData(
       date.setDate(today.getDate() - i);
       const dateStr = date.toISOString().split('T')[0];
 
-      const dayLogs = logs.filter(log => log.log_date.startsWith(dateStr));
-      const completedCount = dayLogs.filter(log => log.completed).length;
+      const completedCount = logs.filter(log => log.completed_at === dateStr).length;
       const percentage = totalHabits > 0
         ? Math.round((completedCount / totalHabits) * 100)
         : 0;
@@ -140,16 +139,16 @@ function calculateGlobalChartData(
       weekStart.setDate(today.getDate() - (today.getDay() || 7) - i * 7 + 1);
 
       const weekLogs = logs.filter(log => {
-        const logDate = new Date(log.log_date);
+        const logDate = new Date(log.completed_at);
         const weekEnd = new Date(weekStart);
         weekEnd.setDate(weekStart.getDate() + 6);
         return logDate >= weekStart && logDate <= weekEnd;
       });
 
-      const completedCount = weekLogs.filter(log => log.completed).length;
-      const totalLogsThisWeek = weekLogs.length;
-      const percentage = totalLogsThisWeek > 0
-        ? Math.round((completedCount / totalLogsThisWeek) * 100)
+      const completedCount = weekLogs.length;
+      const expectedTotal = totalHabits * 7;
+      const percentage = expectedTotal > 0
+        ? Math.round((completedCount / expectedTotal) * 100)
         : 0;
 
       monthData.push({
@@ -172,14 +171,15 @@ function calculateGlobalChartData(
       const monthEnd = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0);
 
       const monthLogs = logs.filter(log => {
-        const logDate = new Date(log.log_date);
+        const logDate = new Date(log.completed_at);
         return logDate >= monthStart && logDate <= monthEnd;
       });
 
-      const completedCount = monthLogs.filter(log => log.completed).length;
-      const totalLogsThisMonth = monthLogs.length;
-      const percentage = totalLogsThisMonth > 0
-        ? Math.round((completedCount / totalLogsThisMonth) * 100)
+      const completedCount = monthLogs.length;
+      const daysInMonth = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0).getDate();
+      const expectedTotal = totalHabits * daysInMonth;
+      const percentage = expectedTotal > 0
+        ? Math.round((completedCount / expectedTotal) * 100)
         : 0;
 
       yearData.push({
@@ -212,8 +212,8 @@ function calculateIndividualHabitsData(
         date.setDate(today.getDate() - i);
         const dateStr = date.toISOString().split('T')[0];
 
-        const logOnDate = habitLogs.find(log => log.log_date.startsWith(dateStr));
-        const percentage = logOnDate?.completed ? 100 : 0;
+        const hasLog = habitLogs.some(log => log.completed_at === dateStr);
+        const percentage = hasLog ? 100 : 0;
 
         weekData.push({
           date: dateStr,
@@ -233,17 +233,12 @@ function calculateIndividualHabitsData(
         weekEnd.setDate(weekStart.getDate() + 6);
 
         const completedInWeek = habitLogs.filter(log => {
-          const logDate = new Date(log.log_date);
-          return logDate >= weekStart && logDate <= weekEnd && log.completed;
-        }).length;
-
-        const logsInWeek = habitLogs.filter(log => {
-          const logDate = new Date(log.log_date);
+          const logDate = new Date(log.completed_at);
           return logDate >= weekStart && logDate <= weekEnd;
         }).length;
 
-        const percentage = logsInWeek > 0
-          ? Math.round((completedInWeek / logsInWeek) * 100)
+        const percentage = completedInWeek > 0
+          ? Math.round((completedInWeek / 7) * 100)
           : 0;
 
         monthData.push({
@@ -264,18 +259,14 @@ function calculateIndividualHabitsData(
         const monthStart = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
         const monthEnd = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0);
 
+        const daysInMonth = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0).getDate();
         const completedInMonth = habitLogs.filter(log => {
-          const logDate = new Date(log.log_date);
-          return logDate >= monthStart && logDate <= monthEnd && log.completed;
-        }).length;
-
-        const logsInMonth = habitLogs.filter(log => {
-          const logDate = new Date(log.log_date);
+          const logDate = new Date(log.completed_at);
           return logDate >= monthStart && logDate <= monthEnd;
         }).length;
 
-        const percentage = logsInMonth > 0
-          ? Math.round((completedInMonth / logsInMonth) * 100)
+        const percentage = daysInMonth > 0
+          ? Math.round((completedInMonth / daysInMonth) * 100)
           : 0;
 
         yearData.push({

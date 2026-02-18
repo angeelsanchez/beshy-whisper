@@ -10,6 +10,7 @@ import {
   STREAK_WARNING_START, STREAK_WARNING_END,
   NIGHT_REMINDER_START, NIGHT_REMINDER_END,
 } from '@/lib/constants';
+import { scheduleReminderSchema } from '@/lib/schemas/notifications';
 
 function verifyCronAuth(request: NextRequest): NextResponse | null {
   const cronSecret = process.env.CRON_SECRET;
@@ -175,19 +176,19 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { action } = body;
-
-    if (action === 'process') {
-      await processReminders();
-      return NextResponse.json({
-        success: true,
-        message: 'Reminders processed successfully'
-      });
+    const parsed = scheduleReminderSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: 'Datos inválidos', details: parsed.error.flatten().fieldErrors },
+        { status: 400 }
+      );
     }
 
+    await processReminders();
     return NextResponse.json({
-      error: 'Invalid action. Use "process" to trigger reminders.'
-    }, { status: 400 });
+      success: true,
+      message: 'Reminders processed successfully'
+    });
 
   } catch (error) {
     logger.error('Error in reminder API', { detail: error instanceof Error ? error.message : String(error) });

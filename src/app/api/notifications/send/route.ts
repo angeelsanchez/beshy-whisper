@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { safeCompare } from '@/utils/crypto-helpers';
 import { sendPushToUser } from '@/lib/push-notify';
 import { logger } from '@/lib/logger';
+import { sendNotificationSchema } from '@/lib/schemas/notifications';
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,14 +15,15 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { userId, title, body: notificationBody, data } = body;
-
-    if (!userId || !title || !notificationBody) {
+    const parsed = sendNotificationSchema.safeParse(body);
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: 'Missing required notification data' },
+        { error: 'Datos inválidos', details: parsed.error.flatten().fieldErrors },
         { status: 400 }
       );
     }
+
+    const { userId, title, body: notificationBody, data } = parsed.data;
 
     const sent = await sendPushToUser(userId, {
       title,

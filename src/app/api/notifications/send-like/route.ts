@@ -2,18 +2,20 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { sendPushToUser } from '@/lib/push-notify';
 import { logger } from '@/lib/logger';
+import { sendLikeSchema } from '@/lib/schemas/notifications';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { entryId, likerUserId } = body;
-
-    if (!entryId || !likerUserId) {
+    const parsed = sendLikeSchema.safeParse(body);
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: 'Missing required data: entryId and likerUserId' },
+        { error: 'Datos inválidos', details: parsed.error.flatten().fieldErrors },
         { status: 400 }
       );
     }
+
+    const { entryId, likerUserId } = parsed.data;
 
     const { data: entryData, error: entryError } = await supabaseAdmin
       .from('entries')

@@ -5,6 +5,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import webpush from 'web-push';
 import { ensureVapidConfigured } from '@/lib/push-notify';
 import { logger } from '@/lib/logger';
+import { testPushSchema } from '@/lib/schemas/notifications';
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,7 +19,15 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { title, body: messageBody, icon, tag, data } = body;
+    const parsed = testPushSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: 'Datos inválidos', details: parsed.error.flatten().fieldErrors },
+        { status: 400 }
+      );
+    }
+
+    const { title, body: messageBody, icon, tag, data } = parsed.data;
 
     const { data: pushTokens, error: tokensError } = await supabaseAdmin
       .from('push_tokens')

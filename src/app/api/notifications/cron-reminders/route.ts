@@ -11,6 +11,7 @@ import {
   NIGHT_REMINDER_START, NIGHT_REMINDER_END,
 } from '@/lib/constants';
 import type { NotificationType } from '@/types/notification-preferences';
+import { cronReminderSchema } from '@/lib/schemas/notifications';
 
 async function hasReminderBeenSentToday(userId: string, reminderType: string): Promise<boolean> {
   const today = new Date();
@@ -337,27 +338,29 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { action, secret } = body;
+    const parsed = cronReminderSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: 'Datos inválidos', details: parsed.error.flatten().fieldErrors },
+        { status: 400 }
+      );
+    }
 
-    if (!secret || !safeCompare(secret, cronSecret)) {
+    const { secret } = parsed.data;
+
+    if (!safeCompare(secret, cronSecret)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    
-    if (action === 'process') {
-      logger.info('Manual trigger requested');
-      const result = await processReminders();
-      
-      return NextResponse.json({
-        success: true,
-        message: 'Manual reminders processed successfully',
-        timestamp: new Date().toISOString(),
-        results: result
-      });
-    }
-    
-    return NextResponse.json({ 
-      error: 'Invalid action. Use "process" to trigger reminders.' 
-    }, { status: 400 });
+
+    logger.info('Manual trigger requested');
+    const result = await processReminders();
+
+    return NextResponse.json({
+      success: true,
+      message: 'Manual reminders processed successfully',
+      timestamp: new Date().toISOString(),
+      results: result
+    });
     
   } catch (error) {
     logger.error('Error in cron reminders POST', { detail: error instanceof Error ? error.message : String(error) });

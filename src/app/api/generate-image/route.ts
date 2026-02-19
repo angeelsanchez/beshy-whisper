@@ -12,14 +12,18 @@ import {
   BRAND_COLORS,
 } from '@/utils/puppeteer-helpers';
 import { generateImageSchema } from '@/lib/schemas/generate-image';
-
-interface FormattedObjective {
-  id: string;
-  text: string;
-  done: boolean;
-  icon: string;
-  isCompleted: boolean;
-}
+import {
+  type FormattedObjective,
+  MONTSERRAT_IMPORT,
+  MONTSERRAT_FONT_STACK,
+  CSS_RESET,
+  IMAGE_RENDERING_CSS,
+  EMOJI_IMG_CSS,
+  renderObjectivesHtml,
+  renderInlineUserInfoHtml,
+  renderLogoFooterHtml,
+  formatImageDate,
+} from '@/utils/image-templates';
 
 interface TemplateOptions {
   mensaje: string;
@@ -168,12 +172,12 @@ function createNormalHTML(opts: TemplateOptions): string {
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <style>
-        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
+        ${MONTSERRAT_IMPORT}
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        ${CSS_RESET}
 
         body {
-          font-family: 'Montserrat', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji', sans-serif;
+          font-family: ${MONTSERRAT_FONT_STACK};
           width: 2160px;
           height: 3840px;
           background-color: ${colors.background};
@@ -182,8 +186,7 @@ function createNormalHTML(opts: TemplateOptions): string {
           align-items: center;
           justify-content: center;
           position: relative;
-          image-rendering: -webkit-optimize-contrast;
-          image-rendering: crisp-edges;
+          ${IMAGE_RENDERING_CSS}
         }
 
         .content-container {
@@ -219,7 +222,7 @@ function createNormalHTML(opts: TemplateOptions): string {
         .objective-completed { text-decoration: line-through; opacity: 0.7; }
         .logo-container { display: flex; justify-content: center; margin-top: 80px; }
         .watermark { position: absolute; bottom: 15%; left: 50%; transform: translateX(-50%); font-size: 96px; font-weight: 700; color: ${colors.text}; opacity: 0.6; }
-        img.emoji { height: 1em; width: 1em; margin: 0 0.05em 0 0.1em; vertical-align: -0.1em; display: inline; }
+        ${EMOJI_IMG_CSS}
       </style>
     </head>
     <body>
@@ -228,22 +231,12 @@ function createNormalHTML(opts: TemplateOptions): string {
           <div class="avatar-container">${avatarHTML}</div>
           <div class="display-name">${escapeHtml(display_name)}</div>
           <div class="display-id">@${escapeHtml(display_id)}</div>
-          <div class="date">${formatDate(fecha)}</div>
+          <div class="date">${formatImageDate(fecha)}</div>
         </div>
 
         <div class="message">${escapeHtml(mensaje)}</div>
 
-        ${objetivos.length > 0 ? `
-          <div class="objectives-container">
-            <div class="objectives-title">Objetivos de hoy:</div>
-            ${objetivos.map(obj => `
-              <div class="objective-item">
-                <span class="objective-icon">${obj.icon}</span>
-                <span class="objective-text ${obj.isCompleted ? 'objective-completed' : ''}">${escapeHtml(obj.text)}</span>
-              </div>
-            `).join('')}
-          </div>
-        ` : ''}
+        ${renderObjectivesHtml(objetivos, 'Objetivos de hoy:')}
 
         <div class="logo-container">${processedLogo}</div>
       </div>
@@ -267,17 +260,16 @@ function createBubbleHTML(opts: TemplateOptions): string {
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <style>
-        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
+        ${MONTSERRAT_IMPORT}
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        ${CSS_RESET}
 
         body {
-          font-family: 'Montserrat', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji', sans-serif;
+          font-family: ${MONTSERRAT_FONT_STACK};
           background: transparent;
           padding: 80px;
           display: inline-block;
-          image-rendering: -webkit-optimize-contrast;
-          image-rendering: crisp-edges;
+          ${IMAGE_RENDERING_CSS}
         }
 
         .bubble-container {
@@ -334,38 +326,23 @@ function createBubbleHTML(opts: TemplateOptions): string {
         .objective-completed { text-decoration: line-through; opacity: 0.7; }
         .footer { display: flex; justify-content: space-between; align-items: center; margin-top: 48px; padding-top: 32px; border-top: 2px solid ${colors.background}; }
         .beshy-text { font-size: 24px; font-weight: 600; opacity: 0.7; }
-        img.emoji { height: 1em; width: 1em; margin: 0 0.05em 0 0.1em; vertical-align: -0.1em; display: inline; }
+        ${EMOJI_IMG_CSS}
       </style>
     </head>
     <body>
       <div class="bubble-container">
-        <div class="user-info">
-          ${avatarHTML}
-          <div class="user-text">
-            <div class="display-name">${escapeHtml(display_name)}</div>
-            <div class="display-id">@${escapeHtml(display_id)}</div>
-            <div class="date">${formatDate(fecha)}</div>
-          </div>
-        </div>
+        ${renderInlineUserInfoHtml({
+          avatarHTML,
+          displayName: display_name,
+          displayId: display_id,
+          formattedDate: formatImageDate(fecha),
+        })}
 
         <div class="message">${escapeHtml(mensaje)}</div>
 
-        ${objetivos.length > 0 ? `
-          <div class="objectives-container">
-            <div class="objectives-title">Objetivos:</div>
-            ${objetivos.map(obj => `
-              <div class="objective-item">
-                <span class="objective-icon">${obj.icon}</span>
-                <span class="objective-text ${obj.isCompleted ? 'objective-completed' : ''}">${escapeHtml(obj.text)}</span>
-              </div>
-            `).join('')}
-          </div>
-        ` : ''}
+        ${renderObjectivesHtml(objetivos, 'Objetivos:')}
 
-        <div class="footer">
-          <div class="beshy-text">BESHY</div>
-          ${processedLogo}
-        </div>
+        ${renderLogoFooterHtml(processedLogo)}
       </div>
     </body>
     </html>
@@ -386,17 +363,16 @@ function createStickerHTML(opts: TemplateOptions): string {
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <style>
-        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
+        ${MONTSERRAT_IMPORT}
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        ${CSS_RESET}
 
         body {
-          font-family: 'Montserrat', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji', sans-serif;
+          font-family: ${MONTSERRAT_FONT_STACK};
           background: transparent;
           padding: 80px;
           display: inline-block;
-          image-rendering: -webkit-optimize-contrast;
-          image-rendering: crisp-edges;
+          ${IMAGE_RENDERING_CSS}
         }
 
         .sticker-container {
@@ -432,51 +408,27 @@ function createStickerHTML(opts: TemplateOptions): string {
         .objective-completed { text-decoration: line-through; opacity: 0.7; }
         .footer { display: flex; justify-content: space-between; align-items: center; margin-top: 48px; padding-top: 32px; }
         .beshy-text { font-size: 24px; font-weight: 600; opacity: 1; text-shadow: ${textShadow}; }
-        img.emoji { height: 1em; width: 1em; margin: 0 0.05em 0 0.1em; vertical-align: -0.1em; display: inline; }
+        ${EMOJI_IMG_CSS}
       </style>
     </head>
     <body>
       <div class="sticker-container">
-        <div class="user-info">
-          ${avatarHTML}
-          <div class="user-text">
-            <div class="display-name">${escapeHtml(display_name)}</div>
-            <div class="display-id">@${escapeHtml(display_id)}</div>
-            <div class="date">${formatDate(fecha)}</div>
-          </div>
-        </div>
+        ${renderInlineUserInfoHtml({
+          avatarHTML,
+          displayName: display_name,
+          displayId: display_id,
+          formattedDate: formatImageDate(fecha),
+        })}
 
         <div class="message">${escapeHtml(mensaje)}</div>
 
-        ${objetivos.length > 0 ? `
-          <div class="objectives-container">
-            <div class="objectives-title">Objetivos:</div>
-            ${objetivos.map(obj => `
-              <div class="objective-item">
-                <span class="objective-icon">${obj.icon}</span>
-                <span class="objective-text ${obj.isCompleted ? 'objective-completed' : ''}">${escapeHtml(obj.text)}</span>
-              </div>
-            `).join('')}
-          </div>
-        ` : ''}
+        ${renderObjectivesHtml(objetivos, 'Objetivos:')}
 
-        <div class="footer">
-          <div class="beshy-text">BESHY</div>
-          ${processedLogo}
-        </div>
+        ${renderLogoFooterHtml(processedLogo)}
       </div>
     </body>
     </html>
   `;
-}
-
-function formatDate(dateString: string): string {
-  const date = new Date(dateString);
-  const day = String(date.getDate()).padStart(2, '0');
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const year = String(date.getFullYear()).slice(-2);
-
-  return `${day}/${month}/${year}`;
 }
 
 function createManifestationHTML(opts: ManifestationTemplateOptions): string {

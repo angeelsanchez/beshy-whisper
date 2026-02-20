@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { EyeOff, Eye, Download } from 'lucide-react';
 import { logger } from '@/lib/logger';
+import { exportHabitsToExcel } from '@/utils/export-excel';
 
 type ChartView = 'week' | 'month' | 'year';
 
@@ -40,6 +41,7 @@ export default function HabitChartsSimple({ isDay }: HabitChartsSimpleProps) {
   const [selectedHabits, setSelectedHabits] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [hideEmpty, setHideEmpty] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     const loadChartData = async () => {
@@ -92,32 +94,21 @@ export default function HabitChartsSimple({ isDay }: HabitChartsSimpleProps) {
 
   const filteredGlobalData = hideEmpty ? globalData.filter(d => d.percentage > 0) : globalData;
 
-  const exportCsv = (): void => {
-    const rows: string[][] = [['Período', 'Cumplimiento (%)']];
-    for (const d of globalData) {
-      rows.push([d.label, String(d.percentage)]);
-    }
+  const VIEW_LABELS: Record<ChartView, string> = { week: 'Semana', month: 'Mes', year: 'Año' };
 
-    if (habitsData.length > 0) {
-      rows.push([]);
-      for (const habit of habitsData) {
-        rows.push([]);
-        rows.push([habit.habitName]);
-        rows.push(['Período', 'Cumplimiento (%)']);
-        for (const d of habit.data) {
-          rows.push([d.label, String(d.percentage)]);
-        }
-      }
+  const handleExport = async (): Promise<void> => {
+    setExporting(true);
+    try {
+      await exportHabitsToExcel({
+        globalData,
+        habitsData,
+        viewLabel: VIEW_LABELS[view],
+      });
+    } catch (error) {
+      logger.error('Error exporting habits to Excel', { error: String(error) });
+    } finally {
+      setExporting(false);
     }
-
-    const csv = rows.map(r => r.join(',')).join('\n');
-    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `habitos-${view}-${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
   };
 
   const chartColors = isDay
@@ -133,11 +124,12 @@ export default function HabitChartsSimple({ isDay }: HabitChartsSimpleProps) {
           </h2>
           <div className="flex gap-1 items-center">
             <button
-              onClick={exportCsv}
-              className={`p-1 rounded transition-all ${textMuted} ${bgHover}`}
-              title="Exportar a CSV (Excel)"
+              onClick={handleExport}
+              disabled={exporting}
+              className={`p-1 rounded transition-all ${textMuted} ${bgHover} disabled:opacity-50`}
+              title="Exportar a Excel"
             >
-              <Download className="w-3.5 h-3.5" />
+              <Download className={`w-3.5 h-3.5 ${exporting ? 'animate-pulse' : ''}`} />
             </button>
             <button
               onClick={() => setHideEmpty(prev => !prev)}
@@ -156,7 +148,7 @@ export default function HabitChartsSimple({ isDay }: HabitChartsSimpleProps) {
                     : `${textMuted} ${bgHover}`
                 }`}
               >
-                {v === 'week' ? 'Semana' : v === 'month' ? 'Mes' : 'Año'}
+                {VIEW_LABELS[v]}
               </button>
             ))}
           </div>

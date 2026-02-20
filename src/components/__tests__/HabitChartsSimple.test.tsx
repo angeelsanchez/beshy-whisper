@@ -6,6 +6,11 @@ vi.mock('@/lib/logger', () => ({
   logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn() },
 }));
 
+const mockExportHabitsToExcel = vi.fn().mockResolvedValue(undefined);
+vi.mock('@/utils/export-excel', () => ({
+  exportHabitsToExcel: (...args: unknown[]) => mockExportHabitsToExcel(...args),
+}));
+
 const mockChartData = {
   success: true,
   global: [
@@ -86,22 +91,23 @@ describe('HabitChartsSimple', () => {
     });
   });
 
-  it('generates CSV on export click', async () => {
+  it('calls exportHabitsToExcel on export click', async () => {
     const user = userEvent.setup();
-    const mockCreateObjectURL = vi.fn(() => 'blob:url');
-    const mockRevokeObjectURL = vi.fn();
-    URL.createObjectURL = mockCreateObjectURL;
-    URL.revokeObjectURL = mockRevokeObjectURL;
 
     render(<HabitChartsSimple isDay={true} />);
     await waitFor(() => {
-      expect(screen.getByTitle('Exportar a CSV (Excel)')).toBeDefined();
+      expect(screen.getByTitle('Exportar a Excel')).toBeDefined();
     });
 
-    await user.click(screen.getByTitle('Exportar a CSV (Excel)'));
+    await user.click(screen.getByTitle('Exportar a Excel'));
 
-    expect(mockCreateObjectURL).toHaveBeenCalledWith(expect.any(Blob));
-    expect(mockRevokeObjectURL).toHaveBeenCalledWith('blob:url');
+    await waitFor(() => {
+      expect(mockExportHabitsToExcel).toHaveBeenCalledWith({
+        globalData: mockChartData.global,
+        habitsData: [],
+        viewLabel: 'Semana',
+      });
+    });
   });
 
   it('switches view when clicking Mes button', async () => {

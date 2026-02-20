@@ -37,8 +37,8 @@ interface TabContentProps {
   readonly today: string;
   readonly activeTimerHabitId: string | null;
   readonly elapsedSeconds: number;
-  readonly onToggle: (habitId: string) => void;
-  readonly onIncrement: (habitId: string, amount: number) => void;
+  readonly onToggle: (habitId: string, date?: string) => void;
+  readonly onIncrement: (habitId: string, amount: number, date?: string) => void;
   readonly onTimerStart: (habitId: string) => void;
   readonly onTimerStop: () => void;
   readonly onEdit: (habitId: string) => void;
@@ -46,6 +46,7 @@ interface TabContentProps {
   readonly onHabitsChanged: () => void;
   readonly activeLinks: HabitLink[];
   readonly currentUserId: string;
+  readonly completedMap: ReadonlyMap<string, ReadonlySet<string>>;
 }
 
 function renderTabContent({
@@ -69,6 +70,7 @@ function renderTabContent({
   onHabitsChanged,
   activeLinks,
   currentUserId,
+  completedMap,
 }: TabContentProps): React.ReactElement {
   if (activeTab === 'tracker') {
     if (habitsLoading) {
@@ -88,6 +90,7 @@ function renderTabContent({
         today={today}
         activeTimerHabitId={activeTimerHabitId}
         elapsedSeconds={elapsedSeconds}
+        completedMap={completedMap}
         onToggle={onToggle}
         onIncrement={onIncrement}
         onTimerStart={onTimerStart}
@@ -119,7 +122,7 @@ export default function HabitsPage(): React.ReactElement | null {
   const { isDay } = useTheme();
   const { habits, loading: habitsLoading } = useHabits();
   const habitIds = useMemo(() => habits.map(h => h.id), [habits]);
-  const { isCompleted, getValue, toggleLog, incrementLog, toggling } = useHabitLogs(habitIds, getCurrentMonth());
+  const { isCompleted, getValue, toggleLog, incrementLog, toggling, completedMap } = useHabitLogs(habitIds, getCurrentMonth());
   const { stats, refetch: refetchStats } = useHabitStats();
   const { activeTimer, elapsedSeconds, start: startTimer, stop: stopTimer, cancel: cancelTimer } = useTimer();
   const { activeLinks } = useHabitLinks();
@@ -136,16 +139,16 @@ export default function HabitsPage(): React.ReactElement | null {
     setTimeout(() => setShowToast(false), 3000);
   }, []);
 
-  const handleToggle = useCallback(async (habitId: string) => {
-    const result = await toggleLog(habitId);
+  const handleToggle = useCallback(async (habitId: string, date?: string) => {
+    const result = await toggleLog(habitId, date);
     if (result?.milestone) {
       showToastMessage(result.milestone.message);
     }
     refetchStats();
   }, [toggleLog, refetchStats, showToastMessage]);
 
-  const handleIncrement = useCallback(async (habitId: string, amount: number) => {
-    const result = await incrementLog(habitId, amount);
+  const handleIncrement = useCallback(async (habitId: string, amount: number, date?: string) => {
+    const result = await incrementLog(habitId, amount, date);
     if (result?.milestone) {
       showToastMessage(result.milestone.message);
     }
@@ -263,6 +266,7 @@ export default function HabitsPage(): React.ReactElement | null {
           onHabitsChanged: refetchStats,
           activeLinks,
           currentUserId: session.user.id,
+          completedMap,
         })}
       </div>
 

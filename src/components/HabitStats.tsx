@@ -1,7 +1,7 @@
 'use client';
 
 import { HabitStatData } from '@/hooks/useHabitStats';
-import HabitEvolution from '@/components/HabitEvolution';
+import HabitLevelRow from '@/components/HabitLevelRow';
 import HabitLinkPartnerIndicator from '@/components/HabitLinkPartnerIndicator';
 import HabitChartsSimple from '@/components/HabitChartsSimple';
 import type { HabitLink } from '@/hooks/useHabitLinks';
@@ -33,24 +33,21 @@ export default function HabitStats({ stats, isDay, onHabitsChanged, activeLinks 
       <HabitChartsSimple isDay={isDay} />
 
       {progressiveStats.length > 0 && (
-        <div className={`border-t pt-3 mt-4 space-y-4 ${border}`}>
-          <h3 className={`text-sm font-semibold ${text}`}>
-            Progresión de niveles
+        <div className={`border-t pt-3 mt-4 space-y-2 ${border}`}>
+          <h3 className={`text-sm font-semibold mb-1 ${text}`}>
+            Niveles
           </h3>
           {progressiveStats.map(s => (
-            <div key={s.habitId}>
-              <p className={`text-xs font-medium mb-2 ${isDay ? 'text-[#4A2E1B]/70' : 'text-[#F5F0E1]/70'}`}>
-                {s.habitName}
-              </p>
-              <HabitEvolution
-                habitId={s.habitId}
-                isDay={isDay}
-                shouldSuggestAdvance={s.shouldSuggestAdvance}
-                currentLevel={s.currentLevel!}
-                maxLevel={s.maxLevel!}
-                onAdvanced={onHabitsChanged}
-              />
-            </div>
+            <HabitLevelRow
+              key={s.habitId}
+              habitId={s.habitId}
+              habitName={s.habitName}
+              isDay={isDay}
+              shouldSuggestAdvance={s.shouldSuggestAdvance}
+              currentLevel={s.currentLevel!}
+              maxLevel={s.maxLevel!}
+              onChanged={onHabitsChanged}
+            />
           ))}
         </div>
       )}

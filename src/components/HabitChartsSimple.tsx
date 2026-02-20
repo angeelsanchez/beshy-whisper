@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
+import { EyeOff, Eye, Download } from 'lucide-react';
 import { logger } from '@/lib/logger';
 
 type ChartView = 'week' | 'month' | 'year';
@@ -38,6 +39,7 @@ export default function HabitChartsSimple({ isDay }: HabitChartsSimpleProps) {
   const [availableHabits, setAvailableHabits] = useState<Array<{ id: string; name: string }>>([]);
   const [selectedHabits, setSelectedHabits] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hideEmpty, setHideEmpty] = useState(false);
 
   useEffect(() => {
     const loadChartData = async () => {
@@ -88,6 +90,36 @@ export default function HabitChartsSimple({ isDay }: HabitChartsSimpleProps) {
     );
   }
 
+  const filteredGlobalData = hideEmpty ? globalData.filter(d => d.percentage > 0) : globalData;
+
+  const exportCsv = (): void => {
+    const rows: string[][] = [['Período', 'Cumplimiento (%)']];
+    for (const d of globalData) {
+      rows.push([d.label, String(d.percentage)]);
+    }
+
+    if (habitsData.length > 0) {
+      rows.push([]);
+      for (const habit of habitsData) {
+        rows.push([]);
+        rows.push([habit.habitName]);
+        rows.push(['Período', 'Cumplimiento (%)']);
+        for (const d of habit.data) {
+          rows.push([d.label, String(d.percentage)]);
+        }
+      }
+    }
+
+    const csv = rows.map(r => r.join(',')).join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `habitos-${view}-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const chartColors = isDay
     ? ['#4A2E1B', '#8B5A2B', '#A0522D', '#CD853F', '#D2B48C']
     : ['#F5F0E1', '#E8DCC4', '#D4C9B8', '#C0B5A8', '#ACA09C'];
@@ -99,7 +131,21 @@ export default function HabitChartsSimple({ isDay }: HabitChartsSimpleProps) {
           <h2 className={`text-base font-bold ${text}`}>
             Cumplimiento global
           </h2>
-          <div className="flex gap-1">
+          <div className="flex gap-1 items-center">
+            <button
+              onClick={exportCsv}
+              className={`p-1 rounded transition-all ${textMuted} ${bgHover}`}
+              title="Exportar a CSV (Excel)"
+            >
+              <Download className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => setHideEmpty(prev => !prev)}
+              className={`p-1 rounded transition-all ${hideEmpty ? bgActive : `${textMuted} ${bgHover}`}`}
+              title={hideEmpty ? 'Mostrar períodos vacíos' : 'Ocultar períodos vacíos'}
+            >
+              {hideEmpty ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+            </button>
             {(['week', 'month', 'year'] as const).map(v => (
               <button
                 key={v}
@@ -116,9 +162,9 @@ export default function HabitChartsSimple({ isDay }: HabitChartsSimpleProps) {
           </div>
         </div>
 
-        {globalData.length > 0 && (
+        {filteredGlobalData.length > 0 && (
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={globalData}>
+            <BarChart data={filteredGlobalData}>
               <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
               <XAxis
                 dataKey="label"

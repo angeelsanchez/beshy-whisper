@@ -403,10 +403,18 @@ export default function ObjectivesList({ entryId, authorId, isDay, isEditing = f
               type="text"
               value={newObjectiveText}
               onChange={(e) => setNewObjectiveText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && newObjectiveText.trim()) {
+                  addNewObjective();
+                }
+                if (e.key === 'Escape') {
+                  setNewObjectiveText('');
+                }
+              }}
               placeholder="Nuevo objetivo..."
               className={`flex-grow p-2 text-sm rounded-md ${
-                isDay 
-                  ? 'bg-white border-[#4A2E1B]/20 focus:border-[#4A2E1B]' 
+                isDay
+                  ? 'bg-white border-[#4A2E1B]/20 focus:border-[#4A2E1B]'
                   : 'bg-[#3A2723] border-[#F5F0E1]/20 focus:border-[#F5F0E1]'
               } border focus:outline-none`}
             />

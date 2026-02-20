@@ -3,7 +3,8 @@
 import { useState, useCallback } from 'react';
 import type { Habit } from '@/hooks/useHabits';
 import HabitCard from './HabitCard';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { getWeekCompletionCount } from '@/utils/habit-helpers';
 
 interface HabitTrackerTabProps {
   readonly habits: Habit[];
@@ -14,8 +15,9 @@ interface HabitTrackerTabProps {
   readonly today: string;
   readonly activeTimerHabitId: string | null;
   readonly elapsedSeconds: number;
-  readonly onToggle: (habitId: string) => void;
-  readonly onIncrement: (habitId: string, amount: number) => void;
+  readonly completedMap: ReadonlyMap<string, ReadonlySet<string>>;
+  readonly onToggle: (habitId: string, date?: string) => void;
+  readonly onIncrement: (habitId: string, amount: number, date?: string) => void;
   readonly onTimerStart: (habitId: string) => void;
   readonly onTimerStop: () => void;
   readonly onEdit: (habitId: string) => void;
@@ -31,6 +33,7 @@ export default function HabitTrackerTab({
   today,
   activeTimerHabitId,
   elapsedSeconds,
+  completedMap,
   onToggle,
   onIncrement,
   onTimerStart,
@@ -140,8 +143,8 @@ export default function HabitTrackerTab({
                 toggling={toggling}
                 isTimerRunning={activeTimerHabitId === habit.id}
                 elapsedSeconds={elapsedSeconds}
-                onToggle={() => onToggle(habit.id)}
-                onIncrement={amount => onIncrement(habit.id, amount)}
+                onToggle={() => onToggle(habit.id, displayDate)}
+                onIncrement={amount => onIncrement(habit.id, amount, displayDate)}
                 onTimerStart={() => onTimerStart(habit.id)}
                 onTimerStop={onTimerStop}
                 onEdit={() => onEdit(habit.id)}
@@ -157,39 +160,44 @@ export default function HabitTrackerTab({
             Hábitos semanales
           </h3>
           <div className="space-y-2">
-            {weeklyHabits.map(habit => (
-              <HabitCard
-                key={habit.id}
-                habit={habit}
-                isCompleted={isCompleted(habit.id, displayDate)}
-                currentValue={getValue(habit.id, displayDate)}
-                isDay={isDay}
-                toggling={toggling}
-                isTimerRunning={activeTimerHabitId === habit.id}
-                elapsedSeconds={elapsedSeconds}
-                onToggle={() => onToggle(habit.id)}
-                onIncrement={amount => onIncrement(habit.id, amount)}
-                onTimerStart={() => onTimerStart(habit.id)}
-                onTimerStop={onTimerStop}
-                onEdit={() => onEdit(habit.id)}
-              />
-            ))}
+            {weeklyHabits.map(habit => {
+              const weekCount = habit.frequency_mode === 'weekly_count'
+                ? getWeekCompletionCount(completedMap.get(habit.id) ?? new Set<string>())
+                : undefined;
+              return (
+                <HabitCard
+                  key={habit.id}
+                  habit={habit}
+                  isCompleted={isCompleted(habit.id, displayDate)}
+                  currentValue={getValue(habit.id, displayDate)}
+                  isDay={isDay}
+                  toggling={toggling}
+                  isTimerRunning={activeTimerHabitId === habit.id}
+                  elapsedSeconds={elapsedSeconds}
+                  weekCompletionCount={weekCount}
+                  onToggle={() => onToggle(habit.id, displayDate)}
+                  onIncrement={amount => onIncrement(habit.id, amount, displayDate)}
+                  onTimerStart={() => onTimerStart(habit.id)}
+                  onTimerStop={onTimerStop}
+                  onEdit={() => onEdit(habit.id)}
+                />
+              );
+            })}
           </div>
         </div>
       )}
 
-      {habits.length === 0 && (
-        <button
-          onClick={onAdd}
-          className={`w-full py-8 rounded-lg border-2 border-dashed ${
-            isDay
-              ? 'border-[#4A2E1B]/30 text-[#4A2E1B]/60 hover:bg-[#4A2E1B]/5'
-              : 'border-[#F5F0E1]/30 text-[#F5F0E1]/60 hover:bg-[#F5F0E1]/5'
-          } transition-all`}
-        >
-          <p className="text-sm font-medium">+ Crear primer hábito</p>
-        </button>
-      )}
+      <button
+        onClick={onAdd}
+        className={`w-full py-3 rounded-lg border-2 border-dashed flex items-center justify-center gap-2 transition-all ${
+          isDay
+            ? 'border-[#4A2E1B]/20 text-[#4A2E1B]/50 hover:bg-[#4A2E1B]/5 hover:text-[#4A2E1B]/70'
+            : 'border-[#F5F0E1]/20 text-[#F5F0E1]/50 hover:bg-[#F5F0E1]/5 hover:text-[#F5F0E1]/70'
+        }`}
+      >
+        <Plus className="w-4 h-4" />
+        <span className="text-sm font-medium">Nuevo hábito</span>
+      </button>
     </div>
   );
 }

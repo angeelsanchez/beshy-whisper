@@ -4,6 +4,31 @@ Plataforma social de journaling diario anonimo construida como Progressive Web A
 
 Desplegada en produccion: **https://whisper.beshy.es**
 
+## Screenshots
+
+<table>
+  <tr>
+    <td align="center"><strong>Landing</strong></td>
+    <td align="center"><strong>Feed</strong></td>
+    <td align="center"><strong>Crear whisper</strong></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/landing.png" width="220" /></td>
+    <td><img src="docs/screenshots/feed.png" width="220" /></td>
+    <td><img src="docs/screenshots/create.png" width="220" /></td>
+  </tr>
+  <tr>
+    <td align="center"><strong>Perfil</strong></td>
+    <td align="center"><strong>Habitos</strong></td>
+    <td align="center"><strong>Whisper card</strong></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/profile.png" width="220" /></td>
+    <td><img src="docs/screenshots/habits.png" width="220" /></td>
+    <td><img src="docs/screenshots/whisper-dark.png" width="220" /></td>
+  </tr>
+</table>
+
 ## Stack Tecnologico
 
 | Capa | Tecnologia |

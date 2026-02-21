@@ -2,12 +2,14 @@
 
 import { useState, useCallback } from 'react';
 import type { Habit } from '@/hooks/useHabits';
+import type { HabitStatData } from '@/hooks/useHabitStats';
 import HabitCard from './HabitCard';
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { getWeekCompletionCount } from '@/utils/habit-helpers';
 
 interface HabitTrackerTabProps {
   readonly habits: Habit[];
+  readonly stats: HabitStatData[];
   readonly isDay: boolean;
   readonly isCompleted: (habitId: string, date: string) => boolean;
   readonly getValue: (habitId: string, date: string) => number;
@@ -26,6 +28,7 @@ interface HabitTrackerTabProps {
 
 export default function HabitTrackerTab({
   habits,
+  stats,
   isDay,
   isCompleted,
   getValue,
@@ -137,6 +140,7 @@ export default function HabitTrackerTab({
               <HabitCard
                 key={habit.id}
                 habit={habit}
+                stat={stats.find(s => s.habitId === habit.id)}
                 isCompleted={isCompleted(habit.id, displayDate)}
                 currentValue={getValue(habit.id, displayDate)}
                 isDay={isDay}
@@ -168,6 +172,7 @@ export default function HabitTrackerTab({
                 <HabitCard
                   key={habit.id}
                   habit={habit}
+                  stat={stats.find(s => s.habitId === habit.id)}
                   isCompleted={isCompleted(habit.id, displayDate)}
                   currentValue={getValue(habit.id, displayDate)}
                   isDay={isDay}

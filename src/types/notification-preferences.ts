@@ -57,9 +57,9 @@ export const NOTIFICATION_CATEGORIES: ReadonlyArray<NotificationCategory> = [
     icon: 'Bell',
     types: [
       { type: 'reminder_morning', label: 'Recordatorio matutino', description: 'A las 10:00 si no has publicado' },
-      { type: 'reminder_streak', label: 'Alerta de racha', description: 'Entre las 15:00 y 18:00 si tu racha est\u00e1 en riesgo' },
+      { type: 'reminder_streak', label: 'Alerta de racha', description: 'Entre las 15:00 y 18:00 si tu racha está en riesgo' },
       { type: 'reminder_night', label: 'Recordatorio nocturno', description: 'A las 21:30 si no has publicado' },
-      { type: 'reminder_habit', label: 'Recordatorio de h\u00e1bitos', description: 'A la hora configurada por h\u00e1bito' },
+      { type: 'reminder_habit', label: 'Recordatorio de hábitos', description: 'A la hora configurada por hábito' },
     ],
   },
   {
@@ -77,21 +77,21 @@ export const NOTIFICATION_CATEGORIES: ReadonlyArray<NotificationCategory> = [
   {
     id: 'achievements',
     label: 'Logros',
-    description: 'Hitos de h\u00e1bitos y progreso personal',
+    description: 'Hitos de hábitos y progreso personal',
     icon: 'Trophy',
     types: [
-      { type: 'habit_milestone', label: 'Hitos de h\u00e1bitos', description: 'Al alcanzar 21, 66 repeticiones o retomas' },
+      { type: 'habit_milestone', label: 'Hitos de hábitos', description: 'Al alcanzar 21, 66 repeticiones o retomas' },
     ],
   },
   {
     id: 'habit_links',
-    label: 'H\u00e1bitos compartidos',
-    description: 'Vinculaci\u00f3n de h\u00e1bitos con otras personas',
+    label: 'Hábitos compartidos',
+    description: 'Vinculación de hábitos con otras personas',
     icon: 'Link',
     types: [
-      { type: 'habit_link_request', label: 'Solicitudes de v\u00ednculo', description: 'Cuando alguien quiere vincular un h\u00e1bito contigo' },
-      { type: 'habit_link_response', label: 'Respuestas a solicitudes', description: 'Cuando responden a tu solicitud de v\u00ednculo' },
-      { type: 'habit_link_completion', label: 'Completado del compa\u00f1ero', description: 'Cuando tu compa\u00f1ero completa el h\u00e1bito vinculado' },
+      { type: 'habit_link_request', label: 'Solicitudes de vínculo', description: 'Cuando alguien quiere vincular un hábito contigo' },
+      { type: 'habit_link_response', label: 'Respuestas a solicitudes', description: 'Cuando responden a tu solicitud de vínculo' },
+      { type: 'habit_link_completion', label: 'Completado del compañero', description: 'Cuando tu compañero completa el hábito vinculado' },
     ],
   },
 ];

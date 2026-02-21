@@ -198,7 +198,7 @@ describe('GET /api/feed', () => {
       expect(json.entries[0].display_name).toBe('GuestUser');
     });
 
-    it('uses "Anonimo" for guest entries without name', async () => {
+    it('uses "Anónimo" for guest entries without name', async () => {
       mockGetServerSession.mockResolvedValue(null);
 
       const entry = makeEntry({ user_id: null, guest: true, nombre: '', users: null });

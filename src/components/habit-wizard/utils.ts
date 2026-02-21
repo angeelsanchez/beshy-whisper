@@ -49,7 +49,7 @@ export function arraysEqual(a: readonly number[], b: readonly number[]): boolean
 }
 
 export function formatDaysLabel(days: readonly number[]): string {
-  if (arraysEqual(days, [...ALL_DAYS])) return 'Todos los d\u00edas';
+  if (arraysEqual(days, [...ALL_DAYS])) return 'Todos los días';
   if (arraysEqual(days, [...WEEKDAYS])) return 'Lunes a Viernes';
   if (arraysEqual(days, [...WEEKEND_DAYS])) return 'Fines de semana';
   return days.map(d => DAY_LABELS[d]).join(', ');

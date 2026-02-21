@@ -178,7 +178,7 @@ export default function AdaptiveNavigation() {
     <>
       {/* Mobile Bottom Navigation */}
       <nav
-        aria-label="Navegacion principal"
+        aria-label="Navegación principal"
         className={`lg:hidden fixed bottom-0 left-0 right-0 z-50 ${
           isDay ? 'bg-[#F5F0E1]/95' : 'bg-[#2D1E1A]/95'
         } backdrop-blur-sm border-t ${
@@ -229,7 +229,7 @@ export default function AdaptiveNavigation() {
 
       {/* Desktop Sidebar Navigation */}
       <nav
-        aria-label="Navegacion principal"
+        aria-label="Navegación principal"
         className={`hidden lg:flex fixed left-0 top-0 bottom-0 z-50 w-20 flex-col items-center py-8 safe-area-top safe-area-left ${
           isDay ? 'bg-[#F5F0E1]/95' : 'bg-[#2D1E1A]/95'
         } backdrop-blur-sm border-r ${

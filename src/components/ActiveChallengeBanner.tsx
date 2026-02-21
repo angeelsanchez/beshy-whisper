@@ -38,7 +38,7 @@ export default function ActiveChallengeBanner({ isDay }: ActiveChallengeBannerPr
                   : 'bg-[#F5F0E1]/10 text-[#F5F0E1]'
               }`}
             >
-              {daysLeft} {daysLeft === 1 ? 'dia' : 'dias'} restantes
+              {daysLeft} {daysLeft === 1 ? 'día' : 'días'} restantes
             </span>
           </div>
           <p className="font-semibold text-sm mt-1">{challenge.title}</p>

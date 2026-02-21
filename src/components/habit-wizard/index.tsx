@@ -84,18 +84,18 @@ export default function HabitWizard({ mode, initialData, onSubmit, onDelete, add
     if (form.trackingType === 'quantity') {
       const val = Number(form.targetValueStr);
       if (!form.targetValueStr || isNaN(val) || val <= 0) {
-        setError('Introduce un objetivo num\u00e9rico v\u00e1lido');
+        setError('Introduce un objetivo numérico válido');
         return false;
       }
       if (!form.unit.trim()) {
-        setError('La unidad es obligatoria para h\u00e1bitos de cantidad');
+        setError('La unidad es obligatoria para hábitos de cantidad');
         return false;
       }
     }
     if (form.trackingType === 'timer') {
       const val = Number(form.targetValueStr);
       if (!form.targetValueStr || isNaN(val) || val <= 0) {
-        setError('Introduce un objetivo en minutos v\u00e1lido');
+        setError('Introduce un objetivo en minutos válido');
         return false;
       }
     }
@@ -163,7 +163,7 @@ export default function HabitWizard({ mode, initialData, onSubmit, onDelete, add
     if (success) {
       router.push('/habits');
     } else {
-      setError('Error al guardar el h\u00e1bito');
+      setError('Error al guardar el hábito');
     }
   }, [submitting, onSubmit, buildSubmitData, router]);
 
@@ -180,13 +180,13 @@ export default function HabitWizard({ mode, initialData, onSubmit, onDelete, add
       router.push('/habits');
     } else {
       setShowConfirmDelete(false);
-      setError('Error al eliminar el h\u00e1bito');
+      setError('Error al eliminar el hábito');
     }
   }, [onDelete, showConfirmDelete, router]);
 
   const stepTitles: Record<number, string> = {
-    1: 'Nuevo h\u00e1bito',
-    2: mode === 'edit' ? 'Editar h\u00e1bito' : 'Configura tu h\u00e1bito',
+    1: 'Nuevo hábito',
+    2: mode === 'edit' ? 'Editar hábito' : 'Configura tu hábito',
     3: 'Confirma',
   };
 
@@ -215,7 +215,7 @@ export default function HabitWizard({ mode, initialData, onSubmit, onDelete, add
               className={`p-2 -mr-2 rounded-lg transition-colors ${
                 deleting ? 'opacity-50 cursor-not-allowed' : ''
               } text-red-500 hover:bg-red-500/10`}
-              aria-label="Eliminar h\u00e1bito"
+              aria-label="Eliminar hábito"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
                 <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
@@ -228,7 +228,7 @@ export default function HabitWizard({ mode, initialData, onSubmit, onDelete, add
         {showConfirmDelete && (
           <div className={`mb-4 p-3 rounded-xl ${isDay ? 'bg-red-50 border border-red-200' : 'bg-red-500/10 border border-red-500/20'}`}>
             <p className={`text-xs text-center mb-2 ${isDay ? 'text-red-700' : 'text-red-400'}`}>
-              Se desactivar\u00e1 el h\u00e1bito y sus registros
+              Se desactivará el hábito y sus registros
             </p>
             <div className="flex gap-2">
               <button

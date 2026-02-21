@@ -154,7 +154,7 @@ function LoginForm() {
            backgroundColor: colors.formBg,
            overflow: 'hidden'
          }}>
-      <div role="tablist" aria-label="Metodo de acceso" className="flex">
+      <div role="tablist" aria-label="Método de acceso" className="flex">
         <button
           role="tab"
           id="tab-login"

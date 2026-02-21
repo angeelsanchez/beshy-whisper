@@ -16,7 +16,7 @@ const montserrat = Montserrat({
 export const metadata: Metadata = {
   metadataBase: new URL("https://whisper.beshy.es"),
   title: {
-    default: "BESHY Whisper - Journaling Diario Anonimo",
+    default: "BESHY Whisper - Journaling Diario Anónimo",
     template: "%s | BESHY Whisper",
   },
   description:
@@ -27,7 +27,7 @@ export const metadata: Metadata = {
     "bienestar",
     "reflexión personal",
     "hábitos diarios",
-    "escritura terapeutica",
+    "escritura terapéutica",
     "mindfulness",
     "diario personal",
     "red social journaling",
@@ -49,13 +49,13 @@ export const metadata: Metadata = {
     locale: "es_ES",
     url: "https://whisper.beshy.es",
     siteName: "BESHY Whisper",
-    title: "BESHY Whisper - Journaling Diario Anonimo",
+    title: "BESHY Whisper - Journaling Diario Anónimo",
     description:
       "Transforma tu vida con journaling diario. Escribe susurros anónimos, conecta con otros y construye hábitos de bienestar.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "BESHY Whisper - Journaling Diario Anonimo",
+    title: "BESHY Whisper - Journaling Diario Anónimo",
     description:
       "Transforma tu vida con journaling diario. Escribe susurros anónimos, conecta con otros y construye hábitos de bienestar.",
   },

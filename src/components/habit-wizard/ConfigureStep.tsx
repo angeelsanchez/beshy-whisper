@@ -22,7 +22,7 @@ function TrackingTypeToggle({
   readonly onChange: (val: TrackingType) => void;
 }): React.ReactElement {
   const options: { key: TrackingType; label: string }[] = [
-    { key: 'binary', label: 'S\u00ed/No' },
+    { key: 'binary', label: 'Sí/No' },
     { key: 'quantity', label: 'Cantidad' },
     { key: 'timer', label: 'Tiempo' },
   ];
@@ -179,7 +179,7 @@ function CategorySelector({
   return (
     <div>
       <span className={`block text-sm font-medium mb-2 ${isDay ? 'text-[#4A2E1B]' : 'text-[#F5F0E1]'}`}>
-        Categor\u00eda
+        Categoría
       </span>
       <div className="flex flex-wrap gap-1.5">
         {CATEGORY_KEYS.map(key => {
@@ -220,7 +220,7 @@ function DaySelector({
   return (
     <div>
       <span className={`block text-sm font-medium mb-2 ${isDay ? 'text-[#4A2E1B]' : 'text-[#F5F0E1]'}`}>
-        D\u00edas
+        Días
       </span>
       <div className="flex gap-1.5 mb-2">
         {DAY_LABELS.map((label, dayIndex) => {
@@ -275,8 +275,8 @@ function FrequencySection({
   readonly onDayPreset: (days: number[]) => void;
 }): React.ReactElement {
   const modeOptions: { value: FrequencyMode; label: string }[] = [
-    { value: 'specific_days', label: 'D\u00edas espec\u00edficos' },
-    { value: 'weekly_count', label: 'X d\u00edas/semana' },
+    { value: 'specific_days', label: 'Días específicos' },
+    { value: 'weekly_count', label: 'X días/semana' },
   ];
 
   return (
@@ -311,7 +311,7 @@ function FrequencySection({
       ) : (
         <div>
           <span className={`block text-xs mb-2 ${isDay ? 'text-[#4A2E1B]/60' : 'text-[#F5F0E1]/60'}`}>
-            Cumple cualquier d\u00eda de la semana
+            Cumple cualquier día de la semana
           </span>
           <div className="flex gap-1.5">
             {WEEKLY_TARGET_OPTIONS.map(n => (
@@ -449,13 +449,13 @@ function ConfigureStep({
       </div>
 
       <div>
-        <label className={labelCls}>Descripci\u00f3n</label>
+        <label className={labelCls}>Descripción</label>
         <input
           type="text"
           value={form.description}
           onChange={e => onChange('description', e.target.value)}
           maxLength={500}
-          placeholder="Descripci\u00f3n opcional"
+          placeholder="Descripción opcional"
           className={inputCls}
         />
       </div>

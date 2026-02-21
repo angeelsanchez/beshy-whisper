@@ -34,8 +34,8 @@ function TemplateCard({
       </div>
       <div className={`text-[10px] mt-0.5 ${isDay ? 'text-[#4A2E1B]/50' : 'text-[#F5F0E1]/50'}`}>
         {template.trackingType === 'binary'
-          ? 'S\u00ed/No'
-          : `${template.targetValue} ${template.unit}/d\u00eda`}
+          ? 'Sí/No'
+          : `${template.targetValue} ${template.unit}/día`}
       </div>
     </button>
   );

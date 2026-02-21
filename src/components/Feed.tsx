@@ -726,7 +726,7 @@ export default function Feed() {
                           <div
                             role="alertdialog"
                             aria-modal="true"
-                            aria-label="Confirmar eliminacion"
+                            aria-label="Confirmar eliminación"
                             className={`fixed sm:absolute bottom-auto sm:bottom-full left-1/2 -translate-x-1/2 top-1/2 sm:top-auto -translate-y-1/2 sm:translate-y-0 sm:mb-2 p-4 rounded-lg shadow-lg z-50 w-[90vw] max-w-xs sm:w-64 ${
                               isDay ? 'bg-[#F5F0E1]' : 'bg-[#2D1E1A]'
                             }`}

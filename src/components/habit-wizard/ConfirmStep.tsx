@@ -35,23 +35,23 @@ function PreviewCard({
           <span>Tipo</span>
           <span className="font-medium">
             {form.trackingType === 'binary'
-              ? 'S\u00ed/No'
+              ? 'Sí/No'
               : form.trackingType === 'timer'
-                ? `${form.targetValueStr} min/d\u00eda`
-                : `${form.targetValueStr} ${form.unit}/d\u00eda`}
+                ? `${form.targetValueStr} min/día`
+                : `${form.targetValueStr} ${form.unit}/día`}
           </span>
         </div>
         <div className="flex justify-between">
           <span>Frecuencia</span>
           <span className="font-medium">
             {form.frequencyMode === 'weekly_count'
-              ? `${form.weeklyTargetStr} d\u00edas/semana`
+              ? `${form.weeklyTargetStr} días/semana`
               : formatDaysLabel(form.targetDays)}
           </span>
         </div>
         {form.category && (
           <div className="flex justify-between">
-            <span>Categor\u00eda</span>
+            <span>Categoría</span>
             <span className="font-medium flex items-center gap-1"><AppIcon identifier={CATEGORIES[form.category].icon} type="category" className="w-3.5 h-3.5" /> {CATEGORIES[form.category].label}</span>
           </div>
         )}
@@ -94,7 +94,7 @@ function ReminderToggle({
             Activar recordatorio
           </p>
           <p className={`text-xs ${isDay ? 'text-[#4A2E1B]/35' : 'text-[#F5F0E1]/35'}`}>
-            Recibe una notificaci\u00f3n push diaria
+            Recibe una notificación push diaria
           </p>
         </div>
       </button>
@@ -187,10 +187,10 @@ function ConfirmStep({
             onChange={e => onChange('hasProgression', e.target.checked)}
             className="w-4 h-4 cursor-pointer"
           />
-          <span className="text-sm font-medium">Activar progresi\u00f3n de niveles</span>
+          <span className="text-sm font-medium">Activar progresión de niveles</span>
         </label>
         <p className={`text-xs mt-2 ${isDay ? 'text-[#4A2E1B]/60' : 'text-[#F5F0E1]/60'}`}>
-          Divide este h\u00e1bito en 2-10 niveles progresivos para aumentar la dificultad con el tiempo
+          Divide este hábito en 2-10 niveles progresivos para aumentar la dificultad con el tiempo
         </p>
       </div>
 
@@ -202,7 +202,7 @@ function ConfirmStep({
           submitting ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-90 active:scale-[0.98]'
         } ${isDay ? 'bg-[#4A2E1B] text-[#F5F0E1]' : 'bg-[#F5F0E1] text-[#2D1E1A]'}`}
       >
-        {submitting ? 'Guardando...' : mode === 'create' ? 'Crear h\u00e1bito' : 'Guardar cambios'}
+        {submitting ? 'Guardando...' : mode === 'create' ? 'Crear hábito' : 'Guardar cambios'}
       </button>
     </div>
   );

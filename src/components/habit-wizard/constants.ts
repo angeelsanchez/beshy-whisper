@@ -10,7 +10,7 @@ export const DAY_LABELS = ['D', 'L', 'M', 'X', 'J', 'V', 'S'] as const;
 export const ALL_DAYS = [0, 1, 2, 3, 4, 5, 6] as const;
 export const WEEKDAYS = [1, 2, 3, 4, 5] as const;
 export const WEEKEND_DAYS = [0, 6] as const;
-export const COMMON_UNITS = ['vasos', 'p\u00e1ginas', 'min', 'km', 'pasos', 'reps'] as const;
+export const COMMON_UNITS = ['vasos', 'páginas', 'min', 'km', 'pasos', 'reps'] as const;
 export const CATEGORY_KEYS = Object.keys(CATEGORIES) as HabitCategory[];
 export const DAY_PRESETS = [
   { label: 'Todos', days: [...ALL_DAYS] },

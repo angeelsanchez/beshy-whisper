@@ -39,6 +39,7 @@ export default function HabitLevelRow({
       const res = await fetch(`/api/habits/${habitId}/advance-level`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ confirm: true }),
       });
       if (res.ok) onChanged?.();
     } catch (error) {

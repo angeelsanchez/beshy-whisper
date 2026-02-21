@@ -276,6 +276,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!habit.is_active) {
+      logger.warn('Attempt to log inactive habit', { habitId, userId: session.user.id });
       return NextResponse.json({ error: 'Habit is not active' }, { status: 400 });
     }
 

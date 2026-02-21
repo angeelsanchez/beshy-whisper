@@ -57,7 +57,10 @@ describe('HabitLevelRow', () => {
 
     expect(global.fetch).toHaveBeenCalledWith(
       '/api/habits/habit-1/advance-level',
-      expect.objectContaining({ method: 'POST' }),
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ confirm: true }),
+      }),
     );
   });
 

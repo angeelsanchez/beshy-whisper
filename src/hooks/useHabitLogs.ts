@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useAuthSession } from '@/hooks/useAuthSession';
+import { logger } from '@/lib/logger';
 
 interface MilestoneEvent {
   type: string;
@@ -132,6 +133,8 @@ export function useHabitLogs(habitIds: string[], month?: string) {
       });
 
       if (!res.ok) {
+        const errorBody = await res.json().catch(() => null);
+        logger.warn('Habit toggle failed', { status: res.status, habitId, date: targetDate, error: errorBody });
         revertCompletedMap(habitId, targetDate, wasCompleted);
         return null;
       }
@@ -142,7 +145,8 @@ export function useHabitLogs(habitIds: string[], month?: string) {
         milestone: data.milestone ?? null,
         value: data.value,
       };
-    } catch {
+    } catch (error) {
+      logger.error('Habit toggle error', { habitId, date: targetDate, error: String(error) });
       revertCompletedMap(habitId, targetDate, wasCompleted);
       return null;
     } finally {
@@ -188,6 +192,8 @@ export function useHabitLogs(habitIds: string[], month?: string) {
       });
 
       if (!res.ok) {
+        const errorBody = await res.json().catch(() => null);
+        logger.warn('Habit increment failed', { status: res.status, habitId, date: targetDate, error: errorBody });
         revertValueMap(habitId, targetDate, currentValue);
         return null;
       }

@@ -6,26 +6,35 @@ Desplegada en produccion: **https://whisper.beshy.es**
 
 ## Screenshots
 
+Tema automatico dia/noche segun la hora del dispositivo.
+
 <table>
   <tr>
-    <td align="center"><strong>Landing</strong></td>
-    <td align="center"><strong>Feed</strong></td>
-    <td align="center"><strong>Crear whisper</strong></td>
+    <td align="center" colspan="2"><strong>Landing</strong></td>
+    <td align="center" colspan="2"><strong>Feed</strong></td>
   </tr>
   <tr>
-    <td><img src="docs/screenshots/landing.png" width="220" /></td>
-    <td><img src="docs/screenshots/feed.png" width="220" /></td>
-    <td><img src="docs/screenshots/create.png" width="220" /></td>
+    <td><img src="docs/screenshots/landing-light.png" width="160" /></td>
+    <td><img src="docs/screenshots/landing.png" width="160" /></td>
+    <td><img src="docs/screenshots/feed-light.png" width="160" /></td>
+    <td><img src="docs/screenshots/feed.png" width="160" /></td>
   </tr>
   <tr>
-    <td align="center"><strong>Perfil</strong></td>
-    <td align="center"><strong>Habitos</strong></td>
-    <td align="center"><strong>Whisper card</strong></td>
+    <td align="center" colspan="2"><strong>Crear whisper</strong></td>
+    <td align="center" colspan="2"><strong>Perfil</strong></td>
   </tr>
   <tr>
-    <td><img src="docs/screenshots/profile.png" width="220" /></td>
-    <td><img src="docs/screenshots/habits.png" width="220" /></td>
-    <td><img src="docs/screenshots/whisper-dark.png" width="220" /></td>
+    <td><img src="docs/screenshots/create-light.png" width="160" /></td>
+    <td><img src="docs/screenshots/create.png" width="160" /></td>
+    <td><img src="docs/screenshots/profile-light.png" width="160" /></td>
+    <td><img src="docs/screenshots/profile.png" width="160" /></td>
+  </tr>
+  <tr>
+    <td align="center" colspan="2"><strong>Habitos</strong></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/habits-light.png" width="160" /></td>
+    <td><img src="docs/screenshots/habits.png" width="160" /></td>
   </tr>
 </table>
 

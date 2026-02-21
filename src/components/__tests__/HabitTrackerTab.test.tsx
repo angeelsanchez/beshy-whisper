@@ -52,6 +52,7 @@ const mockOnIncrement = vi.fn();
 
 const defaultProps = {
   habits: [dailyHabit, weeklyHabit],
+  stats: [],
   isDay: true,
   isCompleted: vi.fn(() => false),
   getValue: vi.fn(() => 0),

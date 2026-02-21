@@ -83,6 +83,7 @@ function renderTabContent({
     return (
       <HabitTrackerTab
         habits={habits}
+        stats={stats}
         isDay={isDay}
         isCompleted={isCompleted}
         getValue={getValue}

@@ -5,14 +5,10 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/auth';
 import { initiativeProgressQuerySchema } from '@/lib/schemas/initiatives';
 import { logger } from '@/lib/logger';
 import { UUID_REGEX } from '@/lib/constants';
+import { getTodayDate } from '@/utils/date-helpers';
 
 interface RouteParams {
   params: Promise<{ initiativeId: string }>;
-}
-
-function getTodayDate(): string {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 }
 
 function formatDate(d: Date): string {

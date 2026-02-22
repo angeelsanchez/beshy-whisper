@@ -3,11 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { safeCompare } from '@/utils/crypto-helpers';
 import { sendPushToUserIfEnabled } from '@/lib/push-notify';
 import { logger } from '@/lib/logger';
-
-function getTodayDate(): string {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-}
+import { getTodayDate } from '@/utils/date-helpers';
 
 function getYesterdayDate(): string {
   const d = new Date();

@@ -6,6 +6,7 @@ import { toggleHabitLogSchema } from '@/lib/schemas/habits';
 import { sendPushToUserIfEnabled } from '@/lib/push-notify';
 import { logger } from '@/lib/logger';
 import { countRetomas } from '@/utils/habit-helpers';
+import { getTodayDate } from '@/utils/date-helpers';
 
 interface MilestoneResult {
   type: '21_reps' | '66_reps' | 'first_retoma' | '3_retomas';
@@ -25,11 +26,6 @@ interface QuantityLogParams {
   incomingValue: number;
   targetValue: number;
   habitName: string;
-}
-
-function getTodayDate(): string {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 }
 
 function isValidDate(dateStr: string): boolean {

@@ -6,6 +6,7 @@ import { Square } from 'lucide-react';
 import { useTimer } from '@/hooks/useTimer';
 import { useTheme } from '@/context/ThemeContext';
 import { logger } from '@/lib/logger';
+import { getTodayDate } from '@/utils/date-helpers';
 
 function getTimerDestination(habitId: string): string {
   if (habitId.startsWith('init-')) {
@@ -18,11 +19,6 @@ function formatElapsed(totalSeconds: number): string {
   const mins = Math.floor(totalSeconds / 60);
   const secs = totalSeconds % 60;
   return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-}
-
-function getTodayDate(): string {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 }
 
 async function saveTimerMinutes(timerId: string, minutes: number): Promise<boolean> {

@@ -255,37 +255,27 @@ INTERNAL_API_KEY                  # Auth para endpoint de envío de notificacion
 
 ## Deployment
 
-### VPS (producción)
-- **Host**: `whisper.beshy.es` (IP: <REDACTED_IP>)
-- **Conexión**: SSH al servidor de producción
-- **Usuario de app**: `beshy` (tiene las SSH keys de GitHub)
-- **Contenedores**: Podman + podman-compose (ejecutados como root)
-- **Puerto**: 4000 (app) + 6380→6379 (Redis)
+### Containerización
+- **Runtime**: Podman + podman-compose
 - **Compose file**: `compose.yaml` en la raíz del proyecto
+- **Servicios**: app (Next.js en puerto 4000) + Redis 7 Alpine (cache + rate limiting)
 - **Variables de entorno**: `.env.container.example` como referencia para configurar `.env` del contenedor
+- **Dockerfile**: Multi-stage build (deps → builder → runner) con Node 20 slim, standalone output, non-root user
 
 ### Secuencia de deploy
 ```bash
-# 1. Pull como beshy (tiene SSH keys de GitHub)
-ssh-server "su - app -c 'cd /path/to/beshy-whisper && git pull origin main'"
+# 1. Pull cambios
+git pull origin main
 
-# 2. Build y restart como root (los contenedores corren como root)
-zap "cd /path/to/beshy-whisper && podman-compose build && podman-compose down && podman-compose up -d"
+# 2. Build y restart
+podman-compose build && podman-compose down && podman-compose up -d
 ```
 
 ### Comandos útiles
 - **Health check**: `curl https://whisper.beshy.es/api/health`
-- **Estado contenedores**: `ssh-server "podman ps --format '{{.Names}} {{.Status}}'"`
-- **Logs app**: `ssh-server "podman logs -f --tail 50 beshy-whisper"`
-- **Logs Redis**: `ssh-server "podman logs -f --tail 50 beshy-redis"`
-- **Redis CLI**: `ssh-server "podman exec -it beshy-redis redis-cli"`
-- **Limpiar imágenes**: `ssh-server "podman system prune -af"` (libera espacio)
-
-### Reglas críticas
-- Git pull SIEMPRE como usuario `beshy` (`su - beshy -c '...'`), root no tiene SSH keys de GitHub
-- Los contenedores corren como root — NO usar `su - beshy` para podman-compose (falla por cgroups)
-- Redis es un contenedor separado (`beshy-redis`), conectado via `redis://host.containers.internal:6380`
-- El script `scripts/deploy-podman.sh` existe pero tiene problemas de permisos al ejecutar como beshy — usar los comandos directos de arriba
+- **Logs app**: `podman logs -f --tail 50 beshy-whisper`
+- **Logs Redis**: `podman logs -f --tail 50 beshy-redis`
+- **Redis CLI**: `podman exec -it beshy-redis redis-cli`
 
 ## Integraciones Futuras
 
@@ -316,22 +306,19 @@ Antes de escribir código en cualquier tarea, verificar:
 11. **Iconos**: preferir Lucide SVG via `<AppIcon>` para iconos funcionales; emojis ok donde aporten calidez
 12. **Notificaciones**: si la feature envía push, registrar tipo en `NOTIFICATION_TYPES` y usar `sendPushToUserIfEnabled()`
 
-## Deuda Técnica Conocida
+## Patrones Anti-Duplicación
 
-Problemas identificados pendientes de resolver (actualizar conforme se resuelvan):
+Lógica compartida ya centralizada — NO volver a duplicar en archivos individuales:
 
-- [x] ~~27 rutas API usan import relativo para `authOptions`~~ (migrado a `@/app/api/auth/[...nextauth]/auth`)
-- [ ] `getTodayDate()` duplicada en 7 archivos — extraer a `src/utils/date-helpers.ts`
-- [x] ~~`UUID_REGEX` duplicada en 7 archivos~~ (extraído a `src/lib/constants.ts`)
-- [x] ~~`webpush.setVapidDetails()` duplicada en 5 archivos~~ (centralizado en `src/lib/push-notify.ts`)
-- [ ] `countRetomas()` + `RETOMA_THRESHOLD_DAYS` duplicados — extraer a `src/utils/habit-helpers.ts`
-- [x] ~~Cálculo de streak implementado en 3 lugares~~ (extraído a `src/lib/streak.ts`)
-- [ ] `PostContext.tsx` usa `console.error/warn` en vez del logger
-- [x] ~~`HabitWizard.tsx` (1125 líneas)~~ (dividido en subcomponentes en `src/components/habit-wizard/`)
-- [x] ~~`generate-image/route.ts` tiene 3 templates HTML con estructura duplicada~~ (extraído a `src/utils/image-templates.ts`)
-- [x] ~~Magic numbers para time windows en cron-reminders~~ (extraído a constantes en `src/lib/constants.ts`)
-- [x] ~~Faltan Error Boundaries en el client-side~~ (implementado: `error.tsx`, `loading.tsx`, `not-found.tsx`)
-- [x] ~~6+ rutas API sin validación Zod~~ (añadido Zod a `generate-image`, `send-like`, `send`, `cron-reminders`, `schedule-reminders`, `test-push`)
+| Utilidad | Ubicación canónica |
+|----------|-------------------|
+| `getTodayDate()` | `src/utils/date-helpers.ts` |
+| `UUID_REGEX` | `src/lib/constants.ts` |
+| `countRetomas()`, `RETOMA_THRESHOLD_DAYS` | `src/utils/habit-helpers.ts` |
+| VAPID config (`setVapidDetails`) | `src/lib/push-notify.ts` |
+| Cálculo de streaks | `src/lib/streak.ts` |
+| Constantes de time windows | `src/lib/constants.ts` |
+| HTML templates para image gen | `src/utils/image-templates.ts` |
 
 ## Documentación Adicional
 

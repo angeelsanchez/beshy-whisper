@@ -4,11 +4,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { authOptions } from '@/app/api/auth/[...nextauth]/auth';
 import { createInitiativeSchema, initiativeListQuerySchema } from '@/lib/schemas/initiatives';
 import { logger } from '@/lib/logger';
-
-function getTodayDate(): string {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-}
+import { getTodayDate } from '@/utils/date-helpers';
 
 export async function GET(request: NextRequest) {
   try {

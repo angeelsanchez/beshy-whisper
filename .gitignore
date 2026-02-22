@@ -64,6 +64,9 @@ e2e/.auth/
 playwright-report/
 test-results/
 
+# Private deployment docs (sensitive info)
+DEPLOY_PRIVATE.md
+
 # Local documentation and presentations (never commit)
 RESUMEN_*.md
 RESUMEN_*.html

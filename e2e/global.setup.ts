@@ -4,7 +4,7 @@ import { mockRecaptcha } from './utils/recaptcha-mock';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
 
-dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
+dotenv.config({ path: path.resolve(process.cwd(), '.env.local'), quiet: true });
 
 const AUTH_FILE = 'e2e/.auth/user.json';
 

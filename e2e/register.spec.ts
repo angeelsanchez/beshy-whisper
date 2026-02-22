@@ -4,7 +4,7 @@ import { cleanRegisterTestUser, REGISTER_TEST_EMAIL } from './utils/db-helpers';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
 
-dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
+dotenv.config({ path: path.resolve(process.cwd(), '.env.local'), quiet: true });
 
 const REGISTER_PASSWORD = 'E2eTestPass1!';
 

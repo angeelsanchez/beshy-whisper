@@ -3,7 +3,7 @@ import { ensureTestUser, cleanTestEntries, seedEntry } from './utils/db-helpers'
 import * as dotenv from 'dotenv';
 import * as path from 'path';
 
-dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
+dotenv.config({ path: path.resolve(process.cwd(), '.env.local'), quiet: true });
 
 let testUserId: string;
 

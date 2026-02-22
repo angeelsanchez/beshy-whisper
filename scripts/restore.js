@@ -11,7 +11,7 @@ const ora = require('ora');
 const readline = require('readline');
 
 // Load environment variables
-require('dotenv').config({ path: '.env.local' });
+require('dotenv').config({ path: '.env.local', quiet: true });
 
 const program = new Command();
 

@@ -320,18 +320,18 @@ Antes de escribir código en cualquier tarea, verificar:
 
 Problemas identificados pendientes de resolver (actualizar conforme se resuelvan):
 
-- [ ] 27 rutas API usan import relativo para `authOptions` en vez de `@/app/api/auth/[...nextauth]/auth`
+- [x] ~~27 rutas API usan import relativo para `authOptions`~~ (migrado a `@/app/api/auth/[...nextauth]/auth`)
 - [ ] `getTodayDate()` duplicada en 7 archivos — extraer a `src/utils/date-helpers.ts`
-- [ ] `UUID_REGEX` duplicada en 7 archivos — extraer a `src/lib/constants.ts`
-- [ ] `webpush.setVapidDetails()` duplicada en 5 archivos — centralizar en `src/lib/push-notify.ts` (ya centralizado, falta migrar: `schedule-reminders`, `like-notification`, `send-like`, `send`, `test-push`)
+- [x] ~~`UUID_REGEX` duplicada en 7 archivos~~ (extraído a `src/lib/constants.ts`)
+- [x] ~~`webpush.setVapidDetails()` duplicada en 5 archivos~~ (centralizado en `src/lib/push-notify.ts`)
 - [ ] `countRetomas()` + `RETOMA_THRESHOLD_DAYS` duplicados — extraer a `src/utils/habit-helpers.ts`
-- [ ] Cálculo de streak implementado en 3 lugares diferentes — extraer a `src/lib/streak.ts`
+- [x] ~~Cálculo de streak implementado en 3 lugares~~ (extraído a `src/lib/streak.ts`)
 - [ ] `PostContext.tsx` usa `console.error/warn` en vez del logger
-- [ ] `HabitWizard.tsx` (1125 líneas) — dividir en subcomponentes
-- [ ] `generate-image/route.ts` tiene 3 templates HTML con estructura duplicada
-- [ ] Magic numbers para time windows en cron-reminders sin constantes con nombre
+- [x] ~~`HabitWizard.tsx` (1125 líneas)~~ (dividido en subcomponentes en `src/components/habit-wizard/`)
+- [x] ~~`generate-image/route.ts` tiene 3 templates HTML con estructura duplicada~~ (extraído a `src/utils/image-templates.ts`)
+- [x] ~~Magic numbers para time windows en cron-reminders~~ (extraído a constantes en `src/lib/constants.ts`)
 - [x] ~~Faltan Error Boundaries en el client-side~~ (implementado: `error.tsx`, `loading.tsx`, `not-found.tsx`)
-- [ ] 6+ rutas API sin validación Zod: `generate-image`, `send-like`, `send`, `like-notification`, `cron-reminders`, `test-push`
+- [x] ~~6+ rutas API sin validación Zod~~ (añadido Zod a `generate-image`, `send-like`, `send`, `cron-reminders`, `schedule-reminders`, `test-push`)
 
 ## Documentación Adicional
 

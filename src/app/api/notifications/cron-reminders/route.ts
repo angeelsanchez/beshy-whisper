@@ -39,8 +39,8 @@ async function logSentReminder(
   title: string,
   body: string,
   reminderData: Record<string, unknown>
-): Promise<void> {
-  const { error } = await supabaseAdmin
+): Promise<string | null> {
+  const { data, error } = await supabaseAdmin
     .from('notifications')
     .insert({
       user_id: userId,
@@ -49,10 +49,26 @@ async function logSentReminder(
       body,
       data: reminderData,
       sent_at: new Date().toISOString(),
-    });
+    })
+    .select('id')
+    .single();
 
   if (error) {
     logger.error('Error logging sent reminder', { userId, detail: error.message });
+    return null;
+  }
+
+  return data?.id ?? null;
+}
+
+async function deleteReminderLog(logId: string): Promise<void> {
+  const { error } = await supabaseAdmin
+    .from('notifications')
+    .delete()
+    .eq('id', logId);
+
+  if (error) {
+    logger.error('Error deleting failed reminder log', { logId, detail: error.message });
   }
 }
 
@@ -100,9 +116,15 @@ async function sendAndLogReminder(
   const alreadySent = await hasReminderBeenSentToday(userId, reminderData.reminder_type as string);
   if (alreadySent) return false;
 
+  // Log BEFORE sending to prevent race conditions with concurrent cron calls.
+  // If two requests pass the check simultaneously, the first to log claims the slot.
+  const logId = await logSentReminder(userId, title, body, reminderData);
+
   const sent = await sendReminderPush(userId, title, body, reminderData);
-  if (sent) {
-    await logSentReminder(userId, title, body, reminderData);
+  if (!sent && logId) {
+    // Push failed: delete the log so the next cron run retries
+    await deleteReminderLog(logId);
+    logger.warn('Push send failed, reminder log deleted for retry', { userId, reminderType: reminderData.reminder_type });
   }
   return sent;
 }

@@ -43,6 +43,7 @@ export const useNotifications = () => {
   const [permission, setPermission] = useState<NotificationPermission>('default');
   const [settings, setSettings] = useState<NotificationSettings>(DEFAULT_SETTINGS);
   const [isRegistering, setIsRegistering] = useState(false);
+  const [isPushRegistered, setIsPushRegistered] = useState(false);
 
   const initializationRef = useRef(false);
   const registrationTimeoutRef = useRef<ReturnType<typeof globalThis.setTimeout>>();
@@ -101,6 +102,7 @@ export const useNotifications = () => {
   }, []);
 
   const scheduleNotifications = useCallback(() => {
+    if (isPushRegistered) return;
     if (!session?.user?.id || permission !== 'granted' || !settings.enabled || loading) {
       return;
     }
@@ -149,7 +151,7 @@ export const useNotifications = () => {
         }, timeUntilNight);
       }
     }
-  }, [session?.user?.id, permission, settings, hasDayPost, hasNightPost, loading, showNotification, clearScheduledNotifications]);
+  }, [isPushRegistered, session?.user?.id, permission, settings, hasDayPost, hasNightPost, loading, showNotification, clearScheduledNotifications]);
 
   const isPushSupported = useCallback((): boolean => {
     if (typeof window === 'undefined') return false;
@@ -263,8 +265,13 @@ export const useNotifications = () => {
     const result = await registrationPromise;
     pushRegistrationRef.current = null;
 
+    if (result) {
+      setIsPushRegistered(true);
+      clearScheduledNotifications();
+    }
+
     return result;
-  }, [isPushSupported, permission, session?.user?.id, isRegistering]);
+  }, [isPushSupported, permission, session?.user?.id, isRegistering, clearScheduledNotifications]);
 
   const updateSettings = useCallback((newSettings: Partial<NotificationSettings>) => {
     const updated = { ...settings, ...newSettings };
@@ -305,11 +312,14 @@ export const useNotifications = () => {
       clearTimeout(registrationTimeoutRef.current);
     }
 
-    registrationTimeoutRef.current = setTimeout(() => {
-      scheduleNotifications();
-
+    registrationTimeoutRef.current = setTimeout(async () => {
       if (permission === 'granted' && session?.user?.id && !isRegistering) {
-        registerPushSubscription().catch(() => {});
+        const pushOk = await registerPushSubscription().catch(() => false);
+        if (!pushOk) {
+          scheduleNotifications();
+        }
+      } else {
+        scheduleNotifications();
       }
     }, 1000);
 

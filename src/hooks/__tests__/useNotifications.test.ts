@@ -169,8 +169,8 @@ describe('useNotifications', () => {
     });
   });
 
-  describe('push registration prevents local notifications', () => {
-    it('does not schedule local notifications when push registration succeeds', async () => {
+  describe('push-supported browsers skip local notifications', () => {
+    it('does not schedule local notifications when push is supported and permission granted', async () => {
       setupAuthenticatedSession();
       setupDailyPosts(false, false);
       mockPushSubscription();
@@ -183,21 +183,16 @@ describe('useNotifications', () => {
 
       const { result } = renderHook(() => useNotifications());
 
-      // Advance past the 1000ms initialization delay
       await act(async () => {
         await vi.advanceTimersByTimeAsync(1500);
       });
 
-      // Wait for push registration to complete
       await waitFor(() => {
         expect(result.current.isRegistering).toBe(false);
       });
 
-      // Local Notification constructor should NOT have been called
-      // (no setTimeout-based local notifications scheduled)
       mockNotificationConstructor.mockClear();
 
-      // Advance time significantly - local notifications would fire if scheduled
       await act(async () => {
         await vi.advanceTimersByTimeAsync(24 * 60 * 60 * 1000);
       });
@@ -205,31 +200,42 @@ describe('useNotifications', () => {
       expect(mockNotificationConstructor).not.toHaveBeenCalled();
     });
 
-    it('schedules local notifications when push registration fails', async () => {
+    it('scheduleNotifications is always a no-op when push is supported', () => {
       setupAuthenticatedSession();
       setupDailyPosts(false, false);
 
-      // Push subscription fails
-      mockGetSubscription.mockResolvedValue(null);
-      mockPushSubscribe.mockRejectedValue(new Error('Push not supported'));
-
       const { result } = renderHook(() => useNotifications());
+
+      mockNotificationConstructor.mockClear();
+
+      act(() => {
+        result.current.scheduleNotifications();
+      });
+
+      expect(mockNotificationConstructor).not.toHaveBeenCalled();
+    });
+
+    it('attempts push registration when session and permission exist', async () => {
+      setupAuthenticatedSession();
+      setupDailyPosts(false, false);
+      mockPushSubscription();
+      mockFetch.mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({ success: true }),
+        text: () => Promise.resolve(''),
+      });
+
+      renderHook(() => useNotifications());
 
       await act(async () => {
         await vi.advanceTimersByTimeAsync(1500);
       });
 
-      await waitFor(() => {
-        expect(result.current.isRegistering).toBe(false);
-      });
-
-      // scheduleNotifications should have been called as fallback
-      // We can't directly check setTimeout was set, but we can verify
-      // the hook tried to register push and fell back to local
       expect(mockGetSubscription).toHaveBeenCalled();
     });
 
-    it('schedules local notifications when no session exists', async () => {
+    it('skips push registration when no session exists', async () => {
       setupNoSession();
       setupDailyPosts(false, false);
 
@@ -239,45 +245,7 @@ describe('useNotifications', () => {
         await vi.advanceTimersByTimeAsync(1500);
       });
 
-      // Without session, push registration is skipped and local scheduling is attempted
-      // (though it also bails because no session, which is correct)
       expect(mockGetSubscription).not.toHaveBeenCalled();
-    });
-
-    it('clears pending local notifications when push registration succeeds', async () => {
-      setupAuthenticatedSession();
-      setupDailyPosts(false, false);
-      mockPushSubscription();
-      mockFetch.mockResolvedValue({
-        ok: true,
-        status: 200,
-        json: () => Promise.resolve({ success: true }),
-        text: () => Promise.resolve(''),
-      });
-
-      const { result } = renderHook(() => useNotifications());
-
-      await act(async () => {
-        await vi.advanceTimersByTimeAsync(1500);
-      });
-
-      await waitFor(() => {
-        expect(result.current.isRegistering).toBe(false);
-      });
-
-      // After push registered, calling scheduleNotifications should be a no-op
-      mockNotificationConstructor.mockClear();
-
-      act(() => {
-        result.current.scheduleNotifications();
-      });
-
-      // Advance timers - no notifications should fire
-      await act(async () => {
-        await vi.advanceTimersByTimeAsync(24 * 60 * 60 * 1000);
-      });
-
-      expect(mockNotificationConstructor).not.toHaveBeenCalled();
     });
   });
 

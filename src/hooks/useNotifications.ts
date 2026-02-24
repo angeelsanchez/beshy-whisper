@@ -43,7 +43,6 @@ export const useNotifications = () => {
   const [permission, setPermission] = useState<NotificationPermission>('default');
   const [settings, setSettings] = useState<NotificationSettings>(DEFAULT_SETTINGS);
   const [isRegistering, setIsRegistering] = useState(false);
-  const [isPushRegistered, setIsPushRegistered] = useState(false);
 
   const initializationRef = useRef(false);
   const registrationTimeoutRef = useRef<ReturnType<typeof globalThis.setTimeout>>();
@@ -101,9 +100,20 @@ export const useNotifications = () => {
     }
   }, []);
 
+  const isPushSupported = useCallback((): boolean => {
+    if (typeof window === 'undefined') return false;
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false;
+
+    if (isIOSDevice() && !isStandalonePWA()) {
+      return false;
+    }
+
+    return true;
+  }, []);
+
   const scheduleNotifications = useCallback(() => {
-    if (isPushRegistered) return;
-    if (!session?.user?.id || permission !== 'granted' || !settings.enabled || loading) {
+    if (isPushSupported() && permission === 'granted') return;
+    if (!session?.user?.id || !settings.enabled || loading) {
       return;
     }
 
@@ -151,18 +161,7 @@ export const useNotifications = () => {
         }, timeUntilNight);
       }
     }
-  }, [isPushRegistered, session?.user?.id, permission, settings, hasDayPost, hasNightPost, loading, showNotification, clearScheduledNotifications]);
-
-  const isPushSupported = useCallback((): boolean => {
-    if (typeof window === 'undefined') return false;
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false;
-
-    if (isIOSDevice() && !isStandalonePWA()) {
-      return false;
-    }
-
-    return true;
-  }, []);
+  }, [isPushSupported, session?.user?.id, permission, settings, hasDayPost, hasNightPost, loading, showNotification, clearScheduledNotifications]);
 
   const registerPushSubscription = useCallback(async (): Promise<boolean> => {
     if (isRegistering || pushRegistrationRef.current) {
@@ -265,13 +264,8 @@ export const useNotifications = () => {
     const result = await registrationPromise;
     pushRegistrationRef.current = null;
 
-    if (result) {
-      setIsPushRegistered(true);
-      clearScheduledNotifications();
-    }
-
     return result;
-  }, [isPushSupported, permission, session?.user?.id, isRegistering, clearScheduledNotifications]);
+  }, [isPushSupported, permission, session?.user?.id, isRegistering]);
 
   const updateSettings = useCallback((newSettings: Partial<NotificationSettings>) => {
     const updated = { ...settings, ...newSettings };
@@ -313,14 +307,10 @@ export const useNotifications = () => {
     }
 
     registrationTimeoutRef.current = setTimeout(async () => {
-      if (permission === 'granted' && session?.user?.id && !isRegistering) {
-        const pushOk = await registerPushSubscription().catch(() => false);
-        if (!pushOk) {
-          scheduleNotifications();
-        }
-      } else {
-        scheduleNotifications();
+      if (permission === 'granted' && session?.user?.id) {
+        await registerPushSubscription().catch(() => false);
       }
+      scheduleNotifications();
     }, 1000);
 
     return () => {
@@ -329,7 +319,7 @@ export const useNotifications = () => {
       }
       clearScheduledNotifications();
     };
-  }, [session?.user?.id, permission, settings, hasDayPost, hasNightPost, loading, scheduleNotifications, registerPushSubscription, clearScheduledNotifications, isRegistering]);
+  }, [session?.user?.id, permission, settings, hasDayPost, hasNightPost, loading, scheduleNotifications, registerPushSubscription, clearScheduledNotifications]);
 
   useEffect(() => {
     return () => {
